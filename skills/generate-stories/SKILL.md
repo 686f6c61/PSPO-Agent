@@ -94,6 +94,30 @@ Then {comportamiento esperado ante la situacion}
 
 #### Sobre los criterios de aceptacion
 
+Los criterios de aceptacion NO son bullets de una frase. Cada escenario es un parrafo que explica:
+
+1. **El contexto completo** (Given): no solo el estado, sino POR QUE el usuario esta en esa situacion. Que ha pasado antes.
+2. **La accion concreta** (When): que hace exactamente el usuario, con que datos, en que interfaz.
+3. **Las expectativas detalladas** (Then): que debe pasar, que debe ver, que debe sentir. Las expectativas son la parte mas importante.
+
+INCORRECTO (demasiado escueto):
+  Given: el usuario esta registrado
+  When: hace login
+  Then: ve el dashboard
+
+CORRECTO (detallado):
+  Given: el usuario tiene una cuenta activa con email confirmado y ha accedido
+  al menos una vez en los ultimos 30 dias. Su sesion anterior caduco hace 2 horas.
+  When: accede a la pagina de login, introduce su email y contrasena correctos,
+  y pulsa el boton "Iniciar sesion".
+  Then:
+  - Se autentica en menos de 2 segundos (feedback visual de carga si supera 500ms).
+  - Se redirige al dashboard con sus datos personalizados del ultimo acceso.
+  - Se genera un token JWT con expiracion de 24 horas.
+  - Se registra la fecha y hora del acceso en el log de actividad del usuario.
+  - Si tiene notificaciones pendientes, se muestra un indicador en la cabecera.
+
+Reglas adicionales:
 - **Minimo 1 escenario positivo** (happy path): el flujo normal cuando todo va bien.
 - **Minimo 1 escenario negativo**: que pasa cuando algo falla (datos invalidos, error de red, permiso denegado, recurso no encontrado).
 - **Valores concretos:** MAL: "una cantidad valida". BIEN: "una cantidad entre 1 y 999".
@@ -122,6 +146,63 @@ Antes de presentar las historias al usuario, revisa:
 3. **Orden:** La prioridad tiene sentido? La historia mas valiosa esta primera?
 4. **Duplicados:** Hay solapamiento entre historias? Si dos historias comparten criterios de aceptacion, probablemente se pueden fusionar.
 5. **Numeracion:** Si hay historias previas en `docs/historias/`, la numeracion continua desde el ultimo numero.
+
+### Paso extra: Analisis de edge cases
+
+Despues de generar los criterios de aceptacion basicos (escenarios positivos y negativos), analiza cada historia para detectar edge cases:
+
+- **Limites de datos:** que pasa con strings vacios, valores nulos, numeros negativos, textos de 10000 caracteres?
+- **Concurrencia:** que pasa si dos usuarios hacen la misma accion a la vez?
+- **Estado inconsistente:** que pasa si el proceso se interrumpe a mitad (cierre del navegador, perdida de red)?
+- **Permisos:** que pasa si un usuario sin permisos intenta acceder?
+- **Integraciones:** que pasa si un servicio externo no responde?
+
+Presenta los edge cases detectados al usuario:
+
+```
+He detectado {N} edge cases potenciales para esta historia:
+
+| # | Edge case | Impacto | Sugiero cubrir? |
+|---|-----------|---------|-----------------|
+| 1 | Email con caracteres Unicode | Medio | Si |
+| 2 | Timeout del servidor SMTP | Alto | Si |
+| 3 | Registro simultaneo con mismo email | Bajo | No (MVP) |
+
+Quieres que anadamos criterios de aceptacion para los edge cases marcados?
+```
+
+Si el usuario acepta, genera criterios de aceptacion adicionales para los edge cases seleccionados.
+Si rechaza, documenta los edge cases conocidos como nota al final de la historia para futuras iteraciones.
+
+### Paso extra: Estimacion rapida
+
+Despues de los edge cases, pide al usuario una estimacion rapida por tallas para cada historia:
+
+```
+Estimacion rapida (t-shirt sizing):
+
+  S = 1 dia | M = 2 dias | L = 3 dias | XL = 5 dias
+
+Asigna una talla a cada historia:
+
+  1. HU-XX: {titulo}
+  2. HU-XX: {titulo}
+  ...
+
+Formato: "1=M 2=L 3=S" o "saltar" para estimar despues:
+```
+
+Si el usuario asigna tallas, incluyelas en la tabla de metadatos de cada fichero HU (campo Estimacion). Si elige saltar, deja el campo vacio y el sprint-plan o el publish lo pediran despues.
+
+### Revision de estilo
+
+Antes de presentar las historias al usuario, pasa todo el contenido generado por el agente `culture-guardian` para revision de estilo. El agente:
+- Corrige acentos y enes (configuracion -> configuración, pequeno -> pequeño)
+- Aplica tono profesional y detallista
+- Verifica que los criterios de aceptacion son concretos y no genericos
+- Lee aprendizajes previos del proyecto de la memoria de Claude Code
+
+Solo despues de la revision de estilo se presentan las historias al usuario.
 
 ### Paso 6: Presentar y encadenar a validacion
 

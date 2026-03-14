@@ -91,6 +91,8 @@ Pedro Lopez,pedro@empresa.com,backend,Mid,50,no
 
 ### Modo importacion CSV
 
+Puedes descargar la plantilla CSV desde https://pspo-agent.com/team-template.csv
+
 1. Lee el fichero indicado por el usuario.
 2. Valida que tiene las columnas necesarias (nombre, email, rol, categoria, dedicacion, usa_agente_ia).
 3. Si faltan columnas, informa cuales y ofrece completarlas interactivamente.

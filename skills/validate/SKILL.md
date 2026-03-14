@@ -21,6 +21,16 @@ Esta skill se ejecuta despues de `/pspo-agent:generate-stories`. Necesitas las h
 
 ## Flujo de validacion
 
+### Revision de estilo previa
+
+Antes de presentar las historias al usuario para validacion, pasa todo el contenido por el agente `culture-guardian` para revision de estilo. El agente:
+- Corrige acentos y enes (configuracion -> configuración, pequeno -> pequeño)
+- Aplica tono profesional y detallista
+- Verifica que los criterios de aceptacion son concretos y no genericos
+- Lee aprendizajes previos del proyecto de la memoria de Claude Code
+
+Solo despues de la revision de estilo se presentan las historias al usuario.
+
 ### Paso 1: Presentar resumen
 
 Muestra una tabla resumen con todas las historias antes de entrar en el detalle:

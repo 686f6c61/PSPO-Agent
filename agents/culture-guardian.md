@@ -7,6 +7,7 @@ description: >
   Lee los aprendizajes del proyecto de la memoria de Claude Code. Usar siempre que
   se genera contenido que el usuario va a leer.
 model: inherit
+color: magenta
 tools: Read, Grep, Glob, Write, Edit
 ---
 

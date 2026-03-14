@@ -63,7 +63,15 @@ Que quieres hacer?
 Si el usuario elige crear, usa `manage-lists` con accion `create` para crear la lista "Backlog".
 Si elige seleccionar, usa la lista indicada como destino.
 
-Una vez confirmada la lista destino, presenta la vista previa al usuario:
+Una vez confirmada la lista destino, lee cada fichero de `docs/historias/HU-*.md` para extraer:
+- Titulo
+- Prioridad (de la tabla de metadatos)
+- Estimacion/talla (de la tabla de metadatos, si existe)
+- Escenarios (nombres para el resumen)
+
+Si las historias no tienen estimacion (talla), pregunta al usuario si quiere asignarlas ahora (S/M/L/XL) o publicar sin estimacion.
+
+Presenta la vista previa al usuario:
 
 ```
 === Vista previa de publicacion ===
@@ -74,14 +82,16 @@ Lista destino: Backlog
 
 Tarjetas a crear:
 
-| # | Titulo | Prioridad | Etiqueta |
-|---|--------|-----------|----------|
-| 1 | HU-01: {titulo} | Alta | Alta (naranja) |
-| 2 | HU-02: {titulo} | Media | Media (amarillo) |
-| 3 | HU-03: {titulo} | Alta | Alta (naranja) |
+| # | Titulo | Prioridad | Talla | Dias |
+|---|--------|-----------|-------|------|
+| 1 | HU-01: {titulo} | Alta | M | 2 |
+| 2 | HU-02: {titulo} | Media | L | 3 |
+| 3 | HU-03: {titulo} | Alta | S | 1 |
 
-Cada tarjeta incluira la historia completa y los criterios de aceptacion
-en la descripcion.
+Cada tarjeta incluira:
+  - Descripcion resumida con prioridad y estimacion
+  - Fichero .md completo como adjunto
+  - Checklist "Definition of Done" (8 criterios)
 
 Confirmas la publicacion? (s/n):
 ```
@@ -107,15 +117,35 @@ Quieres:
 
 ### Paso 4: Ejecutar la publicacion
 
-Delega al agente `publisher` la creacion de tarjetas con la herramienta `create-cards`.
+Antes de publicar, pasa las descripciones de las tarjetas por el agente `culture-guardian` para asegurar que el texto que llega a Trello tiene acentos correctos, tono profesional y es detallista.
 
-Para cada historia aprobada, el formato de la tarjeta es:
+Para CADA historia aprobada, ejecuta estos 3 pasos en orden:
 
-- **Titulo:** `HU-{XX}: {titulo corto}`
-- **Descripcion:** Historia completa + criterios de aceptacion en Markdown (ver formato en `card-format.md`).
-- **Etiqueta:** La etiqueta de prioridad correspondiente.
-- **Lista destino:** "Backlog" (o la configurada en settings).
-- **Posicion:** Al final de la lista (bottom).
+1. **Crear tarjeta** con `create-cards`. La descripcion DEBE seguir este formato exacto:
+   ```
+   ## Historia de usuario
+
+   Como {rol}, quiero {accion}, para {beneficio}.
+
+   ## Criterios de aceptacion (resumen)
+
+   - Escenario 1: {nombre} (positivo)
+   - Escenario 2: {nombre} (negativo)
+
+   Prioridad: {prioridad} | Estimacion: {talla} ({dias} dias)
+
+   ---
+   *Historia completa en el fichero adjunto.*
+   *Generado por PSPO Agent | {DD/MM/AAAA}*
+   ```
+   - **Titulo:** `HU-{XX}: {titulo corto}`
+   - **Etiqueta:** La etiqueta de prioridad correspondiente.
+   - **Lista destino:** "Backlog" (o la configurada en settings).
+   - **Posicion:** Al final de la lista (bottom).
+2. **Adjuntar fichero .md** con `attach-file`: sube el fichero completo HU-XX-titulo.md como adjunto a la tarjeta recien creada.
+3. **Anadir checklist DoD** con `add-checklist`: anade el checklist "Definition of Done" con los criterios de docs/dod.md.
+
+No pidas confirmacion individual por cada tarjeta. La confirmacion se pide UNA VEZ en la vista previa (paso 3). Despues de confirmar, crea TODAS las tarjetas secuencialmente sin interrupciones.
 
 ### Paso 5: Reportar resultado
 
@@ -196,3 +226,10 @@ Si el usuario ejecuta `/pspo-agent:publish` directamente (sin haber pasado por e
 - SIEMPRE guarda localmente antes de intentar publicar en Trello.
 - Si las credenciales han expirado durante la publicacion, informa y guarda localmente.
 - No reintentar automaticamente mas de 3 veces ante errores de API.
+
+## Reglas de ejecucion
+
+- La confirmacion del usuario se pide UNA SOLA VEZ en la vista previa (paso 3).
+- Despues de confirmar, se crean TODAS las tarjetas sin interrupciones.
+- NUNCA pidas confirmacion individual por cada tarjeta.
+- Si una tarjeta falla, registrala en la lista de fallidas y continua con la siguiente.

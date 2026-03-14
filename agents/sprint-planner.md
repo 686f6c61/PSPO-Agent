@@ -6,6 +6,7 @@ description: >
   y evalua la viabilidad de un sprint. Sugiere recortes cuando el sprint
   esta desbordado. Usar para planificacion de sprint y gestion de equipo.
 model: inherit
+color: amber
 tools: Read, Grep, Glob, Write, Edit
 mcpServers:
   - trello-client

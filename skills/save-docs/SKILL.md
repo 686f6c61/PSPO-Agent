@@ -187,7 +187,7 @@ Los estados posibles son:
 
 ### Fechas
 
-Usa el formato `YYYY-MM-DD` para todas las fechas. Ejemplo: `2026-03-13`.
+Las fechas se muestran en formato espanol: DD/MM/AAAA (ejemplo: 14/03/2026). Usa este formato en todos los artefactos generados: historias, backlog, vision y cualquier otro documento.
 
 ## Confirmacion al usuario
 

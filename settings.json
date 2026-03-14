@@ -1,6 +1,6 @@
 {
   "plugin": "pspo-agent",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "defaults": {
     "trello": {
       "token_expiration": "30days",
@@ -50,7 +50,7 @@
       "stories_dir": "historias",
       "backlog_file": "backlog.md",
       "story_prefix": "HU",
-      "date_format": "YYYY-MM-DD"
+      "date_format": "DD/MM/AAAA"
     },
     "publish": {
       "save_local_before_trello": true,

@@ -5,6 +5,7 @@ description: >
   Gestiona la creacion de tarjetas, verificacion de duplicados, y configuracion
   del tablero. Usar cuando se necesite publicar o consultar datos en Trello.
 model: inherit
+color: green
 tools: Read, Grep
 mcpServers:
   - trello-client

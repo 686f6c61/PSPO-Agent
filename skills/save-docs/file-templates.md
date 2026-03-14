@@ -34,7 +34,7 @@ Referencia para la skill save-docs. Define las plantillas exactas de cada tipo d
 {Que NO se incluye en esta version}
 
 ---
-*Generado por PSPO Agent | Ultima actualizacion: {YYYY-MM-DD}*
+*Generado por PSPO Agent | Ultima actualizacion: {DD/MM/AAAA}*
 ```
 
 ## HU-XX-titulo.md
@@ -45,9 +45,10 @@ Referencia para la skill save-docs. Define las plantillas exactas de cada tipo d
 | Campo | Valor |
 |-------|-------|
 | **Prioridad** | {Critica / Alta / Media / Baja} |
+| **Estimacion** | {S / M / L / XL} ({dias} dias) |
 | **Estado** | {Borrador / Aprobada / Publicada en Trello / Rechazada} |
-| **Creada** | {YYYY-MM-DD} |
-| **Ultima modificacion** | {YYYY-MM-DD} |
+| **Creada** | {DD/MM/AAAA} |
+| **Ultima modificacion** | {DD/MM/AAAA} |
 
 ## Historia de usuario
 
@@ -84,14 +85,14 @@ Then {resultado}
 ```markdown
 # Product backlog
 
-Ultima actualizacion: {YYYY-MM-DD}
+Ultima actualizacion: {DD/MM/AAAA}
 
 ## Historias priorizadas
 
-| # | Historia | Prioridad | Estado | Fichero |
-|---|----------|-----------|--------|---------|
-| HU-01 | {titulo} | {prioridad} | {estado} | [HU-01](historias/HU-01-titulo.md) |
-| HU-02 | {titulo} | {prioridad} | {estado} | [HU-02](historias/HU-02-titulo.md) |
+| # | Historia | Prioridad | Talla | Dias | Estado | Fichero |
+|---|----------|-----------|-------|------|--------|---------|
+| HU-01 | {titulo} | {prioridad} | {S/M/L/XL} | {dias} | {estado} | [HU-01](historias/HU-01-titulo.md) |
+| HU-02 | {titulo} | {prioridad} | {S/M/L/XL} | {dias} | {estado} | [HU-02](historias/HU-02-titulo.md) |
 
 ## Resumen
 
@@ -130,6 +131,10 @@ Reglas:
 3. Se eliminan caracteres especiales (tildes, puntos, comas, parentesis).
 4. Maximo 50 caracteres en la parte del titulo (sin contar el prefijo HU-XX-).
 5. Si supera 50 caracteres, se trunca en la ultima palabra completa.
+
+### Fechas
+
+Las fechas se muestran en formato espanol: DD/MM/AAAA (ejemplo: 14/03/2026). Todos los marcadores `{DD/MM/AAAA}` en las plantillas deben sustituirse por la fecha actual en ese formato.
 
 ### Markdown limpio
 

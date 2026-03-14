@@ -121,13 +121,49 @@ Que quieres hacer?
 ```
 
 Segun la eleccion del usuario:
-- **Opcion 1** (o si el usuario pega un bloque de texto largo): Redirige a `/pspo-agent:analyze`.
-- **Opcion 2**: Redirige a `/pspo-agent:discovery`.
+- **Opcion 1** (o si el usuario pega un bloque de texto largo): Antes de redirigir, ejecuta el **paso intermedio de vision** (ver abajo). Despues redirige a `/pspo-agent:analyze`.
+- **Opcion 2**: Antes de redirigir, ejecuta el **paso intermedio de vision** (ver abajo). Despues redirige a `/pspo-agent:discovery`.
 - **Opcion 3**: Redirige a `/pspo-agent:publish`.
 - **Opcion 4**: Redirige a `/pspo-agent:sprint-plan`.
 - **Opcion 5**: Redirige a `/pspo-agent:onboarding`.
-- **Si el usuario escribe directamente una descripcion corta** (menos de 100 palabras): Interpretar como opcion 2 y arrancar el descubrimiento.
-- **Si el usuario pega un texto largo** (mas de 100 palabras): Interpretar como opcion 1 y arrancar el analisis de requisitos.
+- **Si el usuario escribe directamente una descripcion corta** (menos de 100 palabras): Ejecuta el **paso intermedio de vision** y luego interpretar como opcion 2 y arrancar el descubrimiento.
+- **Si el usuario pega un texto largo** (mas de 100 palabras): Ejecuta el **paso intermedio de vision** y luego interpretar como opcion 1 y arrancar el analisis de requisitos.
+
+### Paso intermedio: Vision de producto
+
+Este paso se ejecuta ANTES de redirigir a analyze o discovery (opciones 1 y 2).
+
+1. Comprueba si existe el fichero `docs/vision.md`.
+2. **Si existe:** No hagas nada. Continua con la redireccion al flujo correspondiente.
+3. **Si NO existe:** Muestra al usuario el siguiente mensaje y espera su respuesta:
+
+```
+Antes de empezar con las historias, necesito entender la vision del producto.
+
+La vision no son requisitos. Es la filosofia: por que existe este producto,
+que lo hace diferente, y cual es el norte que guia las decisiones.
+
+Ejemplo de una buena vision:
+  "Democratizar la gestion de producto para equipos que no tienen PO.
+  Cada desarrollador deberia poder escribir historias de usuario de calidad
+  sin necesitar formacion en Scrum ni herramientas de 200 euros al mes."
+
+Describe la vision de tu producto en 2-3 frases:
+```
+
+4. Cuando el usuario responda, guarda su respuesta en `docs/vision.md` con el siguiente formato:
+
+```markdown
+# Vision de producto
+
+> {respuesta del usuario}
+
+---
+*Generado por PSPO Agent | Ultima actualizacion: {fecha en formato DD/MM/AAAA}*
+```
+
+5. Crea el directorio `docs/` si no existe antes de guardar.
+6. Continua con la redireccion al flujo correspondiente (analyze o discovery).
 
 ## Reglas
 

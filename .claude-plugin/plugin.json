@@ -1,7 +1,7 @@
 {
   "name": "pspo-agent",
   "description": "Product Owner profesional (PSPO) para Claude Code. Descubrimiento de producto, generacion de historias de usuario con criterios de aceptacion, y publicacion en Trello.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": {
     "name": "686f6c61"
   },
