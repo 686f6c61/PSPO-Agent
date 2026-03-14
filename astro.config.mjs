@@ -4,7 +4,7 @@ import rehypeMermaid from 'rehype-mermaid';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  site: 'https://pspo-agent.vercel.app',
+  site: 'https://pspo-agent.onrender.com',
   output: 'static',
   integrations: [sitemap()],
   build: {

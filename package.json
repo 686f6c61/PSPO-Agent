@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && node scripts/update-csp-hashes.mjs",
+    "build": "astro build",
     "preview": "astro preview",
     "postinstall": "npx playwright install chromium"
   },
