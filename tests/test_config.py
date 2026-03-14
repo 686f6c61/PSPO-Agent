@@ -45,10 +45,10 @@ class TestPluginJson(unittest.TestCase):
         self.assertIsInstance(self.plugin["agents"], list)
 
     def test_skill_count(self):
-        self.assertEqual(len(self.plugin["skills"]), 13)
+        self.assertEqual(len(self.plugin["skills"]), 14)
 
     def test_agent_count(self):
-        self.assertEqual(len(self.plugin["agents"]), 5)
+        self.assertEqual(len(self.plugin["agents"]), 6)
 
 
 class TestSettingsJson(unittest.TestCase):

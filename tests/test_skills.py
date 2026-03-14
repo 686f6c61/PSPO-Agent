@@ -31,8 +31,8 @@ class TestSkillStructure(unittest.TestCase):
 
     def test_skill_count(self):
         skills = self._get_skill_files()
-        self.assertEqual(len(skills), 13,
-                         f"Se esperan 13 skills, hay {len(skills)}")
+        self.assertEqual(len(skills), 14,
+                         f"Se esperan 14 skills, hay {len(skills)}")
 
     def test_skill_names_unique(self):
         names = []
@@ -48,7 +48,7 @@ class TestSkillStructure(unittest.TestCase):
     def test_expected_skill_names(self):
         expected = {"start", "onboarding", "discovery", "generate-stories",
                     "validate", "publish", "save-docs", "update", "team",
-                    "sprint-plan", "export", "sprint-review", "analyze"}
+                    "sprint-plan", "export", "sprint-review", "analyze", "audit"}
         actual = set()
         for path in self._get_skill_files():
             with open(path) as f:
@@ -79,11 +79,11 @@ class TestAgentStructure(unittest.TestCase):
 
     def test_agent_count(self):
         agents = self._get_agent_files()
-        self.assertEqual(len(agents), 5,
-                         f"Se esperan 5 agentes, hay {len(agents)}")
+        self.assertEqual(len(agents), 6,
+                         f"Se esperan 6 agentes, hay {len(agents)}")
 
     def test_expected_agent_names(self):
-        expected = {"product-owner", "publisher", "sprint-planner", "culture-guardian", "requirement-analyst"}
+        expected = {"product-owner", "publisher", "sprint-planner", "culture-guardian", "requirement-analyst", "senior-auditor"}
         actual = set()
         for path in self._get_agent_files():
             with open(path) as f:
