@@ -18,7 +18,7 @@ $ErrorActionPreference = "Stop"
 
 $Repo = "686f6c61/PSPO-Agent"
 $PluginName = "pspo-agent"
-$Version = "1.0.1"
+$Version = "1.0.2"
 
 # -- Funciones de logging ---------------------------------------------------
 

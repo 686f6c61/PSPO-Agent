@@ -1,5 +1,36 @@
 # Changelog
 
+## v1.0.2 (14/03/2026)
+
+### Nuevas funcionalidades
+
+- **Agente senior-auditor:** auditoria de fondo de las HU (completitud, coherencia, huecos, HU que faltan/sobran). Cruza contra documento original. Automatico en primera generacion, bajo demanda despues.
+- **Skill audit:** `/pspo-agent:audit` para auditorias bajo demanda.
+- **MCP invite-member:** invita miembros al tablero de Trello por email. Trello envia la invitacion automaticamente.
+- **Invitacion automatica al board:** antes de publicar tarjetas, invita a los miembros del equipo (team.csv) al tablero.
+- **Sprint y asignacion en cada HU:** campos Sprint y Asignado a (nombre + email) en la tabla de metadatos de cada fichero MD.
+
+### Mejoras
+
+- **Flujo autonomo entre fases:** el plugin avanza automaticamente sin preguntar "quieres pasar a la siguiente fase". Solo se detiene para preguntas de contenido.
+- **Equipo conversacional:** explica campos necesarios, ofrece descargar plantilla CSV, pregunta cuantos miembros o carga CSV existente.
+- **Equipo obligatorio en sprint-plan:** redirige a /pspo-agent:team si falta team.csv.
+- **AskUserQuestion en todas las skills:** selectores interactivos en vez de texto plano con letras.
+- **3 reglas inquebrantables del publisher:** create-card + attach-file + add-checklist siempre.
+- **Listas en castellano obligatorio:** el publisher renombra listas si estan en ingles.
+- **Estimacion en descripcion de tarjeta:** prioridad, talla, sprint y asignado visibles.
+
+### Correccion de errores
+
+- Publisher usaba curl/bash en vez de MCP tools.
+- No generaba ficheros MD individuales por HU.
+- No adjuntaba MD a tarjetas de Trello.
+- No pedia equipo antes de planificar.
+- Pedia permiso tarjeta por tarjeta en vez de una sola vez.
+- Update mostraba codigo Python al usuario.
+- API keys se guardaban en local.md en vez de .env.
+- Proximos pasos como tabla de texto en vez de selectores.
+
 ## v1.0.1 (14/03/2026)
 
 ### Nuevas funcionalidades

@@ -1,6 +1,6 @@
 {
   "plugin": "pspo-agent",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "defaults": {
     "trello": {
       "token_expiration": "30days",
