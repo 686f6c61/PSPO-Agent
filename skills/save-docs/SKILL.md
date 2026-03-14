@@ -91,6 +91,9 @@ Reglas para el nombre:
 | Campo | Valor |
 |-------|-------|
 | **Prioridad** | {Critica / Alta / Media / Baja} |
+| **Estimacion** | {S / M / L / XL} ({dias} dias) |
+| **Sprint** | {Sprint N / Sin asignar} |
+| **Asignado a** | {Nombre / Sin asignar} |
 | **Estado** | {Aprobada / Publicada en Trello / Borrador} |
 | **Creada** | {fecha de creacion} |
 | **Ultima modificacion** | {fecha de ultima modificacion} |

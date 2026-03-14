@@ -46,6 +46,8 @@ Referencia para la skill save-docs. Define las plantillas exactas de cada tipo d
 |-------|-------|
 | **Prioridad** | {Critica / Alta / Media / Baja} |
 | **Estimacion** | {S / M / L / XL} ({dias} dias) |
+| **Sprint** | {Sprint N / Sin asignar} |
+| **Asignado a** | {Nombre del miembro / Sin asignar} |
 | **Estado** | {Borrador / Aprobada / Publicada en Trello / Rechazada} |
 | **Creada** | {DD/MM/AAAA} |
 | **Ultima modificacion** | {DD/MM/AAAA} |
@@ -89,10 +91,10 @@ Ultima actualizacion: {DD/MM/AAAA}
 
 ## Historias priorizadas
 
-| # | Historia | Prioridad | Talla | Dias | Estado | Fichero |
-|---|----------|-----------|-------|------|--------|---------|
-| HU-01 | {titulo} | {prioridad} | {S/M/L/XL} | {dias} | {estado} | [HU-01](historias/HU-01-titulo.md) |
-| HU-02 | {titulo} | {prioridad} | {S/M/L/XL} | {dias} | {estado} | [HU-02](historias/HU-02-titulo.md) |
+| # | Historia | Prioridad | Talla | Dias | Sprint | Asignado | Estado | Fichero |
+|---|----------|-----------|-------|------|--------|----------|--------|---------|
+| HU-01 | {titulo} | {prioridad} | {talla} | {dias} | {sprint} | {asignado} | {estado} | [HU-01](historias/HU-01-titulo.md) |
+| HU-02 | {titulo} | {prioridad} | {talla} | {dias} | {sprint} | {asignado} | {estado} | [HU-02](historias/HU-02-titulo.md) |
 
 ## Resumen
 

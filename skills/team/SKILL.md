@@ -44,13 +44,55 @@ IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes op
 
 ### Si no existe `team.csv`
 
-Usa AskUserQuestion para preguntar al usuario:
-- Pregunta: "No hay equipo configurado para este proyecto. Como quieres definirlo?"
+Muestra este mensaje:
+
+```
+Para planificar el sprint necesito conocer al equipo.
+
+Los datos que necesito de cada miembro son:
+  - Nombre completo
+  - Email (para invitarle al tablero de Trello)
+  - Rol (frontend, backend, fullstack, QA, devops...)
+  - Categoria (Junior, Mid, Senior)
+  - Dedicacion al proyecto (% de tiempo: 100 = completo, 50 = media jornada)
+  - Usa agente de IA para desarrollar? (si/no) -- esto aplica un factor de
+    productividad del 65% en la planificacion
+```
+
+Usa AskUserQuestion:
+- Pregunta: "Como quieres configurar el equipo?"
 - Opciones:
-  - **"Modo guiado"** (description: "Te pregunto los datos de cada miembro paso a paso")
-  - **"Importar desde CSV"** (description: "Indica la ruta de un fichero CSV con los datos del equipo")
+  - **"Tengo la plantilla CSV"** (description: "Ya he descargado y rellenado la plantilla desde pspo-agent.com/team-template.csv. Indicame la ruta del fichero.")
+  - **"Definir miembro a miembro"** (description: "Te digo los datos de cada persona y tu generas el CSV")
+  - **"Descargar plantilla primero"** (description: "Dame el enlace para descargar la plantilla CSV y rellenarla")
 
 IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones como texto plano con letras entre corchetes.
+
+Si el usuario elige **"Descargar plantilla primero"**:
+
+```
+Descarga la plantilla desde:
+
+  https://pspo-agent.com/team-template.csv
+
+El formato del CSV es:
+
+  nombre,email,rol,categoria,dedicacion,usa_agente_ia
+
+Ejemplo:
+  Ana Garcia,ana@empresa.com,frontend,Senior,100,si
+  Pedro Lopez,pedro@empresa.com,backend,Mid,50,no
+
+Cuando la tengas rellena, ejecuta /pspo-agent:team y elige "Tengo la plantilla CSV".
+```
+
+Si el usuario elige **"Definir miembro a miembro"**, pregunta primero:
+
+```
+Cuantas personas componen el equipo?
+```
+
+Con el numero, pregunta los datos de cada uno en secuencia (nombre, email, rol, categoria, dedicacion, usa agente IA). Al terminar cada miembro, muestra el resumen y pregunta si anadir otro o confirmar.
 
 ### Modo guiado
 

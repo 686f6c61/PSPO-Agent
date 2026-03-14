@@ -21,10 +21,17 @@ Coordinas la planificacion de un sprint delegando en el agente `sprint-planner`.
 Comprueba en orden:
 
 1. **Equipo definido:** existe `team.csv`?
-   - Si no existe, NO continues con la planificacion. Usa AskUserQuestion:
-     - Pregunta: "No hay equipo configurado. Necesito saber el equipo para calcular la capacidad del sprint."
+   - Si no existe, NO continues con la planificacion. Muestra:
+     ```
+     Para planificar el sprint necesito conocer al equipo: quienes son,
+     cuanto tiempo dedican al proyecto y si usan agentes de IA.
+
+     Puedes descargar la plantilla CSV desde: https://pspo-agent.com/team-template.csv
+     ```
+     Usa AskUserQuestion:
+     - Pregunta: "Como quieres configurar el equipo?"
      - Opciones:
-       - **"Configurar equipo ahora"** (description: "Abre el asistente de equipo para definir miembros")
+       - **"Configurar equipo ahora"** (description: "Abre el asistente para definir miembros o cargar la plantilla CSV")
        - **"Saltar equipo"** (description: "Planificar sin datos de equipo, solo estimacion de historias")
    - Si elige configurar, redirige a /pspo-agent:team y luego vuelve aqui.
 2. **Historias aprobadas:** existe al menos un fichero en `docs/historias/`?
@@ -251,14 +258,14 @@ Factor IA: {factor}%
 
 ## Historias incluidas
 
-| Historia | Talla | Dias equiv. | Prioridad |
-|----------|-------|-------------|-----------|
-| ... | ... | ... | ... |
+| Historia | Talla | Dias | Asignado a | Prioridad |
+|----------|-------|------|-----------|-----------|
+| ... | ... | ... | ... | ... |
 
 ## Historias excluidas (siguiente sprint)
 
-| Historia | Talla | Dias equiv. | Prioridad | Motivo |
-|----------|-------|-------------|-----------|--------|
+| Historia | Talla | Dias | Prioridad | Motivo |
+|----------|-------|------|-----------|--------|
 | ... | ... | ... | ... | Desbordamiento de capacidad |
 
 ## Resumen
@@ -267,6 +274,16 @@ Factor IA: {factor}%
 - Capacidad equipo: {N} dias equiv.
 - Ocupacion: {N}%
 ```
+
+### Paso 7: Actualizar ficheros de HU con sprint y asignacion
+
+Despues de guardar el sprint-plan, actualiza cada fichero de `docs/historias/HU-XX-*.md` que este incluido en el sprint:
+
+1. Establece el campo **Sprint** en la tabla de metadatos (ej: "Sprint 1").
+2. Si se ha asignado un miembro, establece el campo **Asignado a** con su nombre.
+3. Actualiza el campo **Ultima modificacion** con la fecha actual.
+
+Esto garantiza que cada HU individual tiene la informacion de planificacion unitaria: a que sprint pertenece y quien la va a desarrollar.
 
 ## Reglas
 
