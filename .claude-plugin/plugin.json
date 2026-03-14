@@ -23,6 +23,7 @@
     "./commands/sprint-review.md",
     "./commands/export.md",
     "./commands/update.md",
+    "./commands/audit.md",
     "./commands/help.md"
   ],
   "skills": [
@@ -38,14 +39,16 @@
     "./skills/sprint-plan/SKILL.md",
     "./skills/export/SKILL.md",
     "./skills/sprint-review/SKILL.md",
-    "./skills/analyze/SKILL.md"
+    "./skills/analyze/SKILL.md",
+    "./skills/audit/SKILL.md"
   ],
   "agents": [
     "./agents/product-owner.md",
     "./agents/publisher.md",
     "./agents/sprint-planner.md",
     "./agents/culture-guardian.md",
-    "./agents/requirement-analyst.md"
+    "./agents/requirement-analyst.md",
+    "./agents/senior-auditor.md"
   ],
   "hooks": "./hooks/hooks.json",
   "mcpServers": "./.mcp.json"

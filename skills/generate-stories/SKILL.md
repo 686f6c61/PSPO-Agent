@@ -204,6 +204,20 @@ Antes de presentar las historias al usuario, pasa todo el contenido generado por
 
 Solo despues de la revision de estilo se presentan las historias al usuario.
 
+### Auditoria automatica (primera generacion)
+
+Si NO existe `docs/auditoria-hu.md` (es la primera vez que se generan historias en este proyecto), ejecuta automaticamente `/pspo-agent:audit` ANTES de pasar a validacion.
+
+El agente `senior-auditor` revisara:
+- Completitud contra el documento original (si existe)
+- Coherencia del conjunto
+- Calidad de contenido de cada HU
+- HU que faltan o sobran
+
+Si la auditoria detecta hallazgos, los presenta al usuario para que decida si aplicar correcciones. Solo despues de la auditoria (o si ya se hizo antes) se pasa a validacion.
+
+Si `docs/auditoria-hu.md` ya existe (ya se audito antes), salta este paso y pasa directo a presentar.
+
 ### Paso 6: Presentar y encadenar a validacion
 
 Presenta las historias al usuario con un resumen inicial:
