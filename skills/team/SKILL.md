@@ -137,6 +137,14 @@ Ana Garcia,ana@empresa.com,frontend,Senior,100,si
 Pedro Lopez,pedro@empresa.com,backend,Mid,50,no
 ```
 
+### Transicion automatica al terminar
+
+Al terminar de guardar team.csv, informa:
+
+"Equipo configurado: {N} miembros. Continuando con la planificacion."
+
+Y vuelve automaticamente al flujo que lo invoco (sprint-plan normalmente). No preguntes al usuario que quiere hacer. El equipo ya esta listo, el siguiente paso es continuar con lo que se estaba haciendo.
+
 ### Modo importacion CSV
 
 Puedes descargar la plantilla CSV desde https://pspo-agent.com/team-template.csv

@@ -218,16 +218,30 @@ Si el usuario ejecuta `/pspo-agent:publish` directamente (sin haber pasado por e
 
 4. Continua con el flujo normal (vista previa -> confirmacion -> publicacion).
 
-### Paso 6: Proximos pasos
+### Paso 6: Resumen final
 
-Usa AskUserQuestion para preguntar al usuario que quiere hacer a continuacion.
-NUNCA muestres tablas de texto con comandos como proximos pasos. Siempre usa AskUserQuestion.
+Despues de publicar todas las tarjetas, muestra un resumen completo:
 
-- Pregunta: "La publicacion ha terminado. Que quieres hacer ahora?"
-- Opciones:
-  - **"Planificar sprint"** (description: "Calcula capacidad del equipo y planifica el sprint con las historias publicadas") -> ejecuta /pspo-agent:sprint-plan
-  - **"Exportar backlog"** (description: "Exporta el backlog completo a un fichero local") -> ejecuta /pspo-agent:save-docs
-  - **"Volver al inicio"** (description: "Vuelve al menu principal del plugin")
+```
+=== PSPO Agent -- Resumen de la sesion ===
+
+Vision: {titulo de la vision}
+Tablero: {nombre_tablero} ({url_tablero})
+
+Historias publicadas: {N}
+| # | Titulo | Talla | Sprint | Asignado | URL Trello |
+|---|--------|-------|--------|----------|------------|
+| HU-01 | ... | M | Sprint 1 | Ana (ana@...) | https://... |
+
+Cada tarjeta incluye:
+  - Descripcion resumida con estimacion y prioridad
+  - Fichero .md completo como adjunto
+  - Checklist "Definition of Done" (si configurada)
+
+Documentacion local guardada en docs/
+```
+
+Este es el final del flujo. No preguntes que quiere hacer. Si el usuario quiere planificar sprint, exportar o hacer otra cosa, lo dira el.
 
 ## Reglas de seguridad
 

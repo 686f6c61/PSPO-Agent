@@ -47,22 +47,14 @@ Pasa el documento completo al agente `requirement-analyst`. El agente:
 5. Actualiza el indicador tras cada respuesta.
 6. Cuando alcanza el 80%, presenta el resumen de validacion.
 
-### Paso 3: Transicion a historias
+### Paso 3: Transicion automatica a generacion
 
-Cuando el usuario confirma el resumen de validacion:
+Cuando el usuario confirma el resumen de validacion, avanza automaticamente:
 
-Usa AskUserQuestion para preguntar al usuario:
-- Pregunta: "Analisis completado. El documento esta listo para generar historias. Quieres continuar?"
-- Opciones:
-  - **"Generar historias de usuario"** (description: "Lanza /pspo-agent:generate-stories con el contexto del analisis")
-  - **"Hacer descubrimiento adicional"** (description: "Lanza /pspo-agent:discovery con el analisis como base para preguntas mas enfocadas")
-  - **"Parar aqui"** (description: "El analisis queda guardado en docs/analisis-requisitos.md para usarlo mas tarde")
+1. Guarda el resumen en `docs/analisis-requisitos.md`
+2. Pasa directamente a `/pspo-agent:generate-stories` con el contexto del analisis
 
-IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones como texto plano con letras entre corchetes.
-
-Si elige "Generar historias de usuario", el agente `product-owner` recibe el contexto del analisis (lee `docs/analisis-requisitos.md`) y genera historias directamente, sin repetir preguntas de descubrimiento.
-
-Si elige "Hacer descubrimiento adicional", el discovery arranca con el contexto del analisis como base, haciendo preguntas mas enfocadas.
+No preguntes al usuario si quiere generar historias. El flujo natural despues de analizar es generar. Si el usuario quiere parar, lo dira el.
 
 ## Reglas
 

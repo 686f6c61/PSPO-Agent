@@ -140,23 +140,14 @@ Modificadas y aprobadas ({Z}):
 Total: {X+Z} historias listas para guardar y publicar.
 ```
 
-### Paso 5: Decidir proximos pasos
+### Paso 5: Transicion automatica
 
-Usa AskUserQuestion para preguntar al usuario que quiere hacer a continuacion.
-NUNCA muestres tablas de texto con comandos como proximos pasos. Siempre usa AskUserQuestion.
+Cuando el usuario ha terminado de validar todas las historias:
 
-- Pregunta: "Que quieres hacer con las {X+Z} historias aprobadas?"
-- Opciones:
-  - **"Guardar y publicar en Trello"** (description: "Guarda en docs/ y luego publica en el tablero de Trello")
-  - **"Solo guardar localmente"** (description: "Guarda en docs/ sin publicar en Trello, podras publicar despues")
-  - **"Revisar alguna historia de nuevo"** (description: "Vuelve a revisar una historia especifica")
+1. Si hay historias aprobadas, pasa automaticamente a /pspo-agent:publish.
+2. Si todas fueron rechazadas, informa y vuelve a /pspo-agent:generate-stories.
 
-IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones como texto plano con letras entre corchetes.
-
-Segun la eleccion:
-- **"Guardar y publicar en Trello":** Ejecuta `/pspo-agent:save-docs` y luego `/pspo-agent:publish`.
-- **"Solo guardar localmente":** Ejecuta solo `/pspo-agent:save-docs`.
-- **"Revisar alguna historia de nuevo":** Vuelve al paso 2 para la historia indicada.
+No preguntes al usuario que quiere hacer. El flujo natural despues de validar es publicar.
 
 ## Checklist de calidad
 

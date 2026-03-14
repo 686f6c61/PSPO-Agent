@@ -246,14 +246,14 @@ si la apruebas, quieres cambios, o la descartamos.
 
 Despues del resumen, muestra cada historia completa.
 
-Usa AskUserQuestion para preguntar al usuario que quiere hacer a continuacion.
-NUNCA muestres tablas de texto con comandos como proximos pasos. Siempre usa AskUserQuestion.
+### Transicion automatica
 
-- Pregunta: "Las historias estan generadas y guardadas. Que quieres hacer?"
-- Opciones:
-  - **"Validar historias"** (description: "Revisa y aprueba cada historia antes de publicar") -> ejecuta /pspo-agent:validate
-  - **"Auditar historias"** (description: "Ejecuta una auditoria de calidad sobre las historias generadas") -> ejecuta /pspo-agent:audit
-  - **"Publicar directamente"** (description: "Publica en Trello sin revision individual") -> ejecuta /pspo-agent:publish
+Despues de guardar los ficheros y pasar por la revision de estilo:
+
+1. Si es la primera generacion (no existe docs/auditoria-hu.md), ejecuta automaticamente /pspo-agent:audit.
+2. Despues de la auditoria (o si ya se audito antes), pasa automaticamente a /pspo-agent:validate.
+
+No preguntes al usuario si quiere validar. Es el paso natural. Si quiere parar, lo dira el.
 
 ## Que NO haces en esta skill
 

@@ -28,12 +28,9 @@ Comprueba en orden:
 
      Puedes descargar la plantilla CSV desde: https://pspo-agent.com/team-template.csv
      ```
-     Usa AskUserQuestion:
-     - Pregunta: "Como quieres configurar el equipo?"
-     - Opciones:
-       - **"Configurar equipo ahora"** (description: "Abre el asistente para definir miembros o cargar la plantilla CSV")
-       - **"Saltar equipo"** (description: "Planificar sin datos de equipo, solo estimacion de historias")
-   - Si elige configurar, redirige a /pspo-agent:team y luego vuelve aqui.
+     El equipo es OBLIGATORIO para planificar. Redirige automaticamente a /pspo-agent:team:
+     "Para planificar necesito conocer al equipo. Vamos a configurarlo."
+     -> Redirige a /pspo-agent:team automaticamente, luego vuelve aqui.
 2. **Historias aprobadas:** existe al menos un fichero en `docs/historias/`?
    - Si no: "No hay historias aprobadas. Empieza por el descubrimiento." -> redirige a `/pspo-agent:discovery`.
 3. **Definition of Done:** existe `docs/dod.md`?
