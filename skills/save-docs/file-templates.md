@@ -47,7 +47,7 @@ Referencia para la skill save-docs. Define las plantillas exactas de cada tipo d
 | **Prioridad** | {Critica / Alta / Media / Baja} |
 | **Estimacion** | {S / M / L / XL} ({dias} dias) |
 | **Sprint** | {Sprint N / Sin asignar} |
-| **Asignado a** | {Nombre del miembro / Sin asignar} |
+| **Asignado a** | {Nombre (email) / Sin asignar} |
 | **Estado** | {Borrador / Aprobada / Publicada en Trello / Rechazada} |
 | **Creada** | {DD/MM/AAAA} |
 | **Ultima modificacion** | {DD/MM/AAAA} |
