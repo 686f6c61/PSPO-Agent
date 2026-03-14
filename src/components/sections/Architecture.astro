@@ -2,7 +2,7 @@
 /**
  * Seccion de arquitectura del plugin PSPO Agent.
  *
- * Contiene: vision general del plugin, metricas clave (13 skills, 5 agentes,
+ * Contiene: vision general del plugin, metricas clave (14 skills, 6 agentes,
  * 8 herramientas MCP, 2 hooks), diagrama de componentes en HTML/CSS (sin
  * Mermaid, para control total del layout), diagrama de flujo de datos, tabla
  * de herramientas MCP, referencia de configuracion (settings.json) y plantilla
@@ -25,6 +25,7 @@ const mcpTools = [
   { tool: 'search-cards', method: 'GET', endpoint: '/1/boards/{id}/cards', input: 'boardId, query', output: 'Tarjetas que coinciden' },
   { tool: 'add-checklist', method: 'POST', endpoint: '/1/cards/{id}/checklists', input: 'cardId, name, items[]', output: 'Checklist creado con items' },
   { tool: 'attach-file', method: 'POST', endpoint: '/1/cards/{id}/attachments', input: 'cardId, fileName, content', output: 'Adjunto creado (id, URL)' },
+  { tool: 'invite-member', method: 'PUT', endpoint: '/1/boards/{id}/members', input: 'boardId, email, fullName', output: 'Invitacion enviada' },
 ];
 
 const configSections = [
@@ -99,21 +100,21 @@ TRELLO_BOARD_ID=     # ID del tablero seleccionado`;
         <div class="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
           <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
         </div>
-        <div class="text-3xl font-bold text-white">13</div>
+        <div class="text-3xl font-bold text-white">14</div>
         <div class="text-sm text-primary-100 mt-1">Skills especializadas</div>
       </div>
       <div class="rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 p-5 text-center shadow-lg shadow-primary-500/20">
         <div class="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
           <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
         </div>
-        <div class="text-3xl font-bold text-white">5</div>
+        <div class="text-3xl font-bold text-white">6</div>
         <div class="text-sm text-primary-100 mt-1">Agentes especializados</div>
       </div>
       <div class="rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 p-5 text-center shadow-lg shadow-primary-500/20">
         <div class="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
           <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17l-5.1-3.06a1.5 1.5 0 010-2.58l5.1-3.06a1.5 1.5 0 011.639.058l4.928 3.674a1.5 1.5 0 010 2.416l-4.928 3.674a1.5 1.5 0 01-1.64.058z" /></svg>
         </div>
-        <div class="text-3xl font-bold text-white">10</div>
+        <div class="text-3xl font-bold text-white">11</div>
         <div class="text-sm text-primary-100 mt-1">Herramientas MCP</div>
       </div>
       <div class="rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 p-5 text-center shadow-lg shadow-primary-500/20">
@@ -156,7 +157,7 @@ TRELLO_BOARD_ID=     # ID del tablero seleccionado`;
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <!-- Skills -->
               <div class="rounded-lg border border-surface-200 bg-white p-3">
-                <div class="text-xs font-bold text-primary-700 mb-2">Skills (13)</div>
+                <div class="text-xs font-bold text-primary-700 mb-2">Skills (14)</div>
                 <ul class="space-y-1 text-xs text-text-secondary">
                   <li>analyze</li>
                   <li>start</li>
@@ -171,17 +172,19 @@ TRELLO_BOARD_ID=     # ID del tablero seleccionado`;
                   <li>sprint-plan</li>
                   <li>sprint-review</li>
                   <li>export</li>
+                  <li>audit</li>
                 </ul>
               </div>
               <!-- Agentes -->
               <div class="rounded-lg border border-surface-200 bg-white p-3">
-                <div class="text-xs font-bold text-primary-700 mb-2">Agentes (5)</div>
+                <div class="text-xs font-bold text-primary-700 mb-2">Agentes (6)</div>
                 <ul class="space-y-1 text-xs text-text-secondary">
                   <li>requirement-analyst</li>
                   <li>product-owner</li>
                   <li>publisher</li>
                   <li>sprint-planner</li>
                   <li>culture-guardian</li>
+                  <li>senior-auditor</li>
                 </ul>
                 <div class="mt-2 text-xs text-text-muted">Orquestan skills de forma autónoma</div>
               </div>
