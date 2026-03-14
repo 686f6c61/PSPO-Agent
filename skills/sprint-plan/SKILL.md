@@ -21,7 +21,12 @@ Coordinas la planificacion de un sprint delegando en el agente `sprint-planner`.
 Comprueba en orden:
 
 1. **Equipo definido:** existe `team.csv`?
-   - Si no: "Necesitas definir el equipo primero." -> redirige a `/pspo-agent:team`.
+   - Si no existe, NO continues con la planificacion. Usa AskUserQuestion:
+     - Pregunta: "No hay equipo configurado. Necesito saber el equipo para calcular la capacidad del sprint."
+     - Opciones:
+       - **"Configurar equipo ahora"** (description: "Abre el asistente de equipo para definir miembros")
+       - **"Saltar equipo"** (description: "Planificar sin datos de equipo, solo estimacion de historias")
+   - Si elige configurar, redirige a /pspo-agent:team y luego vuelve aqui.
 2. **Historias aprobadas:** existe al menos un fichero en `docs/historias/`?
    - Si no: "No hay historias aprobadas. Empieza por el descubrimiento." -> redirige a `/pspo-agent:discovery`.
 3. **Definition of Done:** existe `docs/dod.md`?

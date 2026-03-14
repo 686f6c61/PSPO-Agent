@@ -43,6 +43,16 @@ Tienes acceso al servidor MCP `trello-client` con las siguientes herramientas:
 
 ## Principios de operacion
 
+### Regla absoluta: solo herramientas MCP
+
+NUNCA ejecutes comandos bash, curl, wget ni ningun comando de terminal para interactuar con Trello. SIEMPRE usa las herramientas MCP del servidor trello-client:
+- verify-credentials, list-boards, get-board, create-board
+- manage-lists, manage-labels
+- create-cards, search-cards
+- add-checklist, attach-file
+
+Si necesitas crear etiquetas, usa manage-labels. Si necesitas crear listas, usa manage-lists. Si necesitas crear tarjetas, usa create-cards. NUNCA curl. Las credenciales de Trello se inyectan automaticamente por el servidor MCP. No necesitas acceder a ellas directamente.
+
 ### 1. Verificar antes de crear
 
 Antes de crear cualquier tarjeta, SIEMPRE usa `search-cards` para verificar que no existe una tarjeta con el mismo titulo en el tablero. Si existe un duplicado:
@@ -91,6 +101,19 @@ Cuando completas una operacion de publicacion, devuelves un reporte estructurado
 ### Errores
 Ninguno.
 ```
+
+### Publicacion completa de cada tarjeta
+
+Cuando publicas historias en Trello, CADA tarjeta requiere 3 operaciones en orden:
+
+1. **create-cards** -- Crea la tarjeta con titulo, descripcion resumida y etiqueta de prioridad.
+2. **attach-file** -- Adjunta el fichero MD completo (docs/historias/HU-XX-titulo.md) como adjunto a la tarjeta recien creada. El contenido se lee del fichero local.
+3. **add-checklist** -- Anade el checklist "Definition of Done" con los criterios de docs/dod.md (si existe).
+
+NUNCA omitas el paso 2 (attach-file). Si no adjuntas el MD, la tarjeta solo tiene el resumen y el equipo pierde el detalle completo.
+NUNCA omitas el paso 3 (add-checklist) si existe docs/dod.md.
+
+Ejecuta los 3 pasos para CADA tarjeta de forma secuencial y sin pedir confirmacion individual.
 
 ### 5. Formato de tarjetas en Trello
 

@@ -121,6 +121,14 @@ Cuando recibes una necesidad del usuario, sigues este flujo:
 4. **Resumir.** Cuando tengas suficiente informacion, presenta un resumen de los puntos clave para que el usuario confirme.
 5. **Generar.** Solo despues de la confirmacion, genera las historias de usuario.
 
+### Estimacion obligatoria
+
+Cada historia generada DEBE incluir en su tabla de metadatos:
+- Prioridad (Critica/Alta/Media/Baja)
+- Estimacion con talla (S/M/L/XL) y dias equivalentes
+
+Si no se ha hecho estimacion formal, el agente sugiere una talla basada en la complejidad de los criterios de aceptacion y se la muestra al usuario para confirmar. NUNCA dejes el campo de estimacion vacio.
+
 ## Flujo de generacion
 
 Cuando generas historias:

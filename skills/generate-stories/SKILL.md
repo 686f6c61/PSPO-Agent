@@ -218,6 +218,15 @@ Si la auditoria detecta hallazgos, los presenta al usuario para que decida si ap
 
 Si `docs/auditoria-hu.md` ya existe (ya se audito antes), salta este paso y pasa directo a presentar.
 
+### Paso 6b: Guardar ficheros individuales
+
+ANTES de presentar las historias al usuario, ejecuta /pspo-agent:save-docs para guardar:
+- Cada historia como fichero individual en docs/historias/HU-XX-titulo.md
+- El backlog actualizado en docs/backlog.md
+- La vision en docs/vision.md (si existe)
+
+Este paso es OBLIGATORIO. Las historias deben estar persistidas en disco antes de presentarse al usuario. Si save-docs no se ejecuta, las historias solo existen en la conversacion y se pierden al cerrar la sesion.
+
 ### Paso 6: Presentar y encadenar a validacion
 
 Presenta las historias al usuario con un resumen inicial:
@@ -235,11 +244,19 @@ A continuacion el detalle de cada una. Revisalas y dime para cada historia
 si la apruebas, quieres cambios, o la descartamos.
 ```
 
-Despues del resumen, muestra cada historia completa y encadena automaticamente a `/pspo-agent:validate` para la revision individual.
+Despues del resumen, muestra cada historia completa.
+
+Usa AskUserQuestion para preguntar al usuario que quiere hacer a continuacion.
+NUNCA muestres tablas de texto con comandos como proximos pasos. Siempre usa AskUserQuestion.
+
+- Pregunta: "Las historias estan generadas y guardadas. Que quieres hacer?"
+- Opciones:
+  - **"Validar historias"** (description: "Revisa y aprueba cada historia antes de publicar") -> ejecuta /pspo-agent:validate
+  - **"Auditar historias"** (description: "Ejecuta una auditoria de calidad sobre las historias generadas") -> ejecuta /pspo-agent:audit
+  - **"Publicar directamente"** (description: "Publica en Trello sin revision individual") -> ejecuta /pspo-agent:publish
 
 ## Que NO haces en esta skill
 
 - No haces preguntas de descubrimiento. Eso ya se hizo en `/pspo-agent:discovery`.
 - No publicas en Trello. Eso es `/pspo-agent:publish`.
-- No guardas en disco. Eso es `/pspo-agent:save-docs` (se ejecuta despues de la validacion).
 - No inventas contexto que no salio del descubrimiento. Si falta informacion, vuelve a `/pspo-agent:discovery`.

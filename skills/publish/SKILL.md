@@ -218,6 +218,17 @@ Si el usuario ejecuta `/pspo-agent:publish` directamente (sin haber pasado por e
 
 4. Continua con el flujo normal (vista previa -> confirmacion -> publicacion).
 
+### Paso 6: Proximos pasos
+
+Usa AskUserQuestion para preguntar al usuario que quiere hacer a continuacion.
+NUNCA muestres tablas de texto con comandos como proximos pasos. Siempre usa AskUserQuestion.
+
+- Pregunta: "La publicacion ha terminado. Que quieres hacer ahora?"
+- Opciones:
+  - **"Planificar sprint"** (description: "Calcula capacidad del equipo y planifica el sprint con las historias publicadas") -> ejecuta /pspo-agent:sprint-plan
+  - **"Exportar backlog"** (description: "Exporta el backlog completo a un fichero local") -> ejecuta /pspo-agent:save-docs
+  - **"Volver al inicio"** (description: "Vuelve al menu principal del plugin")
+
 ## Reglas de seguridad
 
 - NUNCA publiques sin confirmacion explicita del usuario.

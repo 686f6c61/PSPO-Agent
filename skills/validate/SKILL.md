@@ -142,7 +142,9 @@ Total: {X+Z} historias listas para guardar y publicar.
 
 ### Paso 5: Decidir proximos pasos
 
-Usa AskUserQuestion para preguntar al usuario:
+Usa AskUserQuestion para preguntar al usuario que quiere hacer a continuacion.
+NUNCA muestres tablas de texto con comandos como proximos pasos. Siempre usa AskUserQuestion.
+
 - Pregunta: "Que quieres hacer con las {X+Z} historias aprobadas?"
 - Opciones:
   - **"Guardar y publicar en Trello"** (description: "Guarda en docs/ y luego publica en el tablero de Trello")
