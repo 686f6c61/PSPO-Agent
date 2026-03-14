@@ -9,26 +9,15 @@ El usuario quiere comprobar si hay una version nueva del plugin. Sigue estos pas
 
 ## Paso 1: obtener la version instalada
 
-Ejecuta con Bash:
+Lee el fichero `plugin.json` del plugin instalado para obtener la version actual. Busca en `~/.claude/plugins/cache/pspo-agent/` el fichero `.claude-plugin/plugin.json` mas reciente y extrae el campo `version`.
+
+Ejecuta el comando de forma silenciosa (NO muestres el codigo Python al usuario, solo el resultado):
 
 ```bash
-python3 -c "
-import json, os, glob, sys
-
-candidates = sorted(
-    glob.glob(os.path.expanduser('~/.claude/plugins/cache/pspo-agent/**/.claude-plugin/plugin.json'), recursive=True),
-    key=os.path.getmtime,
-    reverse=True
-)
-if not candidates:
-    print('desconocida')
-    sys.exit(0)
-with open(candidates[0]) as f:
-    print(json.load(f).get('version', 'desconocida'))
-" 2>/dev/null || echo "desconocida"
+python3 -c "import json,os,glob,sys;c=sorted(glob.glob(os.path.expanduser('~/.claude/plugins/cache/pspo-agent/**/.claude-plugin/plugin.json'),recursive=True),key=os.path.getmtime,reverse=True);print(json.load(open(c[0])).get('version','desconocida') if c else 'desconocida')" 2>/dev/null || echo "desconocida"
 ```
 
-Si no se puede leer, busca la version en el fichero `plugin.json` mas cercano dentro de `~/.claude/plugins/cache/pspo-agent/`. El script selecciona la version mas reciente por fecha de modificacion para evitar errores cuando coexistan varias versiones en cache.
+IMPORTANTE: No muestres el codigo del comando al usuario. Solo muestra el resultado (el numero de version). Si falla, informa que la version instalada no se pudo detectar.
 
 ## Paso 2: consultar la ultima release en GitHub
 

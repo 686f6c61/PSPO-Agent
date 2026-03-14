@@ -47,20 +47,15 @@ Redirige al usuario a `/pspo-agent:discovery`.
 
 ### Paso 3: Preguntar formato de exportacion
 
-Presenta las opciones al usuario:
+Usa AskUserQuestion para preguntar al usuario:
+- Pregunta: "Se han encontrado {N} historias aprobadas listas para exportar. Selecciona el formato de exportacion:"
+- Opciones:
+  - **"CSV"** (description: "Tabla con columnas: id, titulo, rol, accion, beneficio, prioridad, estimacion")
+  - **"JSON"** (description: "Array de objetos con todos los campos incluyendo escenarios")
+  - **"Jira CSV"** (description: "Columnas: Summary, Description, Priority, Labels (compatible con importacion de Jira)")
+  - **"Todos"** (description: "Genera los tres formatos de una vez")
 
-```
-Se han encontrado {N} historias aprobadas listas para exportar.
-
-Selecciona el formato de exportacion:
-
-  [C] CSV -- Tabla con columnas: id, titulo, rol, accion, beneficio, prioridad, estimacion
-  [J] JSON -- Array de objetos con todos los campos incluyendo escenarios
-  [I] Jira CSV -- Columnas: Summary, Description, Priority, Labels (compatible con importacion de Jira)
-  [T] Todos -- Genera los tres formatos de una vez
-
-Que formato prefieres?
-```
+IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones como texto plano con letras entre corchetes.
 
 ### Paso 4: Generar los ficheros
 

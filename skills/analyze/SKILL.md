@@ -51,18 +51,18 @@ Pasa el documento completo al agente `requirement-analyst`. El agente:
 
 Cuando el usuario confirma el resumen de validacion:
 
-```
-Analisis completado. El documento esta listo para generar historias.
+Usa AskUserQuestion para preguntar al usuario:
+- Pregunta: "Analisis completado. El documento esta listo para generar historias. Quieres continuar?"
+- Opciones:
+  - **"Generar historias de usuario"** (description: "Lanza /pspo-agent:generate-stories con el contexto del analisis")
+  - **"Hacer descubrimiento adicional"** (description: "Lanza /pspo-agent:discovery con el analisis como base para preguntas mas enfocadas")
+  - **"Parar aqui"** (description: "El analisis queda guardado en docs/analisis-requisitos.md para usarlo mas tarde")
 
-Quieres continuar?
-  [G] Generar historias de usuario -> /pspo-agent:generate-stories
-  [D] Hacer descubrimiento adicional -> /pspo-agent:discovery
-  [P] Parar aqui (el analisis queda guardado en docs/analisis-requisitos.md)
-```
+IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones como texto plano con letras entre corchetes.
 
-Si elige G, el agente `product-owner` recibe el contexto del analisis (lee `docs/analisis-requisitos.md`) y genera historias directamente, sin repetir preguntas de descubrimiento.
+Si elige "Generar historias de usuario", el agente `product-owner` recibe el contexto del analisis (lee `docs/analisis-requisitos.md`) y genera historias directamente, sin repetir preguntas de descubrimiento.
 
-Si elige D, el discovery arranca con el contexto del analisis como base, haciendo preguntas mas enfocadas.
+Si elige "Hacer descubrimiento adicional", el discovery arranca con el contexto del analisis como base, haciendo preguntas mas enfocadas.
 
 ## Reglas
 

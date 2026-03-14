@@ -35,6 +35,8 @@ Solo despues de la revision de estilo se presentan las historias al usuario.
 
 Muestra una tabla resumen con todas las historias antes de entrar en el detalle:
 
+Muestra la tabla resumen:
+
 ```
 Se han generado {N} historias de usuario. Aqui tienes el resumen:
 
@@ -43,14 +45,9 @@ Se han generado {N} historias de usuario. Aqui tienes el resumen:
 | HU-01 | {titulo} | {prioridad} | Pendiente de revision |
 | HU-02 | {titulo} | {prioridad} | Pendiente de revision |
 | HU-03 | {titulo} | {prioridad} | Pendiente de revision |
-
-Voy a presentarte cada historia en detalle. Para cada una puedes:
-  [A] Aprobar -- La historia esta bien tal como esta.
-  [C] Cambios -- Quieres modificar algo (explica que).
-  [R] Rechazar -- La historia no aporta valor o no es necesaria.
-
-Empezamos con HU-01:
 ```
+
+Informa al usuario: "Voy a presentarte cada historia en detalle." y pasa a presentar HU-01.
 
 ### Paso 2: Presentar cada historia en detalle
 
@@ -60,9 +57,16 @@ Para cada historia, muestra el contenido completo (historia + criterios de acept
 ---
 {contenido completo de la historia}
 ---
-
-Que decides para esta historia? [A]probar / [C]ambios / [R]echazar:
 ```
+
+Usa AskUserQuestion para preguntar al usuario:
+- Pregunta: "Que decides para HU-{XX}: {titulo}?"
+- Opciones:
+  - **"Aprobar"** (description: "La historia esta bien tal como esta")
+  - **"Pedir cambios"** (description: "Quieres modificar algo en esta historia")
+  - **"Rechazar"** (description: "La historia no aporta valor o no es necesaria")
+
+IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones como texto plano con letras entre corchetes.
 
 ### Paso 3: Procesar feedback
 
@@ -81,6 +85,7 @@ Que decides para esta historia? [A]probar / [C]ambios / [R]echazar:
 2. Delega la modificacion al agente `product-owner`.
 
 3. Presenta la version revisada:
+   Presenta la version revisada:
    ```
    He revisado HU-{XX} segun tu feedback. Aqui esta la version actualizada:
 
@@ -91,9 +96,16 @@ Que decides para esta historia? [A]probar / [C]ambios / [R]echazar:
    Cambios realizados:
      [-] {descripcion del cambio 1}
      [-] {descripcion del cambio 2}
-
-   Que decides ahora? [A]probar / [C]ambios / [R]echazar:
    ```
+
+   Usa AskUserQuestion para preguntar al usuario:
+   - Pregunta: "Que decides ahora para HU-{XX}?"
+   - Opciones:
+     - **"Aprobar"** (description: "La historia revisada esta bien tal como esta")
+     - **"Pedir cambios"** (description: "Necesitas mas modificaciones en esta historia")
+     - **"Rechazar"** (description: "La historia no aporta valor o no es necesaria")
+
+   IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones como texto plano con letras entre corchetes.
 
 4. Repite hasta que el usuario apruebe o rechace.
 
@@ -130,25 +142,19 @@ Total: {X+Z} historias listas para guardar y publicar.
 
 ### Paso 5: Decidir proximos pasos
 
-Presenta las opciones al usuario:
+Usa AskUserQuestion para preguntar al usuario:
+- Pregunta: "Que quieres hacer con las {X+Z} historias aprobadas?"
+- Opciones:
+  - **"Guardar y publicar en Trello"** (description: "Guarda en docs/ y luego publica en el tablero de Trello")
+  - **"Solo guardar localmente"** (description: "Guarda en docs/ sin publicar en Trello, podras publicar despues")
+  - **"Revisar alguna historia de nuevo"** (description: "Vuelve a revisar una historia especifica")
 
-```
-Que quieres hacer con las {X+Z} historias aprobadas?
-
-  1. Guardar localmente y publicar en Trello
-     -> Guarda en docs/ y luego publica en el tablero de Trello.
-
-  2. Solo guardar localmente
-     -> Guarda en docs/ sin publicar en Trello (puedes publicar despues).
-
-  3. Revisar alguna historia de nuevo
-     -> Volver a revisar una historia especifica.
-```
+IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones como texto plano con letras entre corchetes.
 
 Segun la eleccion:
-- **Opcion 1:** Ejecuta `/pspo-agent:save-docs` y luego `/pspo-agent:publish`.
-- **Opcion 2:** Ejecuta solo `/pspo-agent:save-docs`.
-- **Opcion 3:** Vuelve al paso 2 para la historia indicada.
+- **"Guardar y publicar en Trello":** Ejecuta `/pspo-agent:save-docs` y luego `/pspo-agent:publish`.
+- **"Solo guardar localmente":** Ejecuta solo `/pspo-agent:save-docs`.
+- **"Revisar alguna historia de nuevo":** Vuelve al paso 2 para la historia indicada.
 
 ## Checklist de calidad
 

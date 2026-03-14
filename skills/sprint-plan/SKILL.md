@@ -29,16 +29,14 @@ Comprueba en orden:
 
 ### Paso 1b: Configurar DoD (si no existe)
 
-```
-No tienes una Definition of Done configurada para este proyecto.
-La DoD define los criterios minimos que toda historia debe cumplir
-para considerarse terminada.
+Usa AskUserQuestion para preguntar al usuario:
+- Pregunta: "No tienes una Definition of Done configurada para este proyecto. La DoD define los criterios minimos que toda historia debe cumplir para considerarse terminada. Que quieres hacer?"
+- Opciones:
+  - **"Usar DoD por defecto"** (description: "Aplica 8 criterios estandar: tests, code review, linter, seguridad, criterios de aceptacion, documentacion, pruebas manuales y rama mergeable")
+  - **"Definir mi propia DoD"** (description: "Te preguntare criterio a criterio hasta que digas que has terminado")
+  - **"Saltar por ahora"** (description: "Continua sin Definition of Done, podras configurarla mas adelante")
 
-Quieres:
-  [D] Usar la DoD por defecto (8 criterios estandar)
-  [P] Definir tu propia DoD (te preguntare uno a uno)
-  [S] Saltar por ahora
-```
+IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones como texto plano con letras entre corchetes.
 
 **DoD por defecto (8 criterios):**
 

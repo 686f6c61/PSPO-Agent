@@ -47,18 +47,13 @@ Lee la configuracion del tablero con el agente `publisher` (herramienta `get-boa
 
 Verifica que la lista destino (por defecto "Backlog") existe en el tablero. Si no existe:
 
-```
-[!] La lista "Backlog" no existe en el tablero "{nombre_tablero}".
+Muestra al usuario las listas disponibles en el tablero y luego usa AskUserQuestion para preguntar:
+- Pregunta: "La lista Backlog no existe en el tablero {nombre_tablero}. Que quieres hacer?"
+- Opciones:
+  - **"Seleccionar lista existente"** (description: "Elige una de las listas disponibles en el tablero")
+  - **"Crear lista Backlog"** (description: "Crea automaticamente la lista Backlog en el tablero")
 
-Listas disponibles:
-  1. {nombre_lista_1}
-  2. {nombre_lista_2}
-  ...
-
-Que quieres hacer?
-  [S] Seleccionar una lista existente (indica el numero)
-  [C] Crear la lista "Backlog" automaticamente
-```
+IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones como texto plano con letras entre corchetes.
 
 Si el usuario elige crear, usa `manage-lists` con accion `create` para crear la lista "Backlog".
 Si elige seleccionar, usa la lista indicada como destino.
@@ -102,22 +97,30 @@ Antes de crear tarjetas, usa el agente `publisher` con la herramienta `search-ca
 
 Si encuentra duplicados potenciales:
 
+Muestra al usuario la tabla de duplicados potenciales:
+
 ```
 [!] He encontrado tarjetas existentes que podrian ser duplicados:
 
 | Historia nueva | Tarjeta existente | URL |
 |---------------|-------------------|-----|
 | HU-01: {titulo} | {titulo_existente} | {url} |
-
-Quieres:
-  1. Publicar todas de todos modos (se crearan tarjetas nuevas)
-  2. Omitir las duplicadas y publicar solo las nuevas
-  3. Cancelar la publicacion
 ```
+
+Luego usa AskUserQuestion para preguntar:
+- Pregunta: "He encontrado posibles duplicados. Que quieres hacer?"
+- Opciones:
+  - **"Publicar todas de todos modos"** (description: "Se crearan tarjetas nuevas aunque haya duplicados")
+  - **"Omitir duplicadas"** (description: "Publica solo las historias que no tienen duplicado en el tablero")
+  - **"Cancelar publicacion"** (description: "No se publica nada, las historias siguen guardadas localmente")
+
+IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones como texto plano con letras entre corchetes.
 
 ### Paso 4: Ejecutar la publicacion
 
 Antes de publicar, pasa las descripciones de las tarjetas por el agente `culture-guardian` para asegurar que el texto que llega a Trello tiene acentos correctos, tono profesional y es detallista.
+
+IMPORTANTE SOBRE PERMISOS: A partir de este punto, ejecuta TODAS las llamadas MCP (create-cards, attach-file, add-checklist) de forma CONTINUA y AUTOMATICA. No pidas confirmacion al usuario entre tarjetas. No esperes aprobacion para cada operacion MCP. El usuario ya confirmo en la vista previa. Ejecuta todo el lote de una vez.
 
 Para CADA historia aprobada, ejecuta estos 3 pasos en orden:
 
@@ -205,19 +208,14 @@ Si el usuario ejecuta `/pspo-agent:publish` directamente (sin haber pasado por e
 
 1. Lee las historias existentes en `docs/historias/`.
 2. Si no hay historias, informa y redirige a `/pspo-agent:discovery`.
-3. Si hay historias, presenta la lista y pregunta cuales quiere publicar:
-   ```
-   He encontrado {N} historias en docs/historias/:
+3. Si hay historias, presenta la lista en tabla y luego usa AskUserQuestion para preguntar:
+   - Pregunta: "He encontrado {N} historias en docs/historias/. Cuales quieres publicar en Trello?"
+   - Opciones:
+     - **"Todas"** (description: "Publica todas las historias encontradas en el tablero de Trello")
+     - **"Seleccionar"** (description: "Indica los numeros de las historias que quieres publicar, separados por coma")
 
-   | # | Fichero | Titulo |
-   |---|---------|--------|
-   | 1 | HU-01-titulo.md | {titulo} |
-   | 2 | HU-02-titulo.md | {titulo} |
+   IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones como texto plano con letras entre corchetes.
 
-   Cuales quieres publicar en Trello?
-     [T] Todas
-     [S] Seleccionar (indica los numeros separados por coma)
-   ```
 4. Continua con el flujo normal (vista previa -> confirmacion -> publicacion).
 
 ## Reglas de seguridad

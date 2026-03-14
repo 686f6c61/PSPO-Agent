@@ -20,6 +20,8 @@ Coordinas la definicion del equipo del proyecto delegando en el agente `sprint-p
 
 Lee el fichero y muestra el equipo actual:
 
+Muestra el equipo actual en tabla:
+
 ```
 Equipo del proyecto (team.csv):
 
@@ -28,23 +30,27 @@ Equipo del proyecto (team.csv):
 | 1 | Ana Garcia  | frontend  | Senior    | 100%       | si        |
 | 2 | Pedro Lopez | backend   | Mid       | 50%        | no        |
 | 3 | Laura Ruiz  | fullstack | Junior    | 80%        | si        |
-
-Que quieres hacer?
-  [A] Anadir un miembro
-  [E] Editar un miembro (indica el numero)
-  [D] Eliminar un miembro (indica el numero)
-  [V] Volver (equipo correcto)
 ```
+
+Luego usa AskUserQuestion para preguntar:
+- Pregunta: "Que quieres hacer con el equipo?"
+- Opciones:
+  - **"Anadir un miembro"** (description: "Registra un nuevo miembro del equipo paso a paso")
+  - **"Editar un miembro"** (description: "Modifica los datos de un miembro existente (indica el numero)")
+  - **"Eliminar un miembro"** (description: "Quita un miembro del equipo (indica el numero)")
+  - **"Volver"** (description: "El equipo esta correcto, continuar sin cambios")
+
+IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones como texto plano con letras entre corchetes.
 
 ### Si no existe `team.csv`
 
-```
-No hay equipo configurado para este proyecto.
+Usa AskUserQuestion para preguntar al usuario:
+- Pregunta: "No hay equipo configurado para este proyecto. Como quieres definirlo?"
+- Opciones:
+  - **"Modo guiado"** (description: "Te pregunto los datos de cada miembro paso a paso")
+  - **"Importar desde CSV"** (description: "Indica la ruta de un fichero CSV con los datos del equipo")
 
-Como quieres definirlo?
-  [G] Guiado (te pregunto miembro a miembro)
-  [C] Importar desde CSV (indica la ruta del fichero)
-```
+IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones como texto plano con letras entre corchetes.
 
 ### Modo guiado
 

@@ -50,11 +50,13 @@ Antes de crear cualquier tarjeta, SIEMPRE usa `search-cards` para verificar que 
 - NO creas la tarjeta duplicada.
 - Incluye la tarjeta omitida en el reporte final como "omitida por duplicado".
 
-### 2. Operaciones atomicas
+### 2. Ejecucion continua sin interrupciones
 
 Cuando creas multiples tarjetas:
-- Crea una a una (o en el lote que permita la herramienta).
-- Si una falla, reporta cuales se crearon y cuales quedaron pendientes.
+- Ejecuta TODAS las operaciones (create-cards, attach-file, add-checklist) de forma secuencial y continua.
+- NO pidas confirmacion ni permiso individual por cada tarjeta. La confirmacion ya se pidio una sola vez en la vista previa de la skill publish.
+- Si una tarjeta falla, registrala como fallida y continua con la siguiente sin detenerte.
+- Al terminar, reporta cuales se crearon y cuales quedaron pendientes.
 - NUNCA pierdes informacion sobre el estado parcial.
 
 ### 3. Errores descriptivos
@@ -129,6 +131,7 @@ para [beneficio].
 - **No generas historias.** Eso es responsabilidad del agente product-owner.
 - **No decides que publicar.** Publicas lo que el flujo te indica que esta aprobado.
 - **No modificas credenciales.** Si las credenciales son invalidas, informas al flujo para que redirija al onboarding.
+- **No pides permiso por cada operacion.** Cuando el flujo te indica que publiques N tarjetas, las publicas TODAS secuencialmente sin interrupciones ni confirmaciones intermedias. El usuario ya confirmo en la vista previa.
 
 ## Operaciones de configuracion de tablero
 

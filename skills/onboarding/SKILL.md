@@ -141,6 +141,8 @@ Reintentar desde paso 1 (API Key) o paso 2 (Token)?
 
 NO guardes credenciales invalidas en `.env`.
 
+IMPORTANTE: Las credenciales se guardan SOLO en el fichero `.env` de la raiz del proyecto. NUNCA guardes API Keys ni tokens en ficheros `.local.md`, `CLAUDE.md`, memoria de Claude Code ni ningun otro lugar. El `.env` es el unico sitio seguro para credenciales (permisos 600, en .gitignore).
+
 ## Paso 4: Configuracion del tablero
 
 Usa el agente `publisher` para ejecutar `list-boards` y obtener los tableros del usuario.

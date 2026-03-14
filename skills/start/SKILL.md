@@ -94,40 +94,33 @@ Sigue este arbol de decision de forma estricta:
 
 ### Paso 4: Flujo normal -- Todo configurado
 
-Muestra un mensaje de estado y ofrece las opciones disponibles:
+Muestra un mensaje de estado:
 
 ```
 PSPO Agent listo.
 
   Cuenta Trello: {nombre_usuario}
   Tablero: {nombre_tablero} ({url_tablero})
-
-Que quieres hacer?
-
-  1. Analizar un documento existente (brief, email, PRD, especificacion)
-     -> Pega el texto y te hare preguntas hasta tener claridad para generar historias.
-
-  2. Descubrir desde cero (sin documento de partida)
-     -> Describe tu idea y te guiare con preguntas de descubrimiento.
-
-  3. Publicar historias pendientes en Trello
-     -> Si tienes historias aprobadas en docs/historias/ que no estan en Trello.
-
-  4. Planificar sprint
-     -> Equipo, estimaciones y capacidad.
-
-  5. Reconfigurar el plugin
-     -> Cambiar credenciales, tablero u opciones.
 ```
 
+Usa la herramienta **AskUserQuestion** para presentar las opciones como selector interactivo:
+
+- Pregunta: "Que quieres hacer?"
+- Opciones:
+  - **"Analizar un documento"** (description: "Pega un brief, email o PRD y te hare preguntas hasta tener claridad")
+  - **"Descubrir desde cero"** (description: "Describe tu idea y te guiare con preguntas de descubrimiento")
+  - **"Publicar historias en Trello"** (description: "Publicar historias aprobadas de docs/historias/")
+  - **"Planificar sprint"** (description: "Equipo, estimaciones y capacidad")
+
+IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones numeradas como texto plano.
+
 Segun la eleccion del usuario:
-- **Opcion 1** (o si el usuario pega un bloque de texto largo): Antes de redirigir, ejecuta el **paso intermedio de vision** (ver abajo). Despues redirige a `/pspo-agent:analyze`.
-- **Opcion 2**: Antes de redirigir, ejecuta el **paso intermedio de vision** (ver abajo). Despues redirige a `/pspo-agent:discovery`.
-- **Opcion 3**: Redirige a `/pspo-agent:publish`.
-- **Opcion 4**: Redirige a `/pspo-agent:sprint-plan`.
-- **Opcion 5**: Redirige a `/pspo-agent:onboarding`.
-- **Si el usuario escribe directamente una descripcion corta** (menos de 100 palabras): Ejecuta el **paso intermedio de vision** y luego interpretar como opcion 2 y arrancar el descubrimiento.
-- **Si el usuario pega un texto largo** (mas de 100 palabras): Ejecuta el **paso intermedio de vision** y luego interpretar como opcion 1 y arrancar el analisis de requisitos.
+- **Analizar un documento**: Ejecuta el **paso intermedio de vision** (ver abajo). Despues redirige a `/pspo-agent:analyze`.
+- **Descubrir desde cero**: Ejecuta el **paso intermedio de vision** (ver abajo). Despues redirige a `/pspo-agent:discovery`.
+- **Publicar historias**: Redirige a `/pspo-agent:publish`.
+- **Planificar sprint**: Redirige a `/pspo-agent:sprint-plan`.
+- **Si el usuario escribe directamente una descripcion corta** (menos de 100 palabras): Ejecuta el **paso intermedio de vision** y luego arrancar el descubrimiento.
+- **Si el usuario pega un texto largo** (mas de 100 palabras): Ejecuta el **paso intermedio de vision** y luego arrancar el analisis de requisitos.
 
 ### Paso intermedio: Vision de producto
 
