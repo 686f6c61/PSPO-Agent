@@ -116,6 +116,17 @@ Luego usa AskUserQuestion para preguntar:
 
 IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones como texto plano con letras entre corchetes.
 
+### Paso 3b: Invitar miembros al tablero
+
+Si existe `team.csv`, lee los emails del equipo e invita a cada miembro al tablero usando `invite-member`:
+- Para cada miembro del CSV, ejecuta `invite-member` con boardId, email y fullName.
+- Trello envia la invitacion automaticamente.
+- Si un miembro ya esta en el tablero, no pasa nada (la API no duplica).
+- Informa brevemente: "Invitaciones enviadas a {N} miembros."
+- Si algun email falla, registralo pero continua con los demas.
+
+Este paso se ejecuta UNA VEZ antes de crear tarjetas. No se repite si ya se hizo.
+
 ### Paso 4: Ejecutar la publicacion
 
 Antes de publicar, pasa las descripciones de las tarjetas por el agente `culture-guardian` para asegurar que el texto que llega a Trello tiene acentos correctos, tono profesional y es detallista.

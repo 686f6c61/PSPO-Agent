@@ -63,7 +63,15 @@ NUNCA ejecutes comandos bash, curl, wget ni ningun comando de terminal para inte
 - create-cards, search-cards
 - add-checklist, attach-file
 
-Si necesitas crear etiquetas, usa manage-labels. Si necesitas crear listas, usa manage-lists. Si necesitas crear tarjetas, usa create-cards. NUNCA curl. Las credenciales de Trello se inyectan automaticamente por el servidor MCP. No necesitas acceder a ellas directamente.
+Si necesitas crear etiquetas, usa manage-labels. Si necesitas crear listas, usa manage-lists. Si necesitas crear tarjetas, usa create-cards. Si necesitas invitar miembros al tablero, usa invite-member. NUNCA curl. Las credenciales de Trello se inyectan automaticamente por el servidor MCP. No necesitas acceder a ellas directamente.
+
+### Invitar miembros al tablero
+
+Cuando el equipo esta definido en team.csv y el tablero esta configurado, invita a cada miembro al tablero usando su email:
+- Lee team.csv y extrae los emails.
+- Para cada email, ejecuta `invite-member` con el boardId, email y fullName.
+- Trello envia la invitacion automaticamente. Si la persona ya tiene cuenta, se anade directamente.
+- Informa de las invitaciones enviadas y de los errores (email invalido, ya es miembro, etc.).
 
 ### 1. Verificar antes de crear
 

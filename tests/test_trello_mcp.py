@@ -464,7 +464,7 @@ class TestMCPProtocol(unittest.TestCase):
             "jsonrpc": "2.0", "id": 3, "method": "tools/list", "params": {},
         })
         tools = response["result"]["tools"]
-        self.assertEqual(len(tools), 10)
+        self.assertEqual(len(tools), 11)
         names = {t["name"] for t in tools}
         self.assertIn("verify-credentials", names)
         self.assertIn("create-cards", names)
@@ -616,6 +616,36 @@ class TestHandleAddChecklist(unittest.TestCase):
                 "cardId": VALID_TRELLO_ID,
                 "name": "DoD",
                 "items": [],
+            })
+
+
+handle_invite_member = trello_mcp.handle_invite_member
+
+
+class TestHandleInviteMember(unittest.TestCase):
+
+    def test_invalid_board_id(self):
+        client = make_mock_client()
+        with self.assertRaises(ValueError):
+            handle_invite_member(client, {
+                "boardId": "BAD",
+                "email": "ana@empresa.com",
+            })
+
+    def test_invalid_email(self):
+        client = make_mock_client()
+        with self.assertRaises(ValueError):
+            handle_invite_member(client, {
+                "boardId": VALID_TRELLO_ID,
+                "email": "not-an-email",
+            })
+
+    def test_empty_email(self):
+        client = make_mock_client()
+        with self.assertRaises(ValueError):
+            handle_invite_member(client, {
+                "boardId": VALID_TRELLO_ID,
+                "email": "",
             })
 
 

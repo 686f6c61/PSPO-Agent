@@ -90,12 +90,12 @@ class TestE2EProtocol(unittest.TestCase):
             resp = read_message(proc)
             self.assertEqual(resp["id"], 2)
             tools = resp["result"]["tools"]
-            self.assertEqual(len(tools), 10)
+            self.assertEqual(len(tools), 11)
             tool_names = {t["name"] for t in tools}
             expected = {
                 "verify-credentials", "list-boards", "get-board",
                 "create-board", "manage-lists", "manage-labels",
-                "create-cards", "search-cards", "add-checklist", "attach-file",
+                "create-cards", "search-cards", "add-checklist", "attach-file", "invite-member",
             }
             self.assertEqual(tool_names, expected)
 

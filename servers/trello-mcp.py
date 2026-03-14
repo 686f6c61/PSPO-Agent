@@ -476,6 +476,48 @@ def handle_attach_file(client: TrelloClient, args: dict) -> dict:
 
 
 # ---------------------------------------------------------------------------
+def handle_invite_member(client: TrelloClient, args: dict) -> dict:
+    board_id = _validate_trello_id(args.get("boardId") or "", "boardId")
+    email = (args.get("email") or "").strip()
+    if not email or "@" not in email:
+        raise ValueError("email es obligatorio y debe tener formato valido.")
+    full_name = (args.get("fullName") or "").strip()
+    member_type = (args.get("type") or "normal").strip()
+    if member_type not in ("admin", "normal", "observer"):
+        member_type = "normal"
+
+    url = (f"{TRELLO_BASE}/1/boards/{board_id}/members"
+           f"?email={urllib.parse.quote(email)}"
+           f"&key={client._api_key}&token={client._token}")
+    body = {"fullName": full_name or email.split("@")[0]}
+    if member_type:
+        body["type"] = member_type
+
+    data = json.dumps(body).encode("utf-8")
+    req = urllib.request.Request(url, data=data, method="PUT",
+                                headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+            return {
+                "boardId": board_id,
+                "email": email,
+                "fullName": full_name,
+                "type": member_type,
+                "membersInvited": result.get("membersInvited", []),
+            }
+    except urllib.error.HTTPError as e:
+        resp_body = ""
+        try:
+            resp_body = e.read().decode("utf-8", errors="replace")
+        except Exception:
+            pass
+        info = _error_description(e.code, resp_body)
+        raise RuntimeError(
+            f"[HTTP {e.code}] {info['message']} | {info['suggestedAction']}"
+        )
+
+
 # Definicion de herramientas MCP
 # ---------------------------------------------------------------------------
 
@@ -665,6 +707,25 @@ TOOLS = [
             "required": ["cardId", "fileName", "content"],
         },
         "handler": handle_attach_file,
+    },
+    {
+        "name": "invite-member",
+        "description": "Invita a un miembro al tablero de Trello por email. Trello envia la invitacion automaticamente.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "boardId": {"type": "string", "description": "ID del tablero de Trello"},
+                "email": {"type": "string", "description": "Email del miembro a invitar"},
+                "fullName": {"type": "string", "description": "Nombre completo del miembro"},
+                "type": {
+                    "type": "string",
+                    "enum": ["admin", "normal", "observer"],
+                    "description": "Tipo de miembro (defecto: normal)",
+                },
+            },
+            "required": ["boardId", "email"],
+        },
+        "handler": handle_invite_member,
     },
 ]
 
