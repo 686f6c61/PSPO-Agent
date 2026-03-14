@@ -1,0 +1,71 @@
+{
+  "plugin": "pspo-agent",
+  "version": "1.0.0",
+  "defaults": {
+    "trello": {
+      "token_expiration": "30days",
+      "app_name": "PSPO Agent",
+      "scopes": "read,write",
+      "default_lists": [
+        "Backlog",
+        "Sprint actual",
+        "En progreso",
+        "En revision",
+        "Hecho"
+      ],
+      "default_labels": [
+        { "name": "Critica", "color": "red" },
+        { "name": "Alta", "color": "orange" },
+        { "name": "Media", "color": "yellow" },
+        { "name": "Baja", "color": "blue" }
+      ],
+      "publish_target_list": "Backlog",
+      "card_position": "bottom"
+    },
+    "discovery": {
+      "min_questions": 3,
+      "max_questions": 8,
+      "require_confirmation_before_generation": true
+    },
+    "stories": {
+      "format": "Como [rol], quiero [accion], para [beneficio]",
+      "require_given_when_then": true,
+      "min_positive_scenarios": 1,
+      "min_negative_scenarios": 1,
+      "max_story_size_days": 3,
+      "estimation_sizes": {
+        "S": 1,
+        "M": 2,
+        "L": 3,
+        "XL": 5
+      }
+    },
+    "validation": {
+      "require_explicit_approval": true,
+      "allow_partial_approval": true
+    },
+    "docs": {
+      "output_dir": "docs",
+      "vision_file": "vision.md",
+      "stories_dir": "historias",
+      "backlog_file": "backlog.md",
+      "story_prefix": "HU",
+      "date_format": "YYYY-MM-DD"
+    },
+    "publish": {
+      "save_local_before_trello": true,
+      "check_duplicates_by_title": true,
+      "require_confirmation": true
+    },
+    "sprint": {
+      "duration_days": 10,
+      "ai_agent_factor": 0.65,
+      "ai_agent_factor_recommended": 0.70,
+      "ai_agent_factor_range": [0.30, 0.80]
+    },
+    "dod": {
+      "file": "docs/dod.md",
+      "add_checklist_to_trello": true
+    }
+  }
+}

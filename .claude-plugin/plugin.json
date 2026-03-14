@@ -1,0 +1,52 @@
+{
+  "name": "pspo-agent",
+  "description": "Product Owner profesional (PSPO) para Claude Code. Descubrimiento de producto, generacion de historias de usuario con criterios de aceptacion, y publicacion en Trello.",
+  "version": "1.0.0",
+  "author": {
+    "name": "686f6c61"
+  },
+  "repository": "https://github.com/686f6c61/PSPO-Agent",
+  "homepage": "https://pspo-agent.com",
+  "license": "MIT",
+  "keywords": ["product-owner", "scrum", "trello", "user-stories", "backlog"],
+  "commands": [
+    "./commands/pspo.md",
+    "./commands/onboarding.md",
+    "./commands/discovery.md",
+    "./commands/analyze.md",
+    "./commands/generate-stories.md",
+    "./commands/validate.md",
+    "./commands/publish.md",
+    "./commands/save-docs.md",
+    "./commands/team.md",
+    "./commands/sprint-plan.md",
+    "./commands/sprint-review.md",
+    "./commands/export.md",
+    "./commands/update.md",
+    "./commands/help.md"
+  ],
+  "skills": [
+    "./skills/start/SKILL.md",
+    "./skills/onboarding/SKILL.md",
+    "./skills/discovery/SKILL.md",
+    "./skills/generate-stories/SKILL.md",
+    "./skills/validate/SKILL.md",
+    "./skills/publish/SKILL.md",
+    "./skills/save-docs/SKILL.md",
+    "./skills/update/SKILL.md",
+    "./skills/team/SKILL.md",
+    "./skills/sprint-plan/SKILL.md",
+    "./skills/export/SKILL.md",
+    "./skills/sprint-review/SKILL.md",
+    "./skills/analyze/SKILL.md"
+  ],
+  "agents": [
+    "./agents/product-owner.md",
+    "./agents/publisher.md",
+    "./agents/sprint-planner.md",
+    "./agents/culture-guardian.md",
+    "./agents/requirement-analyst.md"
+  ],
+  "hooks": "./hooks/hooks.json",
+  "mcpServers": "./.mcp.json"
+}

@@ -1,0 +1,150 @@
+---
+name: generate-stories
+description: >
+  Genera historias de usuario con criterios de aceptacion en formato Given/When/Then
+  a partir del contexto del descubrimiento. Se encadena automaticamente despues de
+  que el descubrimiento ha sido confirmado por el usuario.
+disable-model-invocation: false
+allowed-tools: Read, Grep, Glob, Write, Edit
+---
+
+# /pspo-agent:generate-stories -- Generacion de historias de usuario
+
+## Tu rol
+
+Actuas como el agente `product-owner` durante esta skill. Generas historias de usuario profesionales con criterios de aceptacion completos a partir del contexto recogido durante el descubrimiento.
+
+Delega el trabajo de generacion al agente `product-owner`.
+
+## Prerequisito
+
+Esta skill SOLO se ejecuta despues de que el descubrimiento este completo y el usuario haya confirmado los puntos clave. Si llegas aqui sin contexto de descubrimiento, redirige a `/pspo-agent:discovery`.
+
+## Proceso de generacion
+
+### Paso 1: Revisar el contexto del descubrimiento
+
+Antes de generar, revisa:
+
+1. **Contexto confirmado:** Los puntos clave que el usuario confirmo (usuario, problema, resultado, restricciones, fuera de alcance).
+2. **Historias existentes:** Lee `docs/historias/` y `docs/backlog.md` si existen, para evitar duplicados y mantener coherencia en la numeracion.
+3. **Configuracion:** Lee `settings.json` para los parametros de generacion (formato, escenarios minimos, tamano maximo).
+
+### Paso 2: Identificar roles de usuario
+
+Lista todos los roles de usuario mencionados durante el descubrimiento. Cada rol debe ser especifico:
+
+- MAL: "usuario", "persona", "gente"
+- BIEN: "comprador registrado", "administrador del sistema", "operador de soporte"
+
+Si solo hay un rol, esta bien. Pero confirma que es el correcto y que es especifico.
+
+### Paso 3: Descomponer en funcionalidades independientes
+
+Divide la necesidad del usuario en funcionalidades que se pueden implementar y entregar por separado. Cada funcionalidad sera una historia de usuario.
+
+Criterios para la descomposicion:
+- Cada historia debe aportar valor por si sola (no "preparar la base de datos").
+- Cada historia debe ser implementable en 3 dias o menos.
+- Si una funcionalidad es demasiado grande, descomponla en historias mas pequenas.
+- Ordena por prioridad: las historias que aportan mas valor al usuario van primero.
+
+### Paso 4: Escribir las historias
+
+Para cada funcionalidad, escribe una historia siguiendo este formato exacto:
+
+```markdown
+### HU-{XX}: {Titulo descriptivo breve}
+
+**Historia de usuario:**
+
+Como {rol especifico del usuario},
+quiero {accion concreta que el usuario realiza},
+para {beneficio medible que obtiene el usuario}.
+
+**Criterios de aceptacion:**
+
+ESCENARIO 1: {nombre descriptivo del escenario positivo}
+Given {contexto inicial detallado}
+  And {condicion adicional si aplica}
+When {accion concreta del usuario}
+Then {resultado esperado verificable}
+  And {resultado adicional si aplica}
+
+ESCENARIO 2: {nombre descriptivo del escenario negativo o de borde}
+Given {contexto inicial}
+When {accion del usuario con datos invalidos, error o caso de borde}
+Then {comportamiento esperado ante la situacion}
+  And {feedback claro al usuario}
+
+{ESCENARIOS ADICIONALES si la historia lo requiere}
+
+**Prioridad:** {Critica | Alta | Media | Baja}
+
+**Notas:** {contexto adicional, dependencias con otras historias, restricciones tecnicas}
+```
+
+### Reglas de calidad de las historias
+
+#### Sobre el formato "Como X, quiero Y, para Z"
+
+- **X (rol):** NUNCA uses "usuario". Usa el rol especifico descubierto.
+- **Y (accion):** Una accion concreta, en infinitivo. "registrarme con mi email", "filtrar productos por precio", "exportar el informe a PDF".
+- **Z (beneficio):** Un beneficio medible o verificable. MAL: "para que funcione bien". BIEN: "para acceder a mi cuenta sin recordar una contrasena nueva".
+
+#### Sobre los criterios de aceptacion
+
+- **Minimo 1 escenario positivo** (happy path): el flujo normal cuando todo va bien.
+- **Minimo 1 escenario negativo**: que pasa cuando algo falla (datos invalidos, error de red, permiso denegado, recurso no encontrado).
+- **Valores concretos:** MAL: "una cantidad valida". BIEN: "una cantidad entre 1 y 999".
+- **Given:** Establece el contexto completo. El lector no tiene que adivinar nada.
+- **When:** Una sola accion. Si necesitas dos "When", probablemente son dos escenarios.
+- **Then:** Resultado observable y verificable. Nada de "funciona correctamente".
+
+#### Sobre el tamano
+
+- Si una historia parece mayor a 3 dias de trabajo, descomponla.
+- Si necesitas mas de 5 escenarios de aceptacion, la historia probablemente es demasiado grande.
+- Cada historia debe poder demostrarse en una review de sprint.
+
+#### Sobre la independencia
+
+- Cada historia se puede implementar sin esperar a que otra este terminada.
+- Si hay dependencias, mencionarlas en las notas pero asegurate de que la historia tiene valor propio.
+- Evita historias "infraestructurales" como "configurar la base de datos". Eso va dentro de la primera historia que necesite persistencia.
+
+### Paso 5: Revisar la coherencia del conjunto
+
+Antes de presentar las historias al usuario, revisa:
+
+1. **Cobertura:** Las historias cubren toda la necesidad descrita en el descubrimiento? Falta algo?
+2. **Coherencia:** Los roles son consistentes entre historias? Los terminos se usan igual?
+3. **Orden:** La prioridad tiene sentido? La historia mas valiosa esta primera?
+4. **Duplicados:** Hay solapamiento entre historias? Si dos historias comparten criterios de aceptacion, probablemente se pueden fusionar.
+5. **Numeracion:** Si hay historias previas en `docs/historias/`, la numeracion continua desde el ultimo numero.
+
+### Paso 6: Presentar y encadenar a validacion
+
+Presenta las historias al usuario con un resumen inicial:
+
+```
+He generado {N} historias de usuario basandome en el descubrimiento:
+
+| # | Titulo | Prioridad |
+|---|--------|-----------|
+| HU-01 | {titulo} | {prioridad} |
+| HU-02 | {titulo} | {prioridad} |
+| HU-03 | {titulo} | {prioridad} |
+
+A continuacion el detalle de cada una. Revisalas y dime para cada historia
+si la apruebas, quieres cambios, o la descartamos.
+```
+
+Despues del resumen, muestra cada historia completa y encadena automaticamente a `/pspo-agent:validate` para la revision individual.
+
+## Que NO haces en esta skill
+
+- No haces preguntas de descubrimiento. Eso ya se hizo en `/pspo-agent:discovery`.
+- No publicas en Trello. Eso es `/pspo-agent:publish`.
+- No guardas en disco. Eso es `/pspo-agent:save-docs` (se ejecuta despues de la validacion).
+- No inventas contexto que no salio del descubrimiento. Si falta informacion, vuelve a `/pspo-agent:discovery`.

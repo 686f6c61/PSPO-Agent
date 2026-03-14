@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "trello-client": {
+      "command": "python3",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/servers/trello-mcp.py"],
+      "env": {
+        "TRELLO_API_KEY": "${TRELLO_API_KEY}",
+        "TRELLO_TOKEN": "${TRELLO_TOKEN}"
+      }
+    }
+  }
+}
