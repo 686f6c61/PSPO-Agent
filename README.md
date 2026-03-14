@@ -50,6 +50,7 @@ El asistente de onboarding te guiara para configurar las credenciales de Trello 
 | sprint-plan | `/pspo-agent:sprint-plan` | Planificacion de sprint: DoD, estimacion t-shirt, capacidad con factor IA. |
 | sprint-review | `/pspo-agent:sprint-review` | Revision de sprint: estado de tarjetas y cumplimiento de DoD. |
 | export | `/pspo-agent:export` | Exportacion a CSV, JSON y Jira CSV. |
+| audit | `/pspo-agent:audit` | Auditoria senior: completitud, coherencia, HU que faltan/sobran. |
 
 ## Agentes
 
@@ -57,9 +58,10 @@ El asistente de onboarding te guiara para configurar las credenciales de Trello 
 |--------|----------------|
 | requirement-analyst | Interroga documentos hasta alcanzar claridad suficiente para generar historias. |
 | product-owner | Descubrimiento de producto, generacion de historias y validacion. |
-| publisher | Publicacion en Trello: tarjetas, checklists, adjuntos. |
+| publisher | Publicacion en Trello: tarjetas, checklists, adjuntos, invitaciones al board. |
 | sprint-planner | DoD, equipo, capacidad con factor IA y planificacion de sprint. |
 | culture-guardian | Revisor de estilo: normas RAE, tono profesional, aprende del proyecto. |
+| senior-auditor | Auditoria de fondo: completitud, coherencia, HU que faltan/sobran. |
 
 ## Estructura del proyecto
 
@@ -68,10 +70,10 @@ pspo-agent/
 ├── .claude-plugin/
 │   ├── plugin.json
 │   └── marketplace.json
-├── agents/                  # 5 agentes especializados
-├── skills/                  # 13 skills
+├── agents/                  # 6 agentes especializados
+├── skills/                  # 14 skills
 ├── servers/
-│   └── trello-mcp.py       # Servidor MCP (Python puro, 10 herramientas, 0 dependencias)
+│   └── trello-mcp.py       # Servidor MCP (Python puro, 11 herramientas, 0 dependencias)
 ├── hooks/
 │   └── scripts/             # Hooks de seguridad (.env, .gitignore)
 ├── tests/                   # Tests unitarios, integracion y e2e
