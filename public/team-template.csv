@@ -1,0 +1,4 @@
+nombre,email,rol,categoria,dedicacion,usa_agente_ia
+Ana Garcia,ana@empresa.com,frontend,Senior,100,si
+Pedro Lopez,pedro@empresa.com,backend,Mid,50,no
+Laura Ruiz,laura@empresa.com,fullstack,Junior,80,si

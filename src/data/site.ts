@@ -11,7 +11,7 @@ export const site = {
   title: 'PSPO Agent - Product Owner con IA para Claude Code',
   description:
     'Plugin de Claude Code que actúa como Product Owner profesional. Descubrimiento de producto, historias de usuario con criterios de aceptación y publicación en Trello.',
-  url: 'https://pspo-agent.vercel.app',
+  url: 'https://pspo-agent.com',
   ogImage: '/og-image.png',
   repository: 'https://github.com/686f6c61/PSPO-Agent',
   license: 'MIT',

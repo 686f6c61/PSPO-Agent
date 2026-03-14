@@ -32,6 +32,51 @@ export interface UserStory {
 
 export const stories: UserStory[] = [
   {
+    id: 'HU-00',
+    title: 'Visión de producto',
+    role: 'desarrollador que empieza un proyecto nuevo',
+    action:
+      'definir la filosofía y el norte del producto en 2-3 frases antes de generar ninguna historia',
+    benefit:
+      'que todas las historias de usuario estén alineadas con una visión común y que las decisiones de producto tengan un criterio compartido',
+    context:
+      'La visión se pide una sola vez, al inicio del primer flujo de descubrimiento o análisis. Se guarda en docs/vision.md y se usa como contexto en toda la generación posterior. No son requisitos, es la filosofía: por qué existe este producto, qué lo hace diferente y cuál es el norte.',
+    scenarios: [
+      {
+        name: 'Solicitud de visión en el primer uso',
+        given: 'el usuario ejecuta el flujo de descubrimiento o análisis por primera vez y no existe docs/vision.md',
+        when: 'el plugin detecta que falta la visión',
+        then: [
+          'muestra un mensaje explicando qué es la visión y por qué importa, con un ejemplo concreto',
+          'pide al usuario que describa la visión de su producto en 2-3 frases',
+          'no avanza al descubrimiento ni al análisis hasta que el usuario responda',
+        ],
+      },
+      {
+        name: 'Persistencia en docs/vision.md',
+        given: 'el usuario ha escrito la visión de su producto',
+        when: 'el plugin la guarda',
+        then: [
+          'crea el directorio docs/ si no existe',
+          'escribe docs/vision.md con la visión del usuario en formato blockquote, fecha de última actualización y firma de PSPO Agent',
+          'en sesiones futuras, detecta que docs/vision.md ya existe y no vuelve a preguntar',
+        ],
+      },
+      {
+        name: 'Uso como contexto en generación de historias',
+        given: 'docs/vision.md existe y el agente product-owner va a generar historias de usuario',
+        when: 'el agente lee el contexto del proyecto antes de generar',
+        then: [
+          'incluye la visión como contexto de alto nivel para alinear las historias',
+          'si una historia generada contradice la visión, el agente lo señala al usuario antes de presentarla',
+          'la visión aparece referenciada en docs/backlog.md como contexto del conjunto de historias',
+        ],
+      },
+    ],
+    priority: 'must',
+    status: 'mvp',
+  },
+  {
     id: 'HU-01',
     title: 'Onboarding guiado de primera ejecución',
     role: 'desarrollador que instala el plugin por primera vez',
@@ -297,146 +342,169 @@ export const stories: UserStory[] = [
   },
   {
     id: 'HU-07',
-    title: 'Gestión de equipo del proyecto [planificada]',
+    title: 'Gestión de equipo del proyecto',
     role: 'tech lead de un equipo pequeño sin PO dedicado',
     action:
-      'definir los miembros de mi equipo con sus roles dentro del plugin',
+      'definir los miembros de mi equipo con sus roles, dedicación y uso de agentes IA dentro del plugin',
     benefit:
-      'que el PSPO tenga la información necesaria para distribuir historias de forma inteligente',
+      'que el PSPO tenga la información necesaria para calcular la capacidad real del sprint y distribuir historias de forma inteligente',
     context:
-      'El tech lead necesita poder definir el equipo rápidamente: importar CSV o añadir miembros uno a uno. Los roles son libres. La categoría (Junior, Mid, Senior) es crucial para la distribución.',
+      'El tech lead necesita poder definir el equipo rápidamente: importar CSV o añadir miembros uno a uno. Los roles son libres. La categoría (Junior, Mid, Senior), la dedicación y el uso de agente IA son cruciales para la planificación de sprint.',
     scenarios: [
       {
         name: 'Detección de equipo no definido',
-        given: 'el usuario tiene historias aprobadas y no existe team.csv',
-        when: 'solicita distribuir historias al equipo',
+        given: 'el usuario tiene historias aprobadas y no existe team.csv en la raíz del proyecto',
+        when: 'solicita planificar un sprint o distribuir historias al equipo',
         then: [
           'detecta que no hay equipo definido',
-          'ofrece: importar CSV, rellenar plantilla, o añadir miembros uno a uno',
+          'ofrece dos opciones: modo guiado (pregunta miembro a miembro) o importar desde CSV',
         ],
       },
       {
         name: 'Alta guiada de miembros',
         given: 'el usuario elige añadir miembros de forma guiada',
-        when: 'el plugin inicia el asistente',
+        when: 'el plugin inicia el asistente para cada miembro',
         then: [
-          'para cada miembro pregunta: nombre, email, rol y categoria',
-          'sugiere roles comunes pero acepta texto libre',
-          'al terminar, muestra el resumen y pide confirmación',
+          'pregunta en secuencia: nombre, email, rol (texto libre), categoría (Junior/Mid/Senior), dedicación (0-100%) y si usa agente de IA (sí/no)',
+          'si el miembro usa agente IA, informa del factor de corrección del 65% configurable en settings.json',
+          'tras cada miembro muestra un resumen y pregunta si quiere añadir otro',
         ],
       },
       {
-        name: 'Persistencia del equipo',
+        name: 'Persistencia del equipo con 6 campos',
         given: 'el usuario ha confirmado la composición del equipo',
         when: 'el plugin guarda los datos',
         then: [
-          'escribe team.csv con cabecera: nombre,email,rol,categoria,dedicacion,usa_agente_ia',
-          'en futuras sesiones, lee team.csv automáticamente',
+          'escribe team.csv con cabecera de 6 campos: nombre,email,rol,categoria,dedicacion,usa_agente_ia',
+          'valida el email (contiene @ y punto), la dedicación (entre 0 y 100) y usa_agente_ia (solo sí o no)',
+          'en futuras sesiones, lee team.csv automáticamente y muestra el equipo con opciones de editar, añadir o eliminar',
         ],
       },
     ],
-    priority: 'should',
-    status: 'v1.1',
+    priority: 'must',
+    status: 'mvp',
   },
   {
     id: 'HU-08',
-    title: 'Distribución inteligente de historias al equipo [planificada]',
+    title: 'Distribución inteligente de historias al equipo',
     role: 'tech lead que tiene historias aprobadas y un equipo definido',
     action:
-      'que el PSPO sugiera una distribución de historias entre los miembros del equipo',
+      'que el PSPO estime las historias por tallas (S/M/L/XL), calcule la capacidad del equipo con factor IA y sugiera una distribución equilibrada',
     benefit:
-      'no tener que repartir el trabajo a ojo y asegurarme de que la carga está equilibrada',
+      'no tener que repartir el trabajo a ojo y saber si el sprint es viable antes de empezar',
     context:
-      'El tech lead pierde tiempo decidiendo quién hace cada historia. El PSPO puede analizar roles y carga, pero el tech lead siempre debe tener la última palabra.',
+      'El tech lead pierde tiempo decidiendo quién hace cada historia y si cabe en el sprint. El PSPO calcula la capacidad equivalente del equipo (con factor de corrección del 65% para quienes usan agentes IA) y cruza con las estimaciones por tallas.',
     scenarios: [
       {
-        name: 'Propuesta de distribución basada en roles',
-        given: 'hay historias aprobadas y equipo definido',
-        when: 'el PSPO analiza las historias y el equipo',
+        name: 'Estimación por tallas con conversión configurable',
+        given: 'hay historias aprobadas en docs/historias/ y el usuario ejecuta la planificación de sprint',
+        when: 'el agente presenta las historias para estimar',
         then: [
-          'identifica el tipo de trabajo de cada historia',
-          'cruza el tipo de trabajo con los roles del equipo',
-          'genera una propuesta de asignación en formato tabla',
-          'muestra la carga total por miembro y señala desequilibrios',
+          'muestra la tabla de conversión configurable en settings.json: S=1 día, M=2 días, L=3 días, XL=5 días',
+          'permite asignar tallas en formato rápido (ej: "1=M 2=XL 3=S")',
+          'recalcula el total en días equivalentes tras cada ajuste y espera confirmación explícita',
+        ],
+      },
+      {
+        name: 'Propuesta de distribución basada en roles y factor IA',
+        given: 'las historias están estimadas y el equipo está definido en team.csv con dedicación y usa_agente_ia',
+        when: 'el PSPO calcula la capacidad del equipo para el sprint',
+        then: [
+          'calcula días reales por miembro (duración x dedicación/100)',
+          'aplica el factor IA a los miembros que usan agente: capacidad_equiv = días_reales / (1 - factor_ia)',
+          'compara el total de historias contra la capacidad equivalente y muestra el porcentaje de ocupación',
+          'si el sprint desborda, sugiere recortar las historias de menor prioridad o puntuación',
         ],
       },
       {
         name: 'Aprobación del usuario sobre la distribución',
-        given: 'el PSPO presenta la propuesta completa',
+        given: 'el PSPO presenta la propuesta completa con tabla de capacidad y veredicto',
         when: 'el usuario la revisa',
         then: [
           'puede aprobar la distribución tal como está',
-          'puede modificar asignaciones individuales',
+          'puede modificar asignaciones individuales o ajustar tallas',
           'puede rechazar y pedir nuevo análisis con criterios distintos',
         ],
       },
     ],
-    priority: 'should',
-    status: 'v1.1',
+    priority: 'must',
+    status: 'mvp',
   },
   {
     id: 'HU-09',
-    title: 'Mapa de dependencias y bloqueantes entre historias [planificada]',
+    title: 'Mapa de dependencias y bloqueantes',
     role: 'tech lead que coordina el trabajo de un equipo pequeño',
     action:
-      'que el PSPO identifique dependencias y bloqueantes entre historias',
+      'que el PSPO identifique dependencias y bloqueantes entre historias como parte de la priorización asistida del sprint',
     benefit:
-      'saber en qué orden deben ejecutarse y qué impacto tiene un retraso',
+      'saber en qué orden deben ejecutarse las historias y que las bloqueantes se prioricen automáticamente',
     context:
-      'Las dependencias son invisibles hasta que alguien se bloquea. El PSPO puede analizar el contenido de las historias para detectar relaciones, pero el usuario siempre debe confirmar.',
+      'Las dependencias son invisibles hasta que alguien se bloquea. El agente sprint-planner analiza las historias y clasifica cada una como Bloqueante, Dependiente o Independiente. Esto alimenta la fórmula de priorización: Valor*3 + Riesgo*2 + Dependencia*1.',
     scenarios: [
       {
-        name: 'Análisis automático de dependencias',
-        given: 'hay al menos 3 historias aprobadas',
-        when: 'el usuario solicita el mapa de dependencias',
+        name: 'Análisis automático de dependencias en la priorización',
+        given: 'hay al menos 3 historias aprobadas y el usuario acepta la priorización asistida durante la planificación de sprint',
+        when: 'el agente sprint-planner analiza cada historia',
         then: [
-          'analiza el contenido de cada historia buscando relaciones técnicas, de datos y de UX',
-          'genera una lista de dependencias con nivel de confianza (alta, media, baja)',
+          'clasifica cada historia como Bloqueante (otras dependen de ella, peso 3), Independiente (sin relaciones, peso 2) o Dependiente (necesita que otra se complete, peso 1)',
+          'integra la clasificación en la matriz de priorización junto con Valor de negocio y Riesgo técnico',
+          'las historias bloqueantes suben automáticamente en la puntuación final',
         ],
       },
       {
         name: 'Visualización del grafo de dependencias',
-        given: 'el mapa está confirmado por el usuario',
-        when: 'el plugin genera la visualización',
+        given: 'la priorización asistida está confirmada por el usuario',
+        when: 'el plugin guarda la planificación del sprint en docs/sprint-plan.md',
         then: [
-          'crea un diagrama Mermaid en docs/dependencias.md',
-          'cada historia es un nodo con ID y título',
-          'las historias bloqueantes se resaltan visualmente',
+          'genera un diagrama Mermaid en docs/dependencias.md con cada historia como nodo',
+          'las flechas indican la dirección de dependencia (A bloquea a B)',
+          'las historias bloqueantes se resaltan visualmente y aparecen primero en el orden del sprint',
         ],
       },
       {
         name: 'Análisis de impacto de retrasos',
-        given: 'el mapa está confirmado y las historias están asignadas',
-        when: 'el usuario pregunta qué pasa si una historia se retrasa',
+        given: 'el mapa está confirmado y las historias están asignadas a miembros del equipo',
+        when: 'el usuario pregunta qué pasa si una historia concreta se retrasa',
         then: [
-          'recorre la cadena de dependencias desde esa historia',
-          'muestra historias y miembros afectados directa e indirectamente',
-          'calcula el radio de impacto total',
+          'recorre la cadena de dependencias hacia abajo desde esa historia',
+          'muestra las historias afectadas directa e indirectamente con sus asignaciones',
+          'calcula el radio de impacto total en días equivalentes de trabajo bloqueado',
         ],
       },
     ],
-    priority: 'should',
-    status: 'v1.1',
+    priority: 'must',
+    status: 'mvp',
   },
   {
     id: 'HU-10',
-    title: 'Integración de asignaciones y dependencias con Trello [planificada]',
+    title: 'Integración de asignaciones y dependencias con Trello',
     role: 'tech lead que gestiona su equipo a través de Trello',
     action:
-      'que las asignaciones y dependencias se reflejen en las tarjetas del tablero',
+      'que las historias se publiquen con ficheros .md adjuntos, checklists de Definition of Done y asignaciones de miembros',
     benefit:
-      'que todo el equipo vea quién hace qué y qué depende de qué sin salir de Trello',
+      'que todo el equipo vea quién hace qué, qué criterios debe cumplir y tenga la historia completa sin salir de Trello',
     context:
-      'El mapa de dependencias y las asignaciones son útiles localmente, pero el equipo trabaja en Trello. La sincronización debe reflejar asignaciones y dependencias en las tarjetas.',
+      'El plugin publica cada tarjeta con una descripción resumida, adjunta el fichero .md completo como documento de referencia, añade un checklist con los criterios de la DoD y asigna miembros por email. Las dependencias se reflejan como checklist adicional.',
     scenarios: [
       {
+        name: 'Publicación con fichero adjunto y checklist DoD',
+        given: 'las historias están aprobadas, la DoD está configurada en docs/dod.md y el usuario confirma la publicación',
+        when: 'el plugin crea cada tarjeta en Trello',
+        then: [
+          'crea la tarjeta con descripción resumida (historia + criterios + prioridad + estimación)',
+          'adjunta el fichero HU-XX-titulo.md completo como archivo adjunto usando attach-file',
+          'añade un checklist "Definition of Done" con los criterios de docs/dod.md usando add-checklist',
+          'la descripción termina con "Historia completa en el fichero adjunto"',
+        ],
+      },
+      {
         name: 'Asignación de miembros a tarjetas',
-        given: 'las historias están publicadas y las asignaciones aprobadas',
+        given: 'las historias están publicadas y las asignaciones del sprint están aprobadas',
         when: 'el plugin sincroniza con Trello',
         then: [
-          'busca cada miembro asignado por email en el tablero',
+          'busca cada miembro asignado por email en los miembros del tablero',
           'si existe, lo asigna a la tarjeta correspondiente',
-          'si no existe, ofrece invitarle al tablero o registrar la asignación localmente',
+          'si no existe en el tablero, ofrece invitarle o registrar la asignación solo localmente',
         ],
       },
       {
@@ -445,22 +513,13 @@ export const stories: UserStory[] = [
         when: 'el plugin sincroniza las dependencias',
         then: [
           'crea un checklist "Dependencias" en cada tarjeta afectada',
-          'cada item es una dependencia con enlace a la tarjeta de la que depende',
-        ],
-      },
-      {
-        name: 'Vista previa antes de sincronizar',
-        given: 'el plugin va a sincronizar asignaciones y dependencias',
-        when: 'el usuario solicita la sincronización',
-        then: [
-          'muestra una vista previa completa de los cambios',
-          'pide confirmación explícita antes de ejecutar',
-          'NUNCA modifica tarjetas sin confirmación del usuario',
+          'cada ítem es un enlace a la tarjeta de la que depende (formato: "HU-XX: título - url")',
+          'muestra vista previa completa de los cambios y pide confirmación explícita antes de ejecutar',
         ],
       },
     ],
-    priority: 'should',
-    status: 'v1.1',
+    priority: 'must',
+    status: 'mvp',
   },
   {
     id: 'HU-11s',
@@ -505,5 +564,185 @@ export const stories: UserStory[] = [
     ],
     priority: 'should',
     status: 'v1.1',
+  },
+  {
+    id: 'HU-13',
+    title: 'Análisis de requisitos desde documento',
+    role: 'desarrollador que recibe un brief, email o especificación como punto de partida',
+    action:
+      'pegar el documento y que el agente requirement-analyst lo analice mediante preguntas priorizadas hasta alcanzar un 80% de claridad',
+    benefit:
+      'no empezar a generar historias de usuario sin haber entendido bien los requisitos, evitando sprints de trabajo basura por ambigüedades',
+    context:
+      'El agente requirement-analyst sustituye al flujo de descubrimiento cuando el usuario aporta un documento de partida. Evalúa 8 categorías de claridad (usuario final, problema, contexto de negocio, alcance, restricciones técnicas, criterios de éxito, dependencias, fuera de alcance) y hace preguntas una a una hasta alcanzar el umbral.',
+    scenarios: [
+      {
+        name: 'Indicador de claridad 0-100% por categorías',
+        given: 'el usuario pega un documento de más de 50 palabras (brief, PRD, mensaje de Slack o lista de funcionalidades)',
+        when: 'el agente requirement-analyst lee el documento completo sin interrumpir',
+        then: [
+          'evalúa la claridad inicial de las 8 categorías con un porcentaje individual para cada una',
+          'muestra el indicador global (media de las 8 categorías) y el desglose por categoría',
+          'informa de cuántas preguntas estima necesarias para llegar al 80%',
+        ],
+      },
+      {
+        name: 'Preguntas priorizadas por impacto',
+        given: 'el indicador de claridad muestra categorías por debajo del 80%',
+        when: 'el agente formula preguntas al usuario',
+        then: [
+          'pregunta una sola pregunta por mensaje, empezando por la categoría con menor claridad',
+          'tras cada respuesta, actualiza el indicador mostrando solo las categorías que han cambiado (ej: "Restricciones técnicas: 45% -> 75% [+30]")',
+          'si una categoría ya está al 80% o más, no pregunta más sobre ella salvo contradicción',
+        ],
+      },
+      {
+        name: 'Validación final con resumen estructurado',
+        given: 'la claridad media alcanza el 80%',
+        when: 'el agente presenta el resumen de validación',
+        then: [
+          'muestra un resumen de una línea por cada una de las 8 categorías',
+          'pide confirmación explícita al usuario antes de avanzar a la generación de historias',
+          'guarda el documento original y el análisis completo en docs/analisis-requisitos.md para trazabilidad',
+        ],
+      },
+    ],
+    priority: 'must',
+    status: 'mvp',
+  },
+  {
+    id: 'HU-14',
+    title: 'Estimación por tallas (t-shirt sizing)',
+    role: 'tech lead que planifica un sprint',
+    action:
+      'asignar tallas S, M, L o XL a las historias aprobadas con conversión configurable a días equivalentes',
+    benefit:
+      'saber si el sprint es viable comparando el total estimado contra la capacidad del equipo, sin necesidad de estimar en horas',
+    context:
+      'Las tallas se configuran en settings.json (por defecto S=1, M=2, L=3, XL=5 días). La estimación se integra en el flujo de sprint-plan y opcionalmente en generate-stories para asignar tallas en el momento de la generación.',
+    scenarios: [
+      {
+        name: 'Asignación rápida de tallas',
+        given: 'hay historias aprobadas en docs/historias/ y el usuario ejecuta la planificación de sprint',
+        when: 'el agente presenta las historias para estimar',
+        then: [
+          'muestra la tabla de conversión actual (S=1, M=2, L=3, XL=5 días por defecto)',
+          'permite asignar tallas en formato rápido con una sola línea (ej: "1=M 2=XL 3=S")',
+          'calcula el total en días equivalentes y muestra una tabla resumen con historia, talla, días y prioridad',
+        ],
+      },
+      {
+        name: 'Conversión configurable en settings.json',
+        given: 'el usuario ha modificado los valores de conversión en settings.json (ej: S=2, M=4, L=6, XL=10)',
+        when: 'el agente lee la configuración al iniciar la estimación',
+        then: [
+          'usa los valores personalizados del usuario en lugar de los valores por defecto',
+          'muestra la tabla de conversión activa para que el usuario sepa qué escala se está aplicando',
+          'si settings.json no existe o no tiene el campo stories.estimation_sizes, usa los valores por defecto sin error',
+        ],
+      },
+      {
+        name: 'Integración con capacidad del equipo',
+        given: 'las tallas están asignadas y confirmadas, y el equipo está definido en team.csv',
+        when: 'el agente calcula el veredicto del sprint',
+        then: [
+          'compara el total de días equivalentes de las historias contra la capacidad equivalente del equipo (con factor IA aplicado)',
+          'muestra el porcentaje de ocupación del sprint',
+          'si la ocupación supera el 100%, sugiere recortar las historias de menor prioridad o puntuación hasta que el sprint sea viable',
+        ],
+      },
+    ],
+    priority: 'must',
+    status: 'mvp',
+  },
+  {
+    id: 'HU-15',
+    title: 'Revisión de estilo automática (culture guardian)',
+    role: 'tech lead que quiere comunicación profesional y consistente en todo el proyecto',
+    action:
+      'que todo el contenido generado por el plugin pase por un revisor de estilo automático antes de mostrarse al usuario o publicarse en Trello',
+    benefit:
+      'tono consistente en todas las historias, acentos y eñes correctos, criterios de aceptación concretos y detallistas, y aprendizaje de las correcciones del usuario entre sesiones',
+    context:
+      'El agente culture-guardian actúa como corrector de estilo exigente. Revisa historias de usuario, documentación local, descripciones de tarjetas y cualquier texto que el plugin genera. Aplica normas RAE, castellano neutro (España), tono profesional y criterios detallistas.',
+    scenarios: [
+      {
+        name: 'Revisión antes de mostrar al usuario',
+        given: 'el agente product-owner ha generado historias de usuario con sus criterios de aceptación',
+        when: 'el contenido pasa por el agente culture-guardian antes de presentarse',
+        then: [
+          'corrige acentos y eñes (configuracion -> configuración, pequeno -> pequeño)',
+          'aplica títulos en minúsculas según la RAE (solo primera letra mayúscula)',
+          'verifica que los criterios de aceptación usan valores concretos (no "formato válido", sino "32 caracteres hexadecimales")',
+          'si faltan escenarios negativos, lo señala al usuario sin inventar contenido',
+        ],
+      },
+      {
+        name: 'Revisión antes de publicar en Trello',
+        given: 'las historias aprobadas van a publicarse como tarjetas en Trello',
+        when: 'el plugin prepara las descripciones de las tarjetas',
+        then: [
+          'pasa cada descripción por el culture-guardian para asegurar tono profesional y ortografía correcta',
+          'verifica que no hay muros de texto: la información clave debe ser visible de un vistazo',
+          'los comentarios de código se mantienen sin acentos por compatibilidad, pero el contenido visible sí los lleva',
+        ],
+      },
+      {
+        name: 'Aprendizaje de correcciones del usuario',
+        given: 'el usuario corrige un texto generado por el plugin durante la sesión (ej: "no uses X, prefiero Y")',
+        when: 'el culture-guardian detecta la corrección',
+        then: [
+          'registra el aprendizaje en la memoria de Claude Code como tipo feedback',
+          'en sesiones futuras, lee los aprendizajes almacenados antes de revisar cualquier contenido',
+          'aplica automáticamente las preferencias del usuario sin que tenga que repetir la corrección',
+        ],
+      },
+    ],
+    priority: 'must',
+    status: 'mvp',
+  },
+  {
+    id: 'HU-16',
+    title: 'Detección de edge cases en generación de historias',
+    role: 'desarrollador que quiere cubrir todos los escenarios posibles antes de implementar',
+    action:
+      'que el agente detecte edge cases potenciales en cada historia generada y los presente en una tabla de impacto',
+    benefit:
+      'no descubrir en producción problemas que se podían prever durante la definición del producto',
+    context:
+      'Después de generar los criterios de aceptación básicos (happy path y errores), el agente product-owner analiza cada historia buscando edge cases en 5 categorías: límites de datos, concurrencia, estado inconsistente, permisos e integraciones externas.',
+    scenarios: [
+      {
+        name: 'Detección automática en 5 categorías',
+        given: 'el agente product-owner ha generado una historia con sus escenarios positivos y negativos',
+        when: 'ejecuta el análisis de edge cases',
+        then: [
+          'analiza la historia buscando edge cases en: límites de datos (strings vacíos, valores nulos, textos de 10000 caracteres), concurrencia (dos usuarios haciendo lo mismo a la vez), estado inconsistente (proceso interrumpido a mitad), permisos (acceso sin autorización) e integraciones (servicio externo no responde)',
+          'genera una lista de edge cases detectados con nombre descriptivo para cada uno',
+        ],
+      },
+      {
+        name: 'Tabla de impacto para decisión del usuario',
+        given: 'se han detectado edge cases para una historia',
+        when: 'el agente los presenta al usuario',
+        then: [
+          'muestra una tabla con columnas: número, descripción del edge case, impacto (Alto/Medio/Bajo) y recomendación de cobertura (Sí/No para el MVP)',
+          'los edge cases de impacto Alto se recomiendan siempre',
+          'los de impacto Bajo se sugieren para futuras iteraciones',
+        ],
+      },
+      {
+        name: 'Integración opcional en criterios de aceptación',
+        given: 'el usuario selecciona los edge cases que quiere cubrir',
+        when: 'confirma la selección',
+        then: [
+          'genera criterios de aceptación adicionales en formato Given/When/Then para cada edge case seleccionado',
+          'los edge cases no seleccionados se documentan como nota al final de la historia para futuras iteraciones',
+          'si el usuario rechaza todos, no se añade nada pero quedan registrados en las notas',
+        ],
+      },
+    ],
+    priority: 'must',
+    status: 'mvp',
   },
 ];
