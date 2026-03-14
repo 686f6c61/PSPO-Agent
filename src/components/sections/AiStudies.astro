@@ -1,0 +1,128 @@
+---
+/**
+ * Seccion de estudios de productividad con agentes de IA.
+ *
+ * Presenta los datos cientificos que respaldan el factor de correccion
+ * de tiempo que el plugin aplica al planificar sprints con agentes IA.
+ * Los estudios estan ordenados por reduccion de tiempo (mayor a menor).
+ */
+import SectionHeading from '../ui/SectionHeading.astro';
+
+const studies = [
+  { source: 'Amazon Q (Andy Jassy, CEO)', year: '2024', reduction: '~97%', context: 'Migraciones Java internas. 79% del código aprobado sin cambios.', link: 'https://finance.yahoo.com/news/amazon-ceo-andy-jassy-says-213018283.html' },
+  { source: 'Devin / Oracle (Cognition Labs)', year: '2025', reduction: '93% (14x)', context: 'Migración de repositorios Java legacy.', link: 'https://cognition.ai/blog/devin-annual-performance-review-2025' },
+  { source: 'Devin / Nubank (Cognition Labs)', year: '2025', reduction: '92% (12x)', context: 'Migración de sistema ETL crítico.', link: 'https://cognition.ai/blog/devin-annual-performance-review-2025' },
+  { source: 'Devin general (Cognition Labs)', year: '2025', reduction: '75% (4x)', context: 'Tareas generales de desarrollo (nivel junior).', link: 'https://cognition.ai/blog/devin-annual-performance-review-2025' },
+  { source: 'McKinsey (estudio controlado)', year: '2024', reduction: '50% (2x)', context: '40+ desarrolladores, tareas de generación, refactoring y documentación.', link: 'https://www.mckinsey.com/capabilities/tech-and-ai/our-insights/unleashing-developer-productivity-with-generative-ai' },
+  { source: 'GitHub Copilot (arXiv)', year: '2023', reduction: '55%', context: 'Estudio controlado con desarrolladores completando tarea JavaScript.', link: 'https://arxiv.org/abs/2302.06590' },
+  { source: 'Claude Code agent mode', year: '2026', reduction: '30-40%', context: 'Desarrollo general con agente autónomo (casos verificados).', link: 'https://www.faros.ai/blog/best-ai-coding-agents-2026' },
+  { source: 'Google RCT interno', year: '2024', reduction: '21%', context: '96 ingenieros de Google, tarea enterprise con autocompletado.', link: 'https://arxiv.org/html/2410.12944v2' },
+];
+---
+
+<section id="estudios-ia" class="py-16 sm:py-24 bg-gradient-to-b from-white to-primary-50/30">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6">
+    <SectionHeading
+      id="estudios-ia-heading"
+      title="Factor de productividad con agentes IA"
+      subtitle="Datos reales de empresas y estudios académicos. No opiniones, no marketing. Resultados medidos."
+    />
+
+    <!-- Contexto -->
+    <div class="mb-10 max-w-3xl mx-auto">
+      <p class="text-text-secondary leading-relaxed mb-4">
+        Cuando un miembro del equipo usa un <strong>agente autónomo de IA</strong> (no autocompletado),
+        el tiempo necesario para completar tareas de desarrollo se reduce significativamente.
+        PSPO Agent aplica un <strong>factor de corrección del 65%</strong> por defecto
+        (<strong>70% recomendado</strong>, configurable entre 30% y 80%) al calcular la
+        capacidad del equipo en la planificación de sprint.
+      </p>
+      <p class="text-text-secondary leading-relaxed">
+        Este factor está respaldado por los siguientes estudios con agentes autónomos.
+        La diferencia con el autocompletado es significativa: mientras que el autocompletado
+        ofrece mejoras del 20-55%, los agentes autónomos alcanzan el 75-97% en tareas
+        repetitivas y el 60-75% en desarrollo general.
+      </p>
+    </div>
+
+    <!-- Metricas destacadas -->
+    <div class="grid gap-4 sm:grid-cols-3 mb-10">
+      <div class="rounded-xl border border-primary-200 bg-white p-5 text-center">
+        <div class="text-3xl font-bold text-primary-600">65%</div>
+        <div class="text-sm text-text-secondary mt-1">Factor por defecto</div>
+        <div class="text-xs text-text-muted mt-1">Conservador</div>
+      </div>
+      <div class="rounded-xl border-2 border-primary-400 bg-primary-50 p-5 text-center shadow-sm">
+        <div class="text-3xl font-bold text-primary-700">70%</div>
+        <div class="text-sm text-text-secondary mt-1">Factor recomendado</div>
+        <div class="text-xs text-text-muted mt-1">Óptimo según estudios</div>
+      </div>
+      <div class="rounded-xl border border-primary-200 bg-white p-5 text-center">
+        <div class="text-sm font-semibold text-text-primary">Configurable</div>
+        <div class="text-3xl font-bold text-primary-600">30-80%</div>
+        <div class="text-xs text-text-muted mt-1">Ajustable en settings.json</div>
+      </div>
+    </div>
+
+    <!-- Ejemplo practico -->
+    <div class="mb-10 rounded-xl bg-white border border-surface-200 p-6 shadow-sm">
+      <h3 class="text-lg font-semibold text-text-primary mb-4">Ejemplo práctico</h3>
+      <p class="text-sm text-text-secondary mb-4">
+        Una historia estimada en <strong>10 días</strong> de desarrollo sin agente IA,
+        con un factor del 65%, se completa en <strong>3.5 días</strong> con agente.
+        Con el factor recomendado del 70%, en <strong>3 días</strong>.
+      </p>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div class="rounded-lg bg-surface-50 p-4">
+          <div class="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">Sin agente IA</div>
+          <div class="flex items-baseline gap-2">
+            <span class="text-2xl font-bold text-text-primary">10</span>
+            <span class="text-sm text-text-secondary">días de trabajo</span>
+          </div>
+        </div>
+        <div class="rounded-lg bg-primary-50 border border-primary-200 p-4">
+          <div class="text-xs font-semibold text-primary-600 uppercase tracking-wide mb-2">Con agente IA (65%)</div>
+          <div class="flex items-baseline gap-2">
+            <span class="text-2xl font-bold text-primary-700">3.5</span>
+            <span class="text-sm text-text-secondary">días de trabajo</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de estudios -->
+    <div class="overflow-x-auto rounded-lg border border-surface-200">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-surface-50 text-left">
+            <th class="px-4 py-3 font-semibold text-text-primary">Fuente</th>
+            <th class="px-4 py-3 font-semibold text-text-primary">Año</th>
+            <th class="px-4 py-3 font-semibold text-text-primary">Reducción</th>
+            <th class="px-4 py-3 font-semibold text-text-primary hidden sm:table-cell">Contexto</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-surface-100">
+          {studies.map((s) => (
+            <tr class="hover:bg-surface-50 transition-colors">
+              <td class="px-4 py-3">
+                <a href={s.link} target="_blank" rel="noopener noreferrer"
+                   class="text-primary-600 hover:text-primary-700 hover:underline">
+                  {s.source}
+                </a>
+              </td>
+              <td class="px-4 py-3 text-text-secondary">{s.year}</td>
+              <td class="px-4 py-3 font-semibold text-primary-700">{s.reduction}</td>
+              <td class="px-4 py-3 text-text-secondary hidden sm:table-cell">{s.context}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="mt-4 text-xs text-text-muted text-center">
+      Todos los enlaces apuntan a las fuentes originales. Los datos de reducción corresponden
+      a agentes autónomos de IA (no autocompletado), excepto GitHub Copilot y Google RCT
+      que se incluyen como referencia comparativa.
+    </p>
+  </div>
+</section>

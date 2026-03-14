@@ -1,0 +1,58 @@
+---
+/**
+ * Seccion de funcionalidades del plugin.
+ *
+ * Renderiza las funcionalidades agrupadas por categoria (Configuracion,
+ * Producto, Publicacion, Equipo). Los datos vienen de src/data/features.ts.
+ * Cada funcionalidad se muestra como una FeatureCard con titulo, descripcion,
+ * comando e icono SVG.
+ */
+import SectionHeading from '../ui/SectionHeading.astro';
+import FeatureCard from '../ui/FeatureCard.astro';
+import { features, featureCategories } from '../../data/features';
+---
+
+<section id="funcionalidades" class="py-16 sm:py-24 bg-surface-50">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6">
+    <SectionHeading
+      id="funcionalidades-heading"
+      title="Funcionalidades"
+      subtitle="Todo lo que necesitas para gestionar producto como un profesional, sin serlo."
+    />
+
+    {featureCategories.map((category) => {
+      const categoryFeatures = features.filter((f) => f.category === category.id);
+      if (categoryFeatures.length === 0) return null;
+      const count = categoryFeatures.length;
+      const gridClass = count === 1
+        ? 'max-w-md mx-auto'
+        : count === 2
+          ? 'grid gap-6 sm:grid-cols-2 max-w-3xl mx-auto'
+          : count === 4
+            ? 'grid gap-6 sm:grid-cols-2'
+            : 'grid gap-6 sm:grid-cols-2 lg:grid-cols-3';
+      return (
+        <div class="mb-12 last:mb-0">
+          <div class="mb-6 flex items-center justify-center gap-3">
+            <div class="h-px flex-1 bg-surface-200" aria-hidden="true"></div>
+            <h3 class="text-sm font-semibold text-text-muted uppercase tracking-widest">
+              {category.label}
+            </h3>
+            <div class="h-px flex-1 bg-surface-200" aria-hidden="true"></div>
+          </div>
+          <div class={gridClass}>
+            {categoryFeatures.map((feature) => (
+              <FeatureCard
+                title={feature.title}
+                description={feature.description}
+                command={feature.command}
+                icon={feature.icon}
+                huReference={feature.huReference}
+              />
+            ))}
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</section>

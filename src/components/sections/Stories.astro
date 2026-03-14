@@ -1,0 +1,64 @@
+---
+/**
+ * Seccion de historias de usuario del plugin PSPO Agent.
+ *
+ * Muestra las historias de usuario del propio plugin como ejemplo de los
+ * artefactos que el plugin genera para los proyectos de sus usuarios.
+ * Las historias MVP se muestran con opacidad completa; las planificadas
+ * (v1.1, futuro) con opacidad reducida para indicar que no estan disponibles.
+ *
+ * Los datos vienen de src/data/stories.ts.
+ */
+import SectionHeading from '../ui/SectionHeading.astro';
+import StoryCard from '../ui/StoryCard.astro';
+import { stories } from '../../data/stories';
+
+const mvpStories = stories.filter((s) => s.status === 'mvp');
+const futureStories = stories.filter((s) => s.status !== 'mvp');
+---
+
+<section id="historias" class="py-16 sm:py-24 bg-surface-50">
+  <div class="mx-auto max-w-4xl px-4 sm:px-6">
+    <SectionHeading
+      id="historias-heading"
+      title="Historias de usuario"
+      subtitle="Los requisitos del propio PSPO Agent, generados con la misma metodología que el plugin aplica a tus proyectos."
+    />
+
+    <!-- Nota introductoria -->
+    <div class="mb-8 flex items-start gap-3 rounded-lg border border-primary-200 bg-primary-50 p-4 text-sm text-primary-800">
+      <svg class="mt-0.5 h-5 w-5 shrink-0 text-primary-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
+      <div><strong>Nota:</strong> Estas historias son los requisitos del propio plugin PSPO Agent.
+      Sirven como ejemplo de lo que el plugin produce: historias bien formadas con criterios
+      de aceptación Given/When/Then, prioridad MoSCoW y estado claro.
+    </div></div>
+
+    <!-- Historias MVP -->
+    <div class="mb-8">
+      <h3 class="mb-4 text-lg font-semibold text-text-primary">
+        MVP
+        <span class="ml-2 text-sm font-normal text-text-muted">({mvpStories.length} historias)</span>
+      </h3>
+      <div class="space-y-3">
+        {mvpStories.map((story) => (
+          <StoryCard story={story} />
+        ))}
+      </div>
+    </div>
+
+    <!-- Historias futuras -->
+    {futureStories.length > 0 && (
+      <div class="opacity-75">
+        <h3 class="mb-4 text-lg font-semibold text-text-primary">
+          Planificado
+          <span class="ml-2 text-sm font-normal text-text-muted">({futureStories.length} historias)</span>
+        </h3>
+        <div class="space-y-3">
+          {futureStories.map((story) => (
+            <StoryCard story={story} />
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+</section>

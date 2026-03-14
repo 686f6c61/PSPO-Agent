@@ -1,0 +1,60 @@
+---
+/**
+ * Seccion del flujo de trabajo del plugin.
+ *
+ * Visualiza los 5 pasos del flujo (Instalar > Descubrir > Generar >
+ * Validar > Publicar) con dos layouts: horizontal en escritorio (grid de 5
+ * columnas con flechas SVG entre pasos) y vertical en movil (timeline con
+ * linea vertical). Los datos de cada paso estan definidos inline.
+ */
+import SectionHeading from '../ui/SectionHeading.astro';
+import FlowStep from '../ui/FlowStep.astro';
+
+const steps = [
+  { step: 1, title: 'Instalar', description: 'Un comando en la terminal y listo' },
+  { step: 2, title: 'Analizar', description: 'Pega tu documento y el agente pregunta hasta entenderlo' },
+  { step: 3, title: 'Generar', description: 'Produce historias con criterios Given/When/Then' },
+  { step: 4, title: 'Validar', description: 'Tú apruebas, rechazas o pides cambios' },
+  { step: 5, title: 'Publicar', description: 'Las historias se publican como tarjetas en Trello' },
+];
+---
+
+<section id="flujo" class="py-16 sm:py-24 bg-gradient-to-b from-white to-primary-50/30">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6">
+    <SectionHeading
+      id="flujo-heading"
+      title="Flujo de trabajo"
+      subtitle="De la idea al tablero de Trello en 5 pasos. Sin trabajo manual."
+    />
+
+    <!-- Flujo en desktop: horizontal -->
+    <div class="hidden lg:grid lg:grid-cols-5 lg:gap-0 lg:items-start">
+      {steps.map((step, index) => (
+        <FlowStep
+          step={step.step}
+          title={step.title}
+          description={step.description}
+          isLast={index === steps.length - 1}
+        />
+      ))}
+    </div>
+
+    <!-- Flujo en movil: vertical -->
+    <div class="lg:hidden">
+      <div class="relative pl-10">
+        <div class="absolute left-[1.0625rem] top-0 bottom-0 w-0.5 bg-primary-200" aria-hidden="true"></div>
+        {steps.map((step, index) => (
+          <div class={`relative flex items-start gap-4 ${index > 0 ? 'mt-8' : ''}`}>
+            <div class="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-500 text-white font-bold text-sm shadow-sm">
+              {step.step}
+            </div>
+            <div class="pt-0.5">
+              <h3 class="text-base font-semibold text-text-primary">{step.title}</h3>
+              <p class="mt-1 text-sm text-text-secondary">{step.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>

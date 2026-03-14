@@ -1,0 +1,51 @@
+---
+/**
+ * Componente de pestanas (tabs) con soporte ARIA completo.
+ *
+ * Implementa el patron ARIA Tabs: role="tablist", role="tab" con
+ * aria-selected, y role="tabpanel" con aria-labelledby. La navegacion por
+ * teclado (flechas izquierda/derecha) la gestiona src/scripts/tab-group.ts,
+ * que tambien activa la pestana correcta segun el User-Agent del navegador.
+ *
+ * El contenido de cada panel se pasa como <slot /> y el componente que lo
+ * usa (Installation.astro) es responsable de construir los paneles con los
+ * atributos id, role, aria-labelledby y data-tab-panel correctos.
+ */
+interface Tab {
+  id: string;
+  label: string;
+}
+
+interface Props {
+  tabs: Tab[];
+  groupId: string;
+  ariaLabel?: string;
+}
+
+const { tabs, groupId, ariaLabel = 'Seleccionar pestana' } = Astro.props;
+---
+
+<div data-tab-group={groupId}>
+  <div class="flex border-b border-surface-200" role="tablist" aria-label={ariaLabel}>
+    {tabs.map((tab, index) => (
+      <button
+        data-tab-button={tab.id}
+        type="button"
+        role="tab"
+        aria-selected={index === 0 ? 'true' : 'false'}
+        aria-controls={`panel-${groupId}-${tab.id}`}
+        id={`tab-${groupId}-${tab.id}`}
+        class="px-4 py-2.5 text-sm font-medium text-text-muted border-b-2 border-transparent transition-colors hover:text-text-primary hover:border-surface-300 aria-selected:text-primary-600 aria-selected:border-primary-500"
+      >
+        {tab.label}
+      </button>
+    ))}
+  </div>
+  <div class="mt-4">
+    <slot />
+  </div>
+</div>
+
+<script>
+  import '../../scripts/tab-group';
+</script>

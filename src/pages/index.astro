@@ -1,0 +1,27 @@
+---
+/**
+ * Pagina raiz de la web publica de PSPO Agent.
+ *
+ * Monta todas las secciones de la onepage en orden canonico:
+ * Hero > Features > Flow > Installation > Architecture > AiStudies > Stories.
+ * El layout (head, header y footer) lo aporta BaseLayout.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/sections/Hero.astro';
+import Features from '../components/sections/Features.astro';
+import Flow from '../components/sections/Flow.astro';
+import Installation from '../components/sections/Installation.astro';
+import Architecture from '../components/sections/Architecture.astro';
+import AiStudies from '../components/sections/AiStudies.astro';
+import Stories from '../components/sections/Stories.astro';
+---
+
+<BaseLayout>
+  <Hero />
+  <Features />
+  <Flow />
+  <Installation />
+  <Architecture />
+  <AiStudies />
+  <Stories />
+</BaseLayout>

@@ -1,0 +1,74 @@
+---
+/**
+ * Layout base de todas las paginas.
+ *
+ * Aporta el documento HTML completo: meta tags SEO, Open Graph, Twitter Card,
+ * favicon y sitemap. Inyecta el header sticky y el footer. El contenido de
+ * cada pagina se recibe via <slot />.
+ *
+ * Toma los valores por defecto de src/data/site.ts y acepta sobreescrituras
+ * mediante props (title, description, ogImage) para personalizar el SEO
+ * por pagina cuando sea necesario.
+ */
+import '../styles/global.css';
+import { site } from '../data/site';
+import Header from '../components/sections/Header.astro';
+import Footer from '../components/sections/Footer.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+}
+
+const {
+  title = site.title,
+  description = site.description,
+  ogImage = site.ogImage,
+} = Astro.props;
+
+const canonicalUrl = new URL(Astro.url.pathname, site.url);
+const ogImageUrl = new URL(ogImage, site.url);
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+
+    <!-- SEO basico -->
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:locale" content="es_ES" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Sitemap -->
+    <link rel="sitemap" href="/sitemap.xml" />
+  </head>
+  <body class="min-h-screen antialiased">
+    <Header />
+    <main>
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

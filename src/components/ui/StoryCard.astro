@@ -1,0 +1,89 @@
+---
+/**
+ * Tarjeta acordeon para una historia de usuario.
+ *
+ * Implementada con <details>/<summary> nativo para el acordeon, sin
+ * JavaScript. Muestra en el resumen el ID, titulo, prioridad MoSCoW y estado
+ * (MVP/v1.1/futuro). Al expandir, muestra la historia completa en formato
+ * "Como/Quiero/Para", el contexto opcional y todos los escenarios
+ * Given/When/Then.
+ *
+ * Los estilos de prioridad y estado se mapean localmente con objetos
+ * de lookup para evitar clases dinamicas que Tailwind no incluiria en el
+ * bundle si no se usan en otro lugar.
+ */
+import type { UserStory } from '../../data/stories';
+
+interface Props {
+  story: UserStory;
+}
+
+const { story } = Astro.props;
+
+const priorityStyles = {
+  must: 'bg-gradient-to-r from-primary-100 to-primary-50 text-primary-800 ring-1 ring-primary-200/60',
+  should: 'bg-gradient-to-r from-yellow-100 to-yellow-50 text-yellow-800 ring-1 ring-yellow-200/60',
+  could: 'bg-gradient-to-r from-surface-200 to-surface-100 text-text-secondary ring-1 ring-surface-300/60',
+} as const;
+
+const statusLabels = {
+  mvp: 'MVP',
+  'v1.1': 'v1.1',
+  futuro: 'Futuro',
+} as const;
+
+const statusStyles = {
+  mvp: 'bg-gradient-to-r from-green-100 to-green-50 text-green-800 ring-1 ring-green-200/60',
+  'v1.1': 'bg-gradient-to-r from-yellow-100 to-yellow-50 text-yellow-800 ring-1 ring-yellow-200/60',
+  futuro: 'bg-gradient-to-r from-surface-200 to-surface-100 text-text-muted ring-1 ring-surface-300/60',
+} as const;
+---
+
+<details class="rounded-lg border border-surface-200 bg-white shadow-sm transition-all hover:shadow-md hover:border-primary-200" data-accordion-item>
+  <summary class="flex cursor-pointer items-center justify-between gap-4 p-4 select-none">
+    <div class="flex items-center gap-3">
+      <span class="inline-flex items-center rounded-md bg-gradient-to-r from-primary-600 to-primary-700 px-2.5 py-0.5 text-xs font-mono font-semibold text-white shadow-sm">
+        {story.id}
+      </span>
+      <span class="font-medium text-text-primary">{story.title}</span>
+    </div>
+    <div class="flex shrink-0 items-center gap-2">
+      <span class={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${priorityStyles[story.priority]}`}>
+        {story.priority.toUpperCase()}
+      </span>
+      <span class={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusStyles[story.status]}`}>
+        {statusLabels[story.status]}
+      </span>
+      <svg class="h-5 w-5 text-text-muted transition-transform [[open]>&]:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+      </svg>
+    </div>
+  </summary>
+  <div class="border-t border-surface-100 px-4 py-4">
+    <p class="mb-4 text-text-secondary italic leading-relaxed">
+      Como <strong>{story.role}</strong>, quiero <strong>{story.action}</strong>, para <strong>{story.benefit}</strong>.
+    </p>
+
+    {story.context && (
+      <div class="mb-4 rounded-lg bg-surface-50 p-3 text-sm text-text-secondary">
+        <strong class="text-text-primary">Contexto:</strong> {story.context}
+      </div>
+    )}
+
+    <h4 class="mb-3 text-sm font-semibold text-text-primary">Criterios de aceptacion</h4>
+    <div class="space-y-3">
+      {story.scenarios.map((scenario) => (
+        <div class="rounded-lg border border-surface-100 p-3">
+          <p class="mb-2 text-sm font-medium text-text-primary">{scenario.name}</p>
+          <div class="space-y-1 text-sm font-mono">
+            <p><span class="text-primary-600 font-semibold">Given</span> <span class="text-text-secondary">{scenario.given}</span></p>
+            <p><span class="text-primary-600 font-semibold">When</span> <span class="text-text-secondary">{scenario.when}</span></p>
+            {scenario.then.map((thenItem) => (
+              <p><span class="text-primary-600 font-semibold">Then</span> <span class="text-text-secondary">{thenItem}</span></p>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</details>

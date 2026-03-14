@@ -1,0 +1,33 @@
+---
+/**
+ * Paso individual del flujo de trabajo (layout escritorio).
+ *
+ * Muestra un circulo numerado, titulo y descripcion. Si no es el ultimo
+ * paso (isLast=false), dibuja una flecha SVG hacia el siguiente paso usando
+ * posicionamiento absoluto. Solo se renderiza en la vista de escritorio (lg+);
+ * el layout movil lo implementa directamente Flow.astro.
+ */
+interface Props {
+  step: number;
+  title: string;
+  description: string;
+  isLast?: boolean;
+}
+
+const { step, title, description, isLast = false } = Astro.props;
+---
+
+<div class="flex flex-col items-center text-center relative">
+  <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 text-white font-bold text-xl shadow-lg shadow-primary-500/30">
+    {step}
+  </div>
+  <h3 class="mt-4 text-base font-semibold text-text-primary">{title}</h3>
+  <p class="mt-1 max-w-[11rem] text-sm text-text-secondary">{description}</p>
+  {!isLast && (
+    <div class="hidden lg:block absolute top-7 left-[calc(50%+2.5rem)] w-[calc(100%-5rem)]">
+      <svg class="h-6 w-full text-primary-300" viewBox="0 0 100 24" fill="none" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0 12h90M85 6l10 6-10 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </div>
+  )}
+</div>

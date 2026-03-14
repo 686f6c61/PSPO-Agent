@@ -1,0 +1,27 @@
+---
+/**
+ * Contenedor para diagramas Mermaid renderizados en build.
+ *
+ * Envuelve el diagrama (pasado como <slot />) en un <figure> con caption
+ * y soporte de scroll horizontal para diagramas anchos en movil. El
+ * renderizado SVG lo hace rehype-mermaid durante el proceso de build de
+ * Astro; el visitante recibe SVG puro, sin JavaScript de Mermaid en cliente.
+ *
+ * Nota: este componente no se usa actualmente en la web (Architecture.astro
+ * implementa sus diagramas directamente en HTML/CSS). Se mantiene disponible
+ * para futuras secciones con contenido Markdown que incluya bloques Mermaid.
+ */
+interface Props {
+  alt: string;
+  title: string;
+}
+
+const { alt, title } = Astro.props;
+---
+
+<figure class="my-8 overflow-x-auto rounded-lg border border-surface-200 bg-white p-4" aria-label={alt}>
+  <figcaption class="mb-3 text-sm font-medium text-text-primary">{title}</figcaption>
+  <div class="mermaid-container min-w-[600px]">
+    <slot />
+  </div>
+</figure>

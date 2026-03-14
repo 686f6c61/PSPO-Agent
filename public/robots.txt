@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://pspo-agent.vercel.app/sitemap-index.xml

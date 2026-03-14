@@ -1,0 +1,341 @@
+---
+/**
+ * Seccion de arquitectura del plugin PSPO Agent.
+ *
+ * Contiene: vision general del plugin, metricas clave (13 skills, 5 agentes,
+ * 8 herramientas MCP, 2 hooks), diagrama de componentes en HTML/CSS (sin
+ * Mermaid, para control total del layout), diagrama de flujo de datos, tabla
+ * de herramientas MCP, referencia de configuracion (settings.json) y plantilla
+ * de variables de entorno (.env).
+ *
+ * Los datos de herramientas MCP y configuracion estan definidos inline porque
+ * son especificos de esta seccion y no se reutilizan en otros componentes.
+ */
+import SectionHeading from '../ui/SectionHeading.astro';
+import CodeBlock from '../ui/CodeBlock.astro';
+
+const mcpTools = [
+  { tool: 'verify-credentials', method: 'GET', endpoint: '/1/members/me', input: 'key, token', output: 'Nombre usuario, id, URL perfil' },
+  { tool: 'list-boards', method: 'GET', endpoint: '/1/members/me/boards', input: 'key, token', output: 'Lista de tableros (id, nombre, URL)' },
+  { tool: 'get-board', method: 'GET', endpoint: '/1/boards/{id}', input: 'boardId', output: 'Tablero con listas y etiquetas' },
+  { tool: 'create-board', method: 'POST', endpoint: '/1/boards', input: 'name, defaultLists', output: 'Tablero creado (id, URL)' },
+  { tool: 'manage-lists', method: 'POST/PUT', endpoint: '/1/boards/{id}/lists', input: 'boardId, action, params', output: 'Lista creada/modificada' },
+  { tool: 'manage-labels', method: 'POST/PUT', endpoint: '/1/boards/{id}/labels', input: 'boardId, action, params', output: 'Etiqueta creada/modificada' },
+  { tool: 'create-cards', method: 'POST', endpoint: '/1/cards', input: 'listId, cards[]', output: 'Tarjetas creadas (id, URL)' },
+  { tool: 'search-cards', method: 'GET', endpoint: '/1/boards/{id}/cards', input: 'boardId, query', output: 'Tarjetas que coinciden' },
+  { tool: 'add-checklist', method: 'POST', endpoint: '/1/cards/{id}/checklists', input: 'cardId, name, items[]', output: 'Checklist creado con items' },
+  { tool: 'attach-file', method: 'POST', endpoint: '/1/cards/{id}/attachments', input: 'cardId, fileName, content', output: 'Adjunto creado (id, URL)' },
+];
+
+const configSections = [
+  {
+    key: 'trello',
+    title: 'Configuración de Trello',
+    items: [
+      { param: 'default_lists', description: 'Columnas por defecto: Backlog, Sprint actual, En progreso, En revisión, Hecho' },
+      { param: 'default_labels', description: 'Etiquetas de prioridad: Crítica (rojo), Alta (naranja), Media (amarillo), Baja (azul)' },
+      { param: 'publish_target_list', description: 'Lista destino para publicar historias (por defecto: Backlog)' },
+      { param: 'card_position', description: 'Posición de las tarjetas nuevas (bottom)' },
+    ],
+  },
+  {
+    key: 'discovery',
+    title: 'Configuración de descubrimiento',
+    items: [
+      { param: 'min_questions', description: 'Mínimo de preguntas de descubrimiento: 3' },
+      { param: 'max_questions', description: 'Máximo de preguntas de descubrimiento: 8' },
+      { param: 'require_confirmation_before_generation', description: 'Requiere confirmación del alcance antes de generar historias' },
+    ],
+  },
+  {
+    key: 'stories',
+    title: 'Configuración de historias',
+    items: [
+      { param: 'format', description: 'Formato: "Como [rol], quiero [acción], para [beneficio]"' },
+      { param: 'require_given_when_then', description: 'Requiere criterios en formato Given/When/Then' },
+      { param: 'min_positive_scenarios', description: 'Mínimo de escenarios positivos por historia: 1' },
+      { param: 'min_negative_scenarios', description: 'Mínimo de escenarios negativos por historia: 1' },
+    ],
+  },
+  {
+    key: 'publish',
+    title: 'Configuración de publicación',
+    items: [
+      { param: 'save_local_before_trello', description: 'Siempre guarda localmente antes de publicar en Trello' },
+      { param: 'check_duplicates_by_title', description: 'Verifica duplicados por título antes de crear tarjetas' },
+      { param: 'require_confirmation', description: 'Requiere confirmación del usuario antes de publicar' },
+    ],
+  },
+];
+
+const envTemplate = `# Credenciales de la API de Trello
+TRELLO_API_KEY=      # API Key del Power-Up (32 caracteres hex)
+TRELLO_TOKEN=        # Token de autorización (cadena larga)
+TRELLO_BOARD_ID=     # ID del tablero seleccionado`;
+---
+
+<section id="arquitectura" class="py-16 sm:py-24 bg-white">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6">
+    <SectionHeading
+      id="arquitectura-heading"
+      title="Arquitectura"
+      subtitle="Skills, agentes, servidor MCP y hooks. Cada pieza tiene una única responsabilidad."
+    />
+
+    <!-- Vision general -->
+    <div class="mb-12 max-w-3xl mx-auto">
+      <p class="text-text-secondary leading-relaxed">
+        PSPO Agent es un plugin de Claude Code que opera como un conjunto coordinado de
+        <strong>skills</strong> (instrucciones estructuradas en Markdown) que guian el comportamiento del LLM,
+        combinado con un <strong>servidor MCP</strong> ligero para la integración con la API de Trello.
+        El plugin no implementa logica de negocio en codigo compilado. Las skills contienen la inteligencia de producto;
+        el servidor MCP encapsula toda la comunicación HTTP con Trello.
+      </p>
+    </div>
+
+    <!-- Componentes clave -->
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-12">
+      <div class="rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 p-5 text-center shadow-lg shadow-primary-500/20">
+        <div class="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
+          <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
+        </div>
+        <div class="text-3xl font-bold text-white">13</div>
+        <div class="text-sm text-primary-100 mt-1">Skills especializadas</div>
+      </div>
+      <div class="rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 p-5 text-center shadow-lg shadow-primary-500/20">
+        <div class="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
+          <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+        </div>
+        <div class="text-3xl font-bold text-white">5</div>
+        <div class="text-sm text-primary-100 mt-1">Agentes especializados</div>
+      </div>
+      <div class="rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 p-5 text-center shadow-lg shadow-primary-500/20">
+        <div class="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
+          <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17l-5.1-3.06a1.5 1.5 0 010-2.58l5.1-3.06a1.5 1.5 0 011.639.058l4.928 3.674a1.5 1.5 0 010 2.416l-4.928 3.674a1.5 1.5 0 01-1.64.058z" /></svg>
+        </div>
+        <div class="text-3xl font-bold text-white">10</div>
+        <div class="text-sm text-primary-100 mt-1">Herramientas MCP</div>
+      </div>
+      <div class="rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 p-5 text-center shadow-lg shadow-primary-500/20">
+        <div class="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
+          <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" /></svg>
+        </div>
+        <div class="text-3xl font-bold text-white">2</div>
+        <div class="text-sm text-primary-100 mt-1">Hooks de seguridad</div>
+      </div>
+    </div>
+
+    <!-- Diagrama de arquitectura -->
+    <div class="mb-12">
+      <h3 class="text-xl font-semibold text-text-primary mb-4">Diagrama de componentes</h3>
+      <figure class="overflow-x-auto rounded-lg border border-surface-200 bg-white p-6" aria-label="Diagrama de arquitectura del plugin PSPO Agent">
+        <div class="min-w-[640px] space-y-6">
+          <!-- Capa: Usuario -->
+          <div class="flex justify-center">
+            <div class="rounded-lg bg-surface-100 px-6 py-3 text-sm font-semibold text-text-primary border border-surface-300">
+              Usuario (terminal)
+            </div>
+          </div>
+          <div class="flex justify-center" aria-hidden="true">
+            <svg class="h-8 w-6 text-primary-300" viewBox="0 0 24 32" fill="none"><path d="M12 0v24M7 19l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          </div>
+
+          <!-- Capa: Claude Code -->
+          <div class="flex justify-center">
+            <div class="rounded-lg bg-primary-50 border-2 border-primary-300 px-6 py-3 text-sm font-semibold text-primary-800">
+              Claude Code (LLM + CLI)
+            </div>
+          </div>
+          <div class="flex justify-center" aria-hidden="true">
+            <svg class="h-8 w-6 text-primary-300" viewBox="0 0 24 32" fill="none"><path d="M12 0v24M7 19l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          </div>
+
+          <!-- Capa: Plugin PSPO Agent -->
+          <div class="rounded-xl border-2 border-dashed border-primary-300 bg-primary-50/30 p-5">
+            <div class="text-center text-xs font-bold uppercase tracking-wide text-primary-600 mb-4">Plugin PSPO Agent</div>
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <!-- Skills -->
+              <div class="rounded-lg border border-surface-200 bg-white p-3">
+                <div class="text-xs font-bold text-primary-700 mb-2">Skills (13)</div>
+                <ul class="space-y-1 text-xs text-text-secondary">
+                  <li>analyze</li>
+                  <li>start</li>
+                  <li>onboarding</li>
+                  <li>discovery</li>
+                  <li>generate-stories</li>
+                  <li>validate</li>
+                  <li>publish</li>
+                  <li>save-docs</li>
+                  <li>update</li>
+                  <li>team</li>
+                  <li>sprint-plan</li>
+                  <li>sprint-review</li>
+                  <li>export</li>
+                </ul>
+              </div>
+              <!-- Agentes -->
+              <div class="rounded-lg border border-surface-200 bg-white p-3">
+                <div class="text-xs font-bold text-primary-700 mb-2">Agentes (5)</div>
+                <ul class="space-y-1 text-xs text-text-secondary">
+                  <li>requirement-analyst</li>
+                  <li>product-owner</li>
+                  <li>publisher</li>
+                  <li>sprint-planner</li>
+                  <li>culture-guardian</li>
+                </ul>
+                <div class="mt-2 text-xs text-text-muted">Orquestan skills de forma autónoma</div>
+              </div>
+              <!-- Hooks -->
+              <div class="rounded-lg border border-surface-200 bg-white p-3">
+                <div class="text-xs font-bold text-primary-700 mb-2">Hooks (2)</div>
+                <ul class="space-y-1 text-xs text-text-secondary">
+                  <li>Pre-tool: validación de credenciales</li>
+                  <li>Post-tool: registro de operaciones</li>
+                </ul>
+              </div>
+              <!-- MCP Server -->
+              <div class="rounded-lg border-2 border-primary-200 bg-primary-50 p-3">
+                <div class="text-xs font-bold text-primary-700 mb-2">Servidor MCP</div>
+                <div class="text-xs text-text-secondary">Python puro (stdlib)</div>
+                <div class="text-xs text-text-secondary">Protocolo stdio</div>
+                <div class="text-xs text-text-secondary mt-1">8 herramientas</div>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-center" aria-hidden="true">
+            <svg class="h-8 w-6 text-primary-300" viewBox="0 0 24 32" fill="none"><path d="M12 0v24M7 19l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          </div>
+
+          <!-- Capa: Trello API -->
+          <div class="flex justify-center">
+            <div class="rounded-lg bg-blue-50 border border-blue-300 px-6 py-3 text-sm font-semibold text-blue-800">
+              API REST de Trello (api.trello.com)
+            </div>
+          </div>
+        </div>
+        <figcaption class="mt-4 text-center text-xs text-text-muted">
+          Las flechas representan el flujo de datos: el usuario invoca skills vía Claude Code,
+          que activa el servidor MCP cuando necesita interactuar con Trello.
+        </figcaption>
+      </figure>
+    </div>
+
+    <!-- Diagrama de flujo de datos -->
+    <div class="mb-12">
+      <h3 class="text-xl font-semibold text-text-primary mb-4">Flujo de datos</h3>
+      <figure class="overflow-x-auto rounded-lg border border-surface-200 bg-white p-6" aria-label="Flujo de datos del plugin">
+        <div class="min-w-[640px]">
+          <div class="flex items-center justify-between gap-2 text-xs">
+            <div class="shrink-0 rounded-md bg-surface-100 border border-surface-300 px-3 py-2 font-medium text-text-primary text-center w-24">
+              Prompt<br/>del usuario
+            </div>
+            <div class="shrink-0" aria-hidden="true">
+              <svg class="h-6 w-8 text-primary-300" viewBox="0 0 32 24" fill="none"><path d="M0 12h24M19 7l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </div>
+            <div class="shrink-0 rounded-md bg-primary-50 border border-primary-300 px-3 py-2 font-medium text-primary-800 text-center w-24">
+              Skill /<br/>Agente
+            </div>
+            <div class="shrink-0" aria-hidden="true">
+              <svg class="h-6 w-8 text-primary-300" viewBox="0 0 32 24" fill="none"><path d="M0 12h24M19 7l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </div>
+            <div class="shrink-0 rounded-md bg-primary-100 border border-primary-300 px-3 py-2 font-medium text-primary-800 text-center w-24">
+              Claude<br/>(LLM)
+            </div>
+            <div class="shrink-0" aria-hidden="true">
+              <svg class="h-6 w-8 text-primary-300" viewBox="0 0 32 24" fill="none"><path d="M0 12h24M19 7l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </div>
+            <div class="shrink-0 rounded-md bg-primary-50 border border-primary-300 px-3 py-2 font-medium text-primary-800 text-center w-24">
+              Servidor<br/>MCP
+            </div>
+            <div class="shrink-0" aria-hidden="true">
+              <svg class="h-6 w-8 text-primary-300" viewBox="0 0 32 24" fill="none"><path d="M0 12h24M19 7l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </div>
+            <div class="shrink-0 rounded-md bg-blue-50 border border-blue-300 px-3 py-2 font-medium text-blue-800 text-center w-24">
+              Trello<br/>API
+            </div>
+          </div>
+          <div class="mt-4 flex items-start justify-between gap-2 text-xs text-text-muted">
+            <div class="w-24 text-center">Lenguaje natural</div>
+            <div class="w-4"></div>
+            <div class="w-24 text-center">Instrucciones Markdown</div>
+            <div class="w-4"></div>
+            <div class="w-24 text-center">Razonamiento y generación</div>
+            <div class="w-4"></div>
+            <div class="w-24 text-center">JSON-RPC sobre stdio</div>
+            <div class="w-4"></div>
+            <div class="w-24 text-center">HTTP REST</div>
+          </div>
+        </div>
+        <figcaption class="mt-4 text-center text-xs text-text-muted">
+          Los datos fluyen de izquierda a derecha. Solo el servidor MCP realiza llamadas HTTP externas.
+        </figcaption>
+      </figure>
+    </div>
+
+    <!-- Tabla de herramientas MCP -->
+    <div class="mb-12">
+      <h3 class="text-xl font-semibold text-text-primary mb-4">Servidor MCP: herramientas de Trello</h3>
+      <p class="text-text-secondary mb-6">
+        El servidor MCP es la única pieza que ejecuta código. Es un fichero Python puro (stdlib,
+        sin dependencias externas) que implementa el protocolo JSON-RPC 2.0 sobre stdio y
+        expone herramientas para interactuar con la API REST de Trello.
+      </p>
+      <div class="overflow-x-auto rounded-lg border border-surface-200">
+        <table class="w-full text-sm">
+          <thead class="bg-surface-50">
+            <tr>
+              <th class="px-4 py-3 text-left font-semibold text-text-primary">Herramienta</th>
+              <th class="px-4 py-3 text-left font-semibold text-text-primary">Método</th>
+              <th class="px-4 py-3 text-left font-semibold text-text-primary">Endpoint</th>
+              <th class="px-4 py-3 text-left font-semibold text-text-primary">Entrada</th>
+              <th class="px-4 py-3 text-left font-semibold text-text-primary">Salida</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-surface-100 bg-white">
+            {mcpTools.map((tool) => (
+              <tr class="hover:bg-surface-50">
+                <td class="px-4 py-3 font-mono text-xs text-primary-700">{tool.tool}</td>
+                <td class="px-4 py-3">
+                  <span class="inline-flex rounded bg-surface-100 px-1.5 py-0.5 text-xs font-mono">{tool.method}</span>
+                </td>
+                <td class="px-4 py-3 font-mono text-xs text-text-secondary">{tool.endpoint}</td>
+                <td class="px-4 py-3 text-text-secondary">{tool.input}</td>
+                <td class="px-4 py-3 text-text-secondary">{tool.output}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Referencia de configuracion -->
+    <div class="mb-12">
+      <h3 class="text-xl font-semibold text-text-primary mb-4">Referencia de configuración (settings.json)</h3>
+      <div class="space-y-6">
+        {configSections.map((section) => (
+          <div class="rounded-lg border border-surface-200 bg-white p-5">
+            <h4 class="font-semibold text-text-primary mb-3">{section.title}</h4>
+            <dl class="space-y-2">
+              {section.items.map((item) => (
+                <div class="flex flex-col sm:flex-row sm:gap-4">
+                  <dt class="shrink-0 font-mono text-xs text-primary-700 sm:w-60">{item.param}</dt>
+                  <dd class="text-sm text-text-secondary">{item.description}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <!-- Plantilla .env -->
+    <div>
+      <h3 class="text-xl font-semibold text-text-primary mb-4">Variables de entorno (.env)</h3>
+      <p class="text-text-secondary mb-4">
+        El plugin gestiona estas variables automáticamente durante el onboarding.
+        No necesitas editarlas manualmente.
+      </p>
+      <CodeBlock code={envTemplate} language="bash" label=".env" />
+    </div>
+  </div>
+</section>

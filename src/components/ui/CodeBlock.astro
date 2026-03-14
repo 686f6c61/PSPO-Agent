@@ -1,0 +1,42 @@
+---
+/**
+ * Bloque de codigo con boton de copiar al portapapeles.
+ *
+ * Renderiza un <pre><code> con el lenguaje indicado. Muestra un boton
+ * "Copiar" que aparece al hacer hover y usa la Clipboard API para copiar
+ * el contenido. El feedback visual (Copiado / Error) se gestiona en
+ * src/scripts/code-block.ts.
+ *
+ * La etiqueta opcional (label) se muestra encima del bloque en fuente
+ * monoespaciada; util para indicar el nombre del fichero.
+ */
+interface Props {
+  code: string;
+  language?: string;
+  label?: string;
+}
+
+const { code, language = 'bash', label } = Astro.props;
+---
+
+<div class="relative group" data-code-block>
+  {label && (
+    <div class="text-xs text-text-muted mb-1 font-mono">{label}</div>
+  )}
+  <div class="relative">
+    <pre class="!pr-12"><code class={`language-${language}`}>{code}</code></pre>
+    <button
+      data-copy-button
+      type="button"
+      class="absolute right-2 top-2 rounded-md bg-white/10 px-2 py-1 text-xs text-surface-300 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white/20 hover:text-white focus:opacity-100"
+      aria-label="Copiar codigo al portapapeles"
+      aria-live="polite"
+    >
+      Copiar
+    </button>
+  </div>
+</div>
+
+<script>
+  import '../../scripts/code-block';
+</script>
