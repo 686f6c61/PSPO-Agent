@@ -50,6 +50,5 @@
     "./agents/requirement-analyst.md",
     "./agents/senior-auditor.md"
   ],
-  "hooks": "./hooks/hooks.json",
   "mcpServers": "./.mcp.json"
 }

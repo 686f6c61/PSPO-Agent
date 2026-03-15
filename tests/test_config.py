@@ -23,8 +23,14 @@ class TestPluginJson(unittest.TestCase):
             self.assertTrue(os.path.exists(full_path), f"Agente no encontrado: {agent_path}")
 
     def test_hooks_file_exists(self):
-        hooks_path = os.path.join(PLUGIN_ROOT, self.plugin["hooks"].lstrip("./"))
+        """hooks/hooks.json se carga automaticamente, no necesita estar en plugin.json."""
+        hooks_path = os.path.join(PLUGIN_ROOT, "hooks", "hooks.json")
         self.assertTrue(os.path.exists(hooks_path))
+
+    def test_hooks_not_in_manifest(self):
+        """plugin.json NO debe declarar hooks porque hooks/hooks.json se carga automaticamente."""
+        self.assertNotIn("hooks", self.plugin,
+                         "plugin.json no debe tener campo 'hooks' - se carga automaticamente")
 
     def test_mcp_file_exists(self):
         raw = self.plugin["mcpServers"]
@@ -35,7 +41,7 @@ class TestPluginJson(unittest.TestCase):
         self.assertTrue(os.path.exists(mcp_path), f"MCP config no encontrado: {mcp_path}")
 
     def test_required_fields(self):
-        for field in ("name", "version", "skills", "agents", "hooks", "mcpServers"):
+        for field in ("name", "version", "skills", "agents", "mcpServers"):
             self.assertIn(field, self.plugin, f"Falta campo: {field}")
 
     def test_skills_are_array(self):
