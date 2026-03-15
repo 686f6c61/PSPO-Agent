@@ -42,6 +42,9 @@ const ogImageUrl = new URL(ogImage, site.url);
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalUrl} />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="author" content={site.author} />
+    <meta name="theme-color" content="#4f46e5" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
@@ -49,6 +52,9 @@ const ogImageUrl = new URL(ogImage, site.url);
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="PSPO Agent - Product Owner con IA para Claude Code" />
     <meta property="og:site_name" content={site.name} />
     <meta property="og:locale" content="es_ES" />
 
@@ -58,11 +64,44 @@ const ogImageUrl = new URL(ogImage, site.url);
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageUrl} />
 
+    <!-- Datos estructurados JSON-LD -->
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": site.name,
+      "description": site.description,
+      "url": site.url,
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Linux, macOS, Windows",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR"
+      },
+      "author": {
+        "@type": "Person",
+        "name": site.author
+      },
+      "license": "https://opensource.org/licenses/MIT",
+      "softwareVersion": "1.0.3",
+      "programmingLanguage": ["Python", "Markdown"],
+      "codeRepository": site.repository
+    })} />
+
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
     <!-- Sitemap -->
     <link rel="sitemap" href="/sitemap.xml" />
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-6WVDZKY296"></script>
+    <script is:inline>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-6WVDZKY296');
+    </script>
   </head>
   <body class="min-h-screen antialiased">
     <Header />

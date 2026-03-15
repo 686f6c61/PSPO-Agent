@@ -8,13 +8,19 @@
  */
 import SectionHeading from '../ui/SectionHeading.astro';
 
-const studies = [
-  { source: 'Amazon Q (Andy Jassy, CEO)', year: '2024', reduction: '~97%', context: 'Migraciones Java internas. 79% del código aprobado sin cambios.', link: 'https://finance.yahoo.com/news/amazon-ceo-andy-jassy-says-213018283.html' },
-  { source: 'Devin (Cognition Labs)', year: '2025', reduction: '75-93%', context: 'Migraciones Java, ETL y tareas generales de desarrollo con agente autónomo.', link: 'https://cognition.ai/blog/devin-annual-performance-review-2025' },
+const agentStudies = [
+  { source: 'Amazon Q (Andy Jassy, CEO)', year: '2024', reduction: '~97%', context: 'Migraciones Java internas en Amazon. 79% del código generado aprobado sin cambios.', link: 'https://finance.yahoo.com/news/amazon-ceo-andy-jassy-says-213018283.html' },
+  { source: 'Devin (Cognition Labs)', year: '2025', reduction: '75-93%', context: 'Migraciones Java, ETL y tareas generales con agente autónomo (Nubank, Oracle).', link: 'https://cognition.ai/blog/devin-annual-performance-review-2025' },
+  { source: 'McKinsey (alto rendimiento)', year: '2025', reduction: '110%', context: 'Empresas con 80-100% de adopción de IA entre desarrolladores (+600 organizaciones).', link: 'https://www.mckinsey.com/capabilities/mckinsey-technology/our-insights/measuring-ai-in-software-development-interview-with-jellyfish-ceo-andrew-lau' },
+];
+
+const referenceStudies = [
+  { source: 'GitHub Copilot (RCT, arXiv)', year: '2023', reduction: '55.8%', context: 'Ensayo controlado aleatorio con 95 desarrolladores. Tarea HTTP server en JavaScript.', link: 'https://arxiv.org/abs/2302.06590' },
+  { source: 'Google (RCT interno)', year: '2024', reduction: '~21%', context: 'Ensayo controlado con 96 ingenieros en tarea compleja enterprise. Autocompletado.', link: 'https://arxiv.org/html/2410.12944v2' },
 ];
 ---
 
-<section id="estudios-ia" class="py-16 sm:py-24 bg-gradient-to-b from-white to-primary-50/30">
+<section id="estudios-ia" class="py-8 sm:py-12 bg-gradient-to-b from-white to-primary-50/30">
   <div class="mx-auto max-w-6xl px-4 sm:px-6">
     <SectionHeading
       id="estudios-ia-heading"
@@ -84,28 +90,36 @@ const studies = [
       </div>
     </div>
 
-    <!-- Tabla de estudios -->
-    <div class="overflow-x-auto rounded-lg border border-surface-200">
+    <!-- Tabla de estudios: agentes autonomos -->
+    <div class="overflow-x-auto rounded-lg border border-surface-200 mb-6">
       <table class="w-full text-sm">
         <thead>
+          <tr class="bg-primary-50 text-left">
+            <th class="px-4 py-3 font-semibold text-primary-800" colspan="4">
+              <span class="flex items-center gap-1.5">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>
+                Agentes autónomos de IA
+              </span>
+            </th>
+          </tr>
           <tr class="bg-surface-50 text-left">
-            <th class="px-4 py-3 font-semibold text-text-primary">Fuente</th>
-            <th class="px-4 py-3 font-semibold text-text-primary">Año</th>
-            <th class="px-4 py-3 font-semibold text-text-primary">Reducción</th>
-            <th class="px-4 py-3 font-semibold text-text-primary hidden sm:table-cell">Contexto</th>
+            <th class="px-4 py-2 font-semibold text-text-primary text-xs">Fuente</th>
+            <th class="px-4 py-2 font-semibold text-text-primary text-xs">Año</th>
+            <th class="px-4 py-2 font-semibold text-text-primary text-xs">Reducción</th>
+            <th class="px-4 py-2 font-semibold text-text-primary text-xs hidden sm:table-cell">Contexto</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-surface-100">
-          {studies.map((s) => (
+          {agentStudies.map((s) => (
             <tr class="hover:bg-surface-50 transition-colors">
               <td class="px-4 py-3">
                 <a href={s.link} target="_blank" rel="noopener noreferrer"
-                   class="text-primary-600 hover:text-primary-700 hover:underline">
+                   class="text-primary-600 hover:text-primary-700 hover:underline font-medium">
                   {s.source}
                 </a>
               </td>
               <td class="px-4 py-3 text-text-secondary">{s.year}</td>
-              <td class="px-4 py-3 font-semibold text-primary-700">{s.reduction}</td>
+              <td class="px-4 py-3 font-bold text-primary-700">{s.reduction}</td>
               <td class="px-4 py-3 text-text-secondary hidden sm:table-cell">{s.context}</td>
             </tr>
           ))}
@@ -113,10 +127,49 @@ const studies = [
       </table>
     </div>
 
-    <p class="mt-4 text-xs text-text-muted text-center">
-      Todos los enlaces apuntan a las fuentes originales. Los datos de reducción corresponden
-      a agentes autónomos de IA (no autocompletado), excepto GitHub Copilot y Google RCT
-      que se incluyen como referencia comparativa.
+    <!-- Tabla de referencia: autocompletado -->
+    <div class="overflow-x-auto rounded-lg border border-surface-200">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-surface-100 text-left">
+            <th class="px-4 py-3 font-semibold text-text-secondary" colspan="4">
+              <span class="flex items-center gap-1.5">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" /></svg>
+                Referencia comparativa (autocompletado, no agentes)
+              </span>
+            </th>
+          </tr>
+          <tr class="bg-surface-50 text-left">
+            <th class="px-4 py-2 font-semibold text-text-primary text-xs">Fuente</th>
+            <th class="px-4 py-2 font-semibold text-text-primary text-xs">Año</th>
+            <th class="px-4 py-2 font-semibold text-text-primary text-xs">Reducción</th>
+            <th class="px-4 py-2 font-semibold text-text-primary text-xs hidden sm:table-cell">Contexto</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-surface-100">
+          {referenceStudies.map((s) => (
+            <tr class="hover:bg-surface-50 transition-colors">
+              <td class="px-4 py-3">
+                <a href={s.link} target="_blank" rel="noopener noreferrer"
+                   class="text-text-secondary hover:text-primary-600 hover:underline">
+                  {s.source}
+                </a>
+              </td>
+              <td class="px-4 py-3 text-text-secondary">{s.year}</td>
+              <td class="px-4 py-3 font-semibold text-text-secondary">{s.reduction}</td>
+              <td class="px-4 py-3 text-text-secondary hidden sm:table-cell">{s.context}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="mt-4 text-xs text-text-muted text-center max-w-2xl mx-auto">
+      Todos los enlaces apuntan a las fuentes originales. Los estudios de agentes autónomos
+      (Amazon Q, Devin, McKinsey) miden la reducción de tiempo con agentes que ejecutan tareas
+      completas. GitHub Copilot y Google RCT miden autocompletado (sugerencias inline),
+      que ofrece mejoras menores. El factor del 65% de PSPO Agent es conservador respecto
+      a los datos de agentes autónomos.
     </p>
   </div>
 </section>

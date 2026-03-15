@@ -2,24 +2,34 @@
 /**
  * Paso individual del flujo de trabajo (layout escritorio).
  *
- * Muestra un circulo numerado, titulo y descripcion. Si no es el ultimo
- * paso (isLast=false), dibuja una flecha SVG hacia el siguiente paso usando
- * posicionamiento absoluto. Solo se renderiza en la vista de escritorio (lg+);
- * el layout movil lo implementa directamente Flow.astro.
+ * Muestra un icono SVG con el numero, titulo y descripcion. Si no es el ultimo
+ * paso (isLast=false), dibuja una flecha SVG hacia el siguiente paso.
+ * Solo se renderiza en la vista de escritorio (lg+); el layout movil
+ * lo implementa directamente Flow.astro.
  */
 interface Props {
   step: number;
   title: string;
   description: string;
+  icon?: string;
   isLast?: boolean;
 }
 
-const { step, title, description, isLast = false } = Astro.props;
+const { step, title, description, icon, isLast = false } = Astro.props;
 ---
 
 <div class="flex flex-col items-center text-center relative">
-  <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 text-white font-bold text-xl shadow-lg shadow-primary-500/30">
-    {step}
+  <div class="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-lg shadow-primary-500/30">
+    {icon ? (
+      <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d={icon} />
+      </svg>
+    ) : (
+      <span class="font-bold text-xl">{step}</span>
+    )}
+    <span class="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-primary-700 text-[10px] font-bold shadow-sm border border-primary-200">
+      {step}
+    </span>
   </div>
   <h3 class="mt-4 text-base font-semibold text-text-primary">{title}</h3>
   <p class="mt-1 max-w-[11rem] text-sm text-text-secondary">{description}</p>

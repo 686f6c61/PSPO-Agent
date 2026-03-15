@@ -2,11 +2,11 @@
 /**
  * Header sticky con navegacion principal.
  *
- * Muestra el logo y los enlaces de seccion en escritorio. En movil colapsa
- * en un menu hamburguesa. El enlace activo se resalta mediante scroll spy
- * implementado en src/scripts/header-nav.ts. Los items de navegacion
- * vienen de src/data/navigation.ts. El header es transparente sobre el hero
- * y gana fondo blanco al hacer scroll (controlado via data-scrolled).
+ * Muestra el logo, enlaces de seccion, badge de version con changelog modal,
+ * y enlace a GitHub. En movil colapsa en un menu hamburguesa.
+ * El enlace activo se resalta mediante scroll spy implementado en
+ * src/scripts/header-nav.ts. Los items de navegacion vienen de
+ * src/data/navigation.ts.
  */
 import { navigation } from '../../data/navigation';
 
@@ -17,6 +17,98 @@ const navIcons: Record<string, string> = {
   arquitectura: 'M12 2l8 4v8l-8 4-8-4V6z',
   historias: 'M4 6h16M4 12h16M4 18h10',
 };
+
+const currentVersion = 'v1.0.3';
+
+const changelog = [
+  {
+    version: 'v1.0.3',
+    date: '15/03/2026',
+    sections: [
+      {
+        title: 'Nuevas funcionalidades',
+        icon: 'M12 4v16m8-8H4',
+        items: [
+          'MCP get-board-members: mapeo de email a ID de Trello',
+          'Asignacion real de miembros a tarjetas (idMembers)',
+          'Hook anti-curl: bloquea acceso directo a API de Trello',
+          'Verificacion post-publicacion de tarjetas',
+          'Enrutamiento por sprint: Sprint actual vs Backlog',
+        ],
+      },
+      {
+        title: 'Mejoras',
+        icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6',
+        items: [
+          'Procesamiento en lotes de 5 tarjetas',
+          'AskUserQuestion en todos los puntos de decision',
+          'Seleccion de tablero interactiva en onboarding',
+          'Verificacion de listas antes de crear (sin duplicados)',
+          '12 herramientas MCP documentadas en publisher',
+        ],
+      },
+      {
+        title: 'Correcciones',
+        icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+        items: [
+          'Servidor MCP sobrevive a JSON malformado',
+          'Reintentos con backoff en timeout de red',
+          'Rate limiter en attach-file e invite-member',
+          'Sanitizacion de fileName (header injection)',
+          'Validacion de email robusta',
+          '239 tests (44 end-to-end reales)',
+        ],
+      },
+    ],
+  },
+  {
+    version: 'v1.0.2',
+    date: '14/03/2026',
+    sections: [
+      {
+        title: 'Destacado',
+        icon: 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z',
+        items: [
+          'Agente senior-auditor para auditoria de HU',
+          'Flujo autonomo entre fases',
+          '3 reglas inquebrantables del publisher',
+          'Invitacion automatica de miembros al tablero',
+        ],
+      },
+    ],
+  },
+  {
+    version: 'v1.0.1',
+    date: '14/03/2026',
+    sections: [
+      {
+        title: 'Destacado',
+        icon: 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z',
+        items: [
+          'Agentes requirement-analyst, culture-guardian, sprint-planner',
+          'Skills analyze, team, sprint-plan, sprint-review, export',
+          'MCP migrado de TypeScript a Python puro (0 dependencias)',
+          'Factor de productividad IA (65% defecto, 70% recomendado)',
+        ],
+      },
+    ],
+  },
+  {
+    version: 'v1.0.0',
+    date: '14/03/2026',
+    sections: [
+      {
+        title: 'Release inicial',
+        icon: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z',
+        items: [
+          '8 skills, 2 agentes, 8 herramientas MCP',
+          'Servidor MCP en Python puro',
+          'Instalador pipeable para Linux/macOS/Windows',
+        ],
+      },
+    ],
+  },
+];
 ---
 
 <header class="fixed top-0 left-0 right-0 z-50 border-b border-transparent transition-all duration-300 data-[scrolled]:border-surface-200/80 data-[scrolled]:bg-white/90 data-[scrolled]:backdrop-blur-md" data-header>
@@ -63,11 +155,26 @@ const navIcons: Record<string, string> = {
         ))}
       </ul>
       <div class="ml-2 h-5 w-px bg-surface-300" aria-hidden="true"></div>
+
+      <!-- Badge de version -->
+      <button
+        data-changelog-toggle
+        class="ml-2 inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-xs font-semibold text-primary-700 transition-colors hover:bg-primary-100 cursor-pointer border border-primary-200"
+        aria-label="Ver cambios de la version actual"
+      >
+        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
+        </svg>
+        {currentVersion}
+      </button>
+
+      <!-- GitHub -->
       <a
         href="https://github.com/686f6c61/PSPO-Agent"
         target="_blank"
         rel="noopener noreferrer"
-        class="ml-2 flex items-center justify-center rounded-md p-2 text-text-secondary transition-colors hover:text-text-primary hover:bg-surface-100"
+        class="ml-1 flex items-center justify-center rounded-md p-2 text-text-secondary transition-colors hover:text-text-primary hover:bg-surface-100"
         aria-label="Repositorio en GitHub"
       >
         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -77,18 +184,28 @@ const navIcons: Record<string, string> = {
     </div>
 
     <!-- Boton hamburguesa movil -->
-    <button
-      data-menu-toggle
-      type="button"
-      class="inline-flex items-center justify-center rounded-md p-2 text-text-secondary hover:bg-surface-100 hover:text-text-primary md:hidden"
-      aria-expanded="false"
-      aria-controls="mobile-menu"
-      aria-label="Abrir menu de navegacion"
-    >
-      <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-      </svg>
-    </button>
+    <div class="flex items-center gap-2 md:hidden">
+      <!-- Badge version movil -->
+      <button
+        data-changelog-toggle
+        class="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-xs font-semibold text-primary-700 border border-primary-200"
+        aria-label="Ver cambios de la version actual"
+      >
+        {currentVersion}
+      </button>
+      <button
+        data-menu-toggle
+        type="button"
+        class="inline-flex items-center justify-center rounded-md p-2 text-text-secondary hover:bg-surface-100 hover:text-text-primary"
+        aria-expanded="false"
+        aria-controls="mobile-menu"
+        aria-label="Abrir menu de navegacion"
+      >
+        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+        </svg>
+      </button>
+    </div>
   </nav>
 
   <!-- Menu movil -->
@@ -125,6 +242,105 @@ const navIcons: Record<string, string> = {
   </div>
 </header>
 
+<!-- Modal de changelog -->
+<div data-changelog-modal class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-label="Historial de cambios">
+  <div class="relative w-full max-w-lg max-h-[80vh] overflow-y-auto rounded-xl bg-white shadow-2xl border border-surface-200 [scrollbar-width:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden">
+    <!-- Header del modal -->
+    <div class="sticky top-0 z-10 flex items-center justify-between border-b border-surface-200 bg-white px-6 py-4 rounded-t-xl">
+      <div class="flex items-center gap-2">
+        <svg class="h-5 w-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
+        </svg>
+        <h2 class="text-lg font-bold text-text-primary">Historial de cambios</h2>
+      </div>
+      <button data-changelog-close class="rounded-md p-1.5 text-text-muted hover:text-text-primary hover:bg-surface-100 transition-colors" aria-label="Cerrar">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+
+    <!-- Contenido del changelog -->
+    <div class="px-6 py-4 space-y-6">
+      {changelog.map((release, idx) => (
+        <div class:list={[idx > 0 && 'border-t border-surface-100 pt-6']}>
+          <div class="flex items-center gap-2 mb-3">
+            <span class:list={[
+              'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold',
+              idx === 0 ? 'bg-primary-100 text-primary-800' : 'bg-surface-100 text-text-secondary'
+            ]}>
+              {release.version}
+            </span>
+            <span class="text-xs text-text-muted">{release.date}</span>
+            {idx === 0 && <span class="text-xs font-medium text-primary-600">Actual</span>}
+          </div>
+          {release.sections.map((section) => (
+            <div class="mb-3">
+              <div class="flex items-center gap-1.5 mb-1.5">
+                <svg class="h-4 w-4 text-primary-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d={section.icon} />
+                </svg>
+                <h4 class="text-sm font-semibold text-text-primary">{section.title}</h4>
+              </div>
+              <ul class="space-y-1 pl-6">
+                {section.items.map((item) => (
+                  <li class="text-xs text-text-secondary leading-relaxed list-disc">{item}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+
+    <!-- Footer del modal -->
+    <div class="sticky bottom-0 border-t border-surface-200 bg-white px-6 py-3 rounded-b-xl">
+      <a
+        href="https://github.com/686f6c61/PSPO-Agent/blob/main/CHANGELOG.md"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors"
+      >
+        Ver changelog completo en GitHub
+        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" /></svg>
+      </a>
+    </div>
+  </div>
+</div>
+
 <script>
   import '../../scripts/header-nav';
+
+  // Changelog modal
+  function initChangelog() {
+    const modal = document.querySelector('[data-changelog-modal]') as HTMLElement;
+    if (!modal) return;
+
+    const toggleBtns = document.querySelectorAll('[data-changelog-toggle]');
+    const closeBtn = modal.querySelector('[data-changelog-close]');
+
+    function open() {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function close() {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      document.body.style.overflow = '';
+    }
+
+    toggleBtns.forEach(btn => btn.addEventListener('click', open));
+    closeBtn?.addEventListener('click', close);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) close();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) close();
+    });
+  }
+
+  // Funciona tanto con View Transitions como sin ellas
+  initChangelog();
+  document.addEventListener('astro:page-load', initChangelog);
 </script>
