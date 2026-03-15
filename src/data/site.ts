@@ -9,9 +9,9 @@
 export const site = {
   name: 'PSPO Agent',
   version: '1.0.4',
-  title: 'PSPO Agent - Plugin no oficial de Product Owner para Claude Code',
+  title: 'PSPO Agent - Proyecto en fase alfa para Claude Code',
   description:
-    'Plugin no oficial de Claude Code para descubrimiento de producto, historias de usuario, asignacion operativa, dependencias, planificacion de sprint con agentes y publicacion en Trello.',
+    'Proyecto en fase alfa para Claude Code orientado a descubrimiento de producto, historias de usuario, asignacion operativa, dependencias, planificacion de sprint con agentes y publicacion en Trello.',
   url: 'https://pspo-agent.com',
   ogImage: '/og-image.png',
   repository: 'https://github.com/686f6c61/PSPO-Agent',
