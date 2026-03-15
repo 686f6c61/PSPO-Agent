@@ -58,7 +58,7 @@ No eres un Product Owner. No generas historias. No tomas decisiones de producto.
 | `add-checklist` | Anadir checklist (DoD) a una tarjeta | Despues de crear cada tarjeta |
 | `attach-file` | Adjuntar fichero .md completo a una tarjeta | Despues de crear cada tarjeta |
 | `get-board-members` | Obtener miembros del tablero con sus IDs | Para mapear email del equipo a ID de Trello |
-| `invite-member` | Invitar miembro al tablero por email | Antes de publicar, si hay team.csv |
+| `invite-member` | Invitar miembro al tablero por email (devuelve memberId) | Antes de publicar, si hay team.csv |
 
 **Estas son las UNICAS herramientas que puedes usar.** No tienes Bash, Write, Edit ni ninguna otra.
 
@@ -77,21 +77,24 @@ Entre lotes, recuerda las 3 reglas: CADA tarjeta requiere las 3 operaciones. No 
 Lote {N}: {X}/{Y} tarjetas creadas correctamente. Continuando...
 ```
 
+## Invitar miembros y construir mapeo email->memberId
+
+Cuando el equipo esta definido en team.csv y el tablero esta configurado:
+
+1. Lee team.csv y extrae los emails y nombres.
+2. Para cada miembro, ejecuta `invite-member` con boardId, email y fullName.
+3. `invite-member` devuelve el campo `memberId` con el ID de Trello del miembro invitado. **Guarda este mapeo email->memberId.**
+4. Trello envia la invitacion automaticamente. Los miembros ghost (invitados pendientes de aceptar) SI se pueden asignar a tarjetas.
+
 ## Asignacion de miembros a tarjetas
 
-Cuando el equipo esta definido (team.csv) y hay miembros invitados al tablero:
+Con el mapeo email->memberId construido en el paso anterior:
 
-1. Usa `get-board-members` para obtener la lista de miembros con sus IDs de Trello.
-2. Mapea los nombres/emails del team.csv con los IDs de Trello (por nombre o username).
-3. Al crear tarjetas con `create-cards`, incluye el campo `idMembers` con los IDs correspondientes.
-4. Si un miembro no se encuentra en el tablero (no ha aceptado la invitacion), informa pero continua sin asignar.
-
-## Invitar miembros al tablero
-
-Cuando el equipo esta definido en team.csv y el tablero esta configurado, invita a cada miembro al tablero usando su email:
-- Lee team.csv y extrae los emails.
-- Para cada email, ejecuta `invite-member` con el boardId, email y fullName.
-- Trello envia la invitacion automaticamente. Si la persona ya tiene cuenta, se anade directamente.
+1. Lee la asignacion de cada HU en docs/historias/ (campo "Asignado a" con nombre y email).
+2. Busca el memberId correspondiente en el mapeo.
+3. Al crear tarjetas con `create-cards`, incluye el campo `idMembers` con los IDs.
+4. Se pueden asignar multiples miembros a una tarjeta si la historia la desarrollan varias personas.
+5. Si un miembro no tiene memberId (invite-member no lo devolvio), usa `get-board-members` como fallback y busca por nombre (case insensitive).
 - Informa de las invitaciones enviadas y de los errores (email invalido, ya es miembro, etc.).
 
 ## Verificar antes de crear listas

@@ -546,11 +546,31 @@ def handle_invite_member(client: TrelloClient, args: dict) -> dict:
         try:
             with urllib.request.urlopen(req, timeout=30) as resp:
                 result = json.loads(resp.read().decode("utf-8"))
+
+                # Buscar el memberId del miembro recien invitado
+                member_id = ""
+                try:
+                    client._wait_rate_limit()
+                    board_members = client.get(
+                        f"/1/boards/{board_id}/members",
+                        {"fields": "id,fullName,username"},
+                    )
+                    invite_name = (full_name or email.split("@")[0]).lower()
+                    for m in board_members:
+                        m_name = m.get("fullName", "").lower()
+                        m_user = m.get("username", "").lower()
+                        if invite_name == m_name or email.split("@")[0].lower() in m_user:
+                            member_id = m["id"]
+                            break
+                except Exception:
+                    pass  # Si falla la busqueda, devuelve memberId vacio
+
                 return {
                     "boardId": board_id,
                     "email": email,
                     "fullName": full_name,
                     "type": member_type,
+                    "memberId": member_id,
                     "membersInvited": result.get("membersInvited", []),
                 }
         except urllib.error.HTTPError as e:

@@ -5,7 +5,8 @@
 ### Nuevas funcionalidades
 
 - **MCP get-board-members:** obtiene miembros del tablero con sus IDs para mapear email a memberId.
-- **Asignacion real de miembros a tarjetas:** create-cards soporta idMembers. Las tarjetas se crean con miembros asignados en Trello (columna Miembros visible).
+- **invite-member devuelve memberId:** despues de invitar, busca el ID del miembro en el tablero y lo devuelve. El publisher construye el mapeo email->memberId directamente desde las invitaciones sin necesidad de fuzzy matching de nombres.
+- **Asignacion real de miembros a tarjetas:** create-cards soporta idMembers. Las tarjetas se crean con miembros asignados en Trello (columna Miembros visible). Los miembros ghost (invitados pendientes de aceptar) tambien se pueden asignar.
 - **Hook anti-curl:** bloquea automaticamente cualquier comando bash que intente acceder a la API de Trello directamente. Obliga a usar MCP tools.
 - **Verificacion post-publicacion:** despues de crear tarjetas, verifica que cada una existe y tiene adjuntos.
 - **Enrutamiento por sprint:** las HUs del sprint se publican en "Sprint actual", las demas en "Backlog".
