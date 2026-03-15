@@ -1,5 +1,47 @@
 # Changelog
 
+## v1.0.3 (15/03/2026)
+
+### Nuevas funcionalidades
+
+- **MCP get-board-members:** obtiene miembros del tablero con sus IDs para mapear email a memberId.
+- **Asignacion real de miembros a tarjetas:** create-cards soporta idMembers. Las tarjetas se crean con miembros asignados en Trello (columna Miembros visible).
+- **Hook anti-curl:** bloquea automaticamente cualquier comando bash que intente acceder a la API de Trello directamente. Obliga a usar MCP tools.
+- **Verificacion post-publicacion:** despues de crear tarjetas, verifica que cada una existe y tiene adjuntos.
+- **Enrutamiento por sprint:** las HUs del sprint se publican en "Sprint actual", las demas en "Backlog".
+
+### Mejoras
+
+- **Procesamiento en lotes de 5:** evita perdida de contexto con muchas HUs. Cada lote ejecuta las 3 operaciones (card + MD + DoD) para cada tarjeta.
+- **AskUserQuestion en TODOS los puntos de decision:** eliminados todos los (s/n) residuales en onboarding, team, validate, sprint-plan, sprint-review y publish.
+- **Seleccion de tablero interactiva:** onboarding usa AskUserQuestion con los tableros como opciones seleccionables.
+- **Verificacion de listas antes de crear:** el publisher comprueba que la lista no existe antes de crearla. Evita columnas duplicadas.
+- **Orden de pasos clarificado en generate-stories:** secuencia 6a-6e sin ambiguedad (save-docs, culture-guardian, audit, presentar, validate).
+- **12 herramientas MCP listadas en publisher:** tabla completa con todas las herramientas incluidas attach-file, add-checklist, get-board-members e invite-member.
+
+### Correccion de errores
+
+- Columnas duplicadas al ejecutar onboarding mas de una vez.
+- Miembros no asignados a tarjetas (solo texto en descripcion).
+- Agente usando bash/curl con API keys visibles en terminal.
+- Checklists de DoD no anadidos a tarjetas del Backlog (solo Sprint Backlog).
+- Ficheros MD no adjuntados en tarjetas finales con muchas HUs (>10).
+- Opciones de onboarding (seleccion de tablero, columnas, etiquetas) no seleccionables con flechas.
+- Servidor MCP muere con JSON malformado (ahora descarta y continua).
+- Servidor MCP muere con timeout de red/DNS (ahora reintenta con backoff).
+- attach-file e invite-member sin rate limiter ni reintentos (ahora pasan por el rate limiter).
+- fileName sin sanitizar en attach-file (inyeccion de cabeceras multipart).
+- Validacion de email laxa en invite-member ("@@" pasaba como valido).
+- member_type invalido silenciado a "normal" sin avisar (ahora lanza error).
+- Body de errores de Trello reenviado sin truncar al usuario.
+
+### Infraestructura
+
+- 239 tests (89 MCP unitarios, 23 config, 14 skills, 69 contenido, 44 e2e).
+- Tests e2e reales: arrancan servidor MCP como subproceso, validan protocolo completo, resiliencia a JSON malformado, integridad del plugin.
+- Hook PreToolUse para Bash con script block-trello-bash.sh.
+- .env.example con variable TRELLO_TOKEN_CREATED documentada.
+
 ## v1.0.2 (14/03/2026)
 
 ### Nuevas funcionalidades

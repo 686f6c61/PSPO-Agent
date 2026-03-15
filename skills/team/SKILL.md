@@ -110,9 +110,15 @@ Tras cada miembro:
 
 ```
 Miembro anadido: Ana Garcia (frontend, Senior, 100%, agente IA: si)
-
-Anadir otro miembro? (s/n)
 ```
+
+Usa AskUserQuestion para preguntar:
+- Pregunta: "Miembro anadido correctamente. Que quieres hacer?"
+- Opciones:
+  - **"Anadir otro miembro"** (description: "Registrar los datos de otro miembro del equipo")
+  - **"Terminar"** (description: "El equipo esta completo, guardar y continuar")
+
+IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA uses confirmaciones de texto plano.
 
 ### Confirmacion y guardado
 
@@ -126,8 +132,15 @@ Resumen del equipo ({N} miembros):
 | 1 | Ana Garcia  | ana@empresa.com   | frontend  | Senior    | 100%       | si        |
 | 2 | Pedro Lopez | pedro@empresa.com | backend   | Mid       | 50%        | no        |
 
-Guardar equipo? (s/n)
 ```
+
+Usa AskUserQuestion para confirmar:
+- Pregunta: "Guardar este equipo de {N} miembros?"
+- Opciones:
+  - **"Guardar"** (description: "Escribe team.csv con los datos del equipo")
+  - **"Editar"** (description: "Modificar o anadir miembros antes de guardar")
+
+IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA uses confirmaciones de texto plano.
 
 Si confirma, escribe `team.csv` con cabecera:
 

@@ -44,6 +44,8 @@ API_KEY_RE = re.compile(r"^[a-f0-9]{32}$", re.IGNORECASE)
 TOKEN_RE = re.compile(r"^ATTA[a-zA-Z0-9]+$")
 TOKEN_MIN_LEN = 41
 TRELLO_ID_RE = re.compile(r"^[a-f0-9]{24}$", re.IGNORECASE)
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+MAX_MESSAGE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 LABEL_COLORS = [
     "green", "yellow", "orange", "red", "purple",
@@ -69,6 +71,7 @@ def _mask(value: str) -> str:
 
 
 def _error_description(status: int, body: str) -> dict:
+    body = body[:200] if body else "sin detalle"
     messages = {
         400: ("Peticion incorrecta: " + body,
               "Verifica los parametros de la peticion."),
@@ -178,7 +181,17 @@ class TrelloClient:
                     )
                 delay = BACKOFF_DELAYS[attempt] if attempt < len(BACKOFF_DELAYS) else 4.0
                 log.info("Reintento %d/%d tras %.0fms de backoff.",
-                         attempt + 1, MAX_RETRIES - 1, delay * 1000)
+                         attempt + 1, MAX_RETRIES, delay * 1000)
+                time.sleep(delay)
+            except urllib.error.URLError as e:
+                log.info("Error de red en %s: %s", path, e.reason)
+                if attempt == MAX_RETRIES - 1:
+                    raise RuntimeError(
+                        f"Error de red al conectar con Trello: {e.reason} | "
+                        "Verifica tu conexion a internet e intentalo de nuevo."
+                    )
+                delay = BACKOFF_DELAYS[attempt] if attempt < len(BACKOFF_DELAYS) else 4.0
+                log.info("Reintento %d/%d tras error de red.", attempt + 1, MAX_RETRIES)
                 time.sleep(delay)
 
         raise RuntimeError("Error inesperado: se agotaron los reintentos.")
@@ -348,6 +361,9 @@ def handle_create_cards(client: TrelloClient, args: dict) -> dict:
             pos = card.get("pos")
             if pos:
                 body["pos"] = pos
+            members = card.get("idMembers")
+            if members:
+                body["idMembers"] = ",".join(members)
 
             result = client.post("/1/cards", body)
             created.append({
@@ -418,6 +434,8 @@ def handle_attach_file(client: TrelloClient, args: dict) -> dict:
     file_name = (args.get("fileName") or "").strip()
     if not file_name:
         raise ValueError("fileName es obligatorio para adjuntar un fichero.")
+    # Sanitizar fileName: eliminar caracteres peligrosos para cabeceras multipart
+    file_name = re.sub(r'["\r\n\x00]', '_', file_name)
     content = args.get("content") or ""
     if not content:
         raise ValueError("content es obligatorio (contenido del fichero a adjuntar).")
@@ -440,82 +458,124 @@ def handle_attach_file(client: TrelloClient, args: dict) -> dict:
     body_parts.append(f'--{boundary}--')
     body_bytes = '\r\n'.join(body_parts).encode('utf-8')
 
-    url = (
-        f"{TRELLO_BASE}/1/cards/{card_id}/attachments"
-        f"?key={urllib.parse.quote(client._api_key)}"
-        f"&token={urllib.parse.quote(client._token)}"
-    )
+    url = client._build_url(f"/1/cards/{card_id}/attachments")
+    log.info("API POST /1/cards/%s/attachments (multipart)", card_id)
 
-    req = urllib.request.Request(
-        url,
-        data=body_bytes,
-        headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
-        method="POST",
-    )
-
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            result = json.loads(resp.read().decode("utf-8"))
-    except urllib.error.HTTPError as e:
-        resp_body = ""
-        try:
-            resp_body = e.read().decode("utf-8", errors="replace")
-        except Exception:
-            pass
-        info = _error_description(e.code, resp_body)
-        raise RuntimeError(
-            f"[HTTP {e.code}] {info['message']} | {info['suggestedAction']}"
+    for attempt in range(MAX_RETRIES):
+        client._wait_rate_limit()
+        req = urllib.request.Request(
+            url,
+            data=body_bytes,
+            headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+            method="POST",
         )
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                result = json.loads(resp.read().decode("utf-8"))
+                return {
+                    "id": result.get("id", ""),
+                    "name": result.get("name", file_name),
+                    "url": result.get("url", ""),
+                    "cardId": card_id,
+                }
+        except urllib.error.HTTPError as e:
+            resp_body = ""
+            try:
+                resp_body = e.read().decode("utf-8", errors="replace")
+            except Exception:
+                pass
+            if e.code not in RETRYABLE_CODES or attempt == MAX_RETRIES - 1:
+                info = _error_description(e.code, resp_body)
+                raise RuntimeError(
+                    f"[HTTP {e.code}] {info['message']} | {info['suggestedAction']}"
+                )
+            delay = BACKOFF_DELAYS[attempt] if attempt < len(BACKOFF_DELAYS) else 4.0
+            time.sleep(delay)
+        except urllib.error.URLError as e:
+            if attempt == MAX_RETRIES - 1:
+                raise RuntimeError(
+                    f"Error de red al adjuntar fichero: {e.reason} | "
+                    "Verifica tu conexion a internet e intentalo de nuevo."
+                )
+            delay = BACKOFF_DELAYS[attempt] if attempt < len(BACKOFF_DELAYS) else 4.0
+            time.sleep(delay)
 
-    return {
-        "id": result.get("id", ""),
-        "name": result.get("name", file_name),
-        "url": result.get("url", ""),
-        "cardId": card_id,
-    }
+    raise RuntimeError("Error inesperado: se agotaron los reintentos en attach-file.")
 
 
 # ---------------------------------------------------------------------------
+def handle_get_board_members(client: TrelloClient, args: dict) -> dict:
+    board_id = _validate_trello_id(args.get("boardId") or "", "boardId")
+    members = client.get(f"/1/boards/{board_id}/members",
+                         {"fields": "id,fullName,username"})
+    result = []
+    for m in members:
+        entry = {
+            "id": m["id"],
+            "fullName": m.get("fullName", ""),
+            "username": m.get("username", ""),
+        }
+        result.append(entry)
+    return {"members": result}
+
+
 def handle_invite_member(client: TrelloClient, args: dict) -> dict:
     board_id = _validate_trello_id(args.get("boardId") or "", "boardId")
     email = (args.get("email") or "").strip()
-    if not email or "@" not in email:
-        raise ValueError("email es obligatorio y debe tener formato valido.")
+    if not email or not EMAIL_RE.match(email):
+        raise ValueError("email es obligatorio y debe tener formato valido (usuario@dominio.ext).")
     full_name = (args.get("fullName") or "").strip()
     member_type = (args.get("type") or "normal").strip()
     if member_type not in ("admin", "normal", "observer"):
-        member_type = "normal"
-
-    url = (f"{TRELLO_BASE}/1/boards/{board_id}/members"
-           f"?email={urllib.parse.quote(email)}"
-           f"&key={client._api_key}&token={client._token}")
-    body = {"fullName": full_name or email.split("@")[0]}
-    if member_type:
-        body["type"] = member_type
-
-    data = json.dumps(body).encode("utf-8")
-    req = urllib.request.Request(url, data=data, method="PUT",
-                                headers={"Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            result = json.loads(resp.read().decode("utf-8"))
-            return {
-                "boardId": board_id,
-                "email": email,
-                "fullName": full_name,
-                "type": member_type,
-                "membersInvited": result.get("membersInvited", []),
-            }
-    except urllib.error.HTTPError as e:
-        resp_body = ""
-        try:
-            resp_body = e.read().decode("utf-8", errors="replace")
-        except Exception:
-            pass
-        info = _error_description(e.code, resp_body)
-        raise RuntimeError(
-            f"[HTTP {e.code}] {info['message']} | {info['suggestedAction']}"
+        raise ValueError(
+            f'Tipo de miembro "{member_type}" no reconocido. Usa: admin, normal, observer.'
         )
+
+    url = client._build_url(
+        f"/1/boards/{board_id}/members",
+        {"email": email},
+    )
+    body = {"fullName": full_name or email.split("@")[0], "type": member_type}
+    data = json.dumps(body).encode("utf-8")
+    log.info("API PUT /1/boards/%s/members (invite %s)", board_id, email)
+
+    for attempt in range(MAX_RETRIES):
+        client._wait_rate_limit()
+        req = urllib.request.Request(url, data=data, method="PUT",
+                                    headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                result = json.loads(resp.read().decode("utf-8"))
+                return {
+                    "boardId": board_id,
+                    "email": email,
+                    "fullName": full_name,
+                    "type": member_type,
+                    "membersInvited": result.get("membersInvited", []),
+                }
+        except urllib.error.HTTPError as e:
+            resp_body = ""
+            try:
+                resp_body = e.read().decode("utf-8", errors="replace")
+            except Exception:
+                pass
+            if e.code not in RETRYABLE_CODES or attempt == MAX_RETRIES - 1:
+                info = _error_description(e.code, resp_body)
+                raise RuntimeError(
+                    f"[HTTP {e.code}] {info['message']} | {info['suggestedAction']}"
+                )
+            delay = BACKOFF_DELAYS[attempt] if attempt < len(BACKOFF_DELAYS) else 4.0
+            time.sleep(delay)
+        except urllib.error.URLError as e:
+            if attempt == MAX_RETRIES - 1:
+                raise RuntimeError(
+                    f"Error de red al invitar miembro: {e.reason} | "
+                    "Verifica tu conexion a internet e intentalo de nuevo."
+                )
+            delay = BACKOFF_DELAYS[attempt] if attempt < len(BACKOFF_DELAYS) else 4.0
+            time.sleep(delay)
+
+    raise RuntimeError("Error inesperado: se agotaron los reintentos en invite-member.")
 
 
 # Definicion de herramientas MCP
@@ -651,6 +711,11 @@ TOOLS = [
                                 "enum": ["top", "bottom"],
                                 "description": "Posicion en la lista",
                             },
+                            "idMembers": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "IDs de miembros de Trello a asignar a la tarjeta (usar get-board-members para obtener los IDs)",
+                            },
                         },
                         "required": ["name", "desc"],
                     },
@@ -709,6 +774,18 @@ TOOLS = [
         "handler": handle_attach_file,
     },
     {
+        "name": "get-board-members",
+        "description": "Obtiene los miembros de un tablero de Trello con sus IDs, nombres y usernames. Util para mapear miembros del equipo a IDs de Trello antes de asignarlos a tarjetas.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "boardId": {"type": "string", "description": "ID del tablero de Trello"},
+            },
+            "required": ["boardId"],
+        },
+        "handler": handle_get_board_members,
+    },
+    {
         "name": "invite-member",
         "description": "Invita a un miembro al tablero de Trello por email. Trello envia la invitacion automaticamente.",
         "inputSchema": {
@@ -736,6 +813,10 @@ TOOL_MAP = {t["name"]: t for t in TOOLS}
 # ---------------------------------------------------------------------------
 
 
+class _StreamClosed(Exception):
+    """Senal interna: stdin se ha cerrado."""
+
+
 class MCPServer:
     def __init__(self, client: TrelloClient):
         self._client = client
@@ -743,9 +824,12 @@ class MCPServer:
     def run(self):
         log.info("Servidor MCP iniciado. Esperando mensajes en stdin.")
         while True:
-            msg = self._read_message()
-            if msg is None:
+            try:
+                msg = self._read_message()
+            except _StreamClosed:
                 break
+            if msg is None:
+                continue  # Mensaje descartado (JSON malformado, oversized)
             response = self._handle(msg)
             if response is not None:
                 self._write_message(response)
@@ -757,7 +841,7 @@ class MCPServer:
         while True:
             line = stdin.readline()
             if not line:
-                return None
+                raise _StreamClosed()
             line_str = line.decode("utf-8", errors="replace").strip()
             if not line_str:
                 break
@@ -768,11 +852,21 @@ class MCPServer:
             log.warning("Mensaje recibido sin Content-Length o con longitud 0.")
             return None
 
-        data = stdin.read(content_length)
-        if not data:
+        if content_length > MAX_MESSAGE_SIZE:
+            log.error("Mensaje demasiado grande: %d bytes (maximo %d).",
+                       content_length, MAX_MESSAGE_SIZE)
+            stdin.read(content_length)  # Descartar datos
             return None
 
-        return json.loads(data.decode("utf-8"))
+        data = stdin.read(content_length)
+        if not data:
+            raise _StreamClosed()
+
+        try:
+            return json.loads(data.decode("utf-8"))
+        except json.JSONDecodeError as e:
+            log.error("JSON malformado en mensaje entrante: %s", e)
+            return None
 
     def _write_message(self, msg: dict):
         body = json.dumps(msg).encode("utf-8")

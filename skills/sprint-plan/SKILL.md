@@ -123,13 +123,17 @@ Espera confirmacion explicita ("ok", "si", "confirmo") antes de continuar.
 
 ### Paso 3b: Priorizacion asistida
 
-Tras confirmar las estimaciones, ofrece la priorizacion asistida:
+Tras confirmar las estimaciones, ofrece la priorizacion asistida.
 
-```
-Quieres priorizar las historias antes de calcular capacidad? (s/n)
-```
+Usa AskUserQuestion para preguntar:
+- Pregunta: "Quieres priorizar las historias con la matriz de valor/riesgo/dependencias antes de calcular capacidad?"
+- Opciones:
+  - **"Priorizar con matriz"** (description: "Evalua cada historia por valor de negocio, riesgo tecnico y dependencias. Genera una puntuacion para ordenar el backlog")
+  - **"Usar prioridad actual"** (description: "Mantiene la prioridad Alta/Media/Baja sin analisis adicional")
 
-**Si el usuario acepta (s):**
+IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA uses confirmaciones de texto plano.
+
+**Si el usuario acepta priorizar:**
 
 1. Para cada historia, el agente sugiere:
    - **Valor de negocio:** Alto/Medio/Bajo (pregunta al usuario).
@@ -231,10 +235,18 @@ Con este recorte:
   Ocupacion:  94%
   [OK] Sprint viable.
 
-Aceptas esta sugerencia? (s/n/ajustar)
 ```
 
-Si el usuario rechaza la sugerencia, permite seleccionar manualmente que historias quitar.
+Usa AskUserQuestion para preguntar:
+- Pregunta: "Que quieres hacer con la sugerencia de recorte?"
+- Opciones:
+  - **"Aceptar recorte"** (description: "Mover las historias sugeridas al siguiente sprint")
+  - **"Ajustar manualmente"** (description: "Elegir tu mismo que historias quitar o anadir")
+  - **"Forzar todo"** (description: "Mantener todas las historias aunque el sprint este desbordado")
+
+IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA uses confirmaciones de texto plano.
+
+Si el usuario elige ajustar manualmente, permite seleccionar que historias quitar.
 
 ### Paso 6: Guardar planificacion
 

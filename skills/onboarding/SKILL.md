@@ -136,8 +136,15 @@ Acciones automaticas tras la verificacion exitosa:
 
 ```
 [!] Credenciales invalidas. {mensaje_de_error_especifico}
-Reintentar desde paso 1 (API Key) o paso 2 (Token)?
 ```
+
+Usa AskUserQuestion para preguntar:
+- Pregunta: "Las credenciales no son validas. Desde donde quieres reintentar?"
+- Opciones:
+  - **"Reintentar API Key"** (description: "Volver al paso 1 para introducir una nueva API Key")
+  - **"Reintentar Token"** (description: "Volver al paso 2 para generar un nuevo token con la misma API Key")
+
+IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones como texto plano.
 
 NO guardes credenciales invalidas en `.env`.
 
@@ -151,13 +158,17 @@ Usa el agente `publisher` para ejecutar `list-boards` y obtener los tableros del
 Paso 4 de 4 [=============>] Configurar tablero
 
 Tus tableros en Trello:
-  1. {nombre_tablero_1} -- {url_1}
-  2. {nombre_tablero_2} -- {url_2}
-  ...
-  N. [+] Crear tablero nuevo
-
-Que tablero quieres usar? (numero o "nuevo"):
 ```
+
+Muestra la lista de tableros al usuario y luego usa AskUserQuestion para preguntar:
+
+- Pregunta: "Que tablero quieres usar para PSPO Agent?"
+- Opciones (una por cada tablero + opcion de crear):
+  - **"{nombre_tablero_1}"** (description: "{url_1}")
+  - **"{nombre_tablero_2}"** (description: "{url_2}")
+  - **"Crear tablero nuevo"** (description: "Crea un tablero nuevo con las columnas y etiquetas estandar")
+
+IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones numeradas como texto plano.
 
 ### Opcion A: Crear tablero nuevo
 
@@ -168,19 +179,20 @@ Si el usuario elige crear uno nuevo:
    Nombre para el nuevo tablero (pulsa Enter para usar "{nombre_proyecto} - Backlog"):
    ```
 
-2. Usa `create-board` para crear el tablero.
-3. Usa `manage-lists` para crear las columnas por defecto:
+2. Usa `create-board` para crear el tablero (con defaultLists: false).
+3. Usa `get-board` para verificar que no hay listas residuales.
+4. Usa `manage-lists` para crear las columnas por defecto:
    - Backlog
    - Sprint actual
    - En progreso
    - En revision
    - Hecho
-4. Usa `manage-labels` para crear las etiquetas de prioridad:
+5. Usa `manage-labels` para crear las etiquetas de prioridad:
    - Critica (rojo)
    - Alta (naranja)
    - Media (amarillo)
    - Baja (azul)
-5. Guarda `TRELLO_BOARD_ID` en `.env`.
+6. Guarda `TRELLO_BOARD_ID` en `.env`.
 
 ```
 [OK] Tablero creado: {nombre_tablero}
@@ -220,26 +232,24 @@ Si el usuario selecciona uno existente:
      ...
    ```
 
-3. Compara con las columnas estandar (Backlog, Sprint actual, En progreso, En revision, Hecho):
-   - Si faltan columnas estandar:
-     ```
-     Faltan estas columnas que PSPO Agent usa por defecto:
-       [-] Backlog
-       [-] En revision
+3. Compara con las columnas estandar (Backlog, Sprint actual, En progreso, En revision, Hecho).
+   - Si faltan columnas estandar, muestra cuales faltan y usa AskUserQuestion:
+     - Pregunta: "Faltan estas columnas que PSPO Agent usa por defecto: {lista de faltantes}. Que quieres hacer?"
+     - Opciones:
+       - **"Crear las que faltan"** (description: "Anade automaticamente las columnas faltantes al tablero")
+       - **"Continuar sin ellas"** (description: "Usa el tablero tal como esta, sin crear columnas nuevas")
 
-     Quieres que las cree? (s/n):
-     ```
+     IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA uses confirmaciones de texto plano.
+
    - Si estan todas, informa: "El tablero ya tiene todas las columnas necesarias."
 
-4. Compara etiquetas de prioridad:
-   - Si faltan:
-     ```
-     Quieres que cree las etiquetas de prioridad estandar? (s/n):
-       [*] Critica (rojo)
-       [*] Alta (naranja)
-       [*] Media (amarillo)
-       [*] Baja (azul)
-     ```
+4. Compara etiquetas de prioridad. Si faltan, usa AskUserQuestion:
+   - Pregunta: "El tablero no tiene todas las etiquetas de prioridad estandar. Que quieres hacer?"
+   - Opciones:
+     - **"Crear etiquetas faltantes"** (description: "Anade: Critica (rojo), Alta (naranja), Media (amarillo), Baja (azul)")
+     - **"Continuar sin ellas"** (description: "Usa las etiquetas existentes del tablero")
+
+   IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA uses confirmaciones de texto plano.
 
 5. Guarda `TRELLO_BOARD_ID` en `.env`.
 

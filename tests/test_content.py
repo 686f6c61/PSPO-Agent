@@ -104,8 +104,7 @@ class TestPublishFlow(unittest.TestCase):
         self.assertIn("add-checklist", self.content)
 
     def test_single_confirmation(self):
-        self.assertIn("UNA VEZ", self.content.upper() if "UNA VEZ" in self.content.upper()
-                       else self.content,
+        self.assertIn("UNA SOLA VEZ", self.content,
                        "Publish debe pedir confirmacion una sola vez")
 
     def test_no_individual_confirmation(self):
@@ -120,10 +119,129 @@ class TestPublishFlow(unittest.TestCase):
         self.assertIn("Estimacion", self.content,
                        "Descripcion de tarjeta no incluye estimacion")
 
+    def test_batch_processing(self):
+        self.assertIn("lotes de 5", self.content,
+                       "Publish no procesa en lotes de 5")
+
+    def test_post_publish_verification(self):
+        self.assertIn("Verificacion post-publicacion", self.content,
+                       "Publish no tiene verificacion post-publicacion")
+
+    def test_member_assignment(self):
+        self.assertIn("get-board-members", self.content,
+                       "Publish no usa get-board-members para asignar miembros")
+
+    def test_sprint_list_routing(self):
+        self.assertIn("Sprint actual", self.content,
+                       "Publish no envia HUs del sprint a la lista Sprint actual")
+
+    def test_uses_ask_user_question(self):
+        self.assertIn("AskUserQuestion", self.content,
+                       "Publish debe usar AskUserQuestion para opciones")
+
+    def test_no_sn_confirmations(self):
+        self.assertNotIn("(s/n)", self.content,
+                          "Publish no debe usar confirmaciones (s/n)")
+
 
 # ---------------------------------------------------------------------------
 # Generate stories: pasos criticos
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Publisher agent: prohibiciones y herramientas
+# ---------------------------------------------------------------------------
+
+class TestPublisherAgent(unittest.TestCase):
+    """El publisher debe prohibir bash y listar todas las herramientas MCP."""
+
+    def setUp(self):
+        self.content = read_file("agents/publisher.md")
+
+    def test_prohibits_bash(self):
+        self.assertIn("NUNCA", self.content)
+        self.assertIn("bash", self.content.lower())
+
+    def test_prohibits_curl(self):
+        self.assertIn("curl", self.content.lower())
+
+    def test_lists_attach_file(self):
+        self.assertIn("attach-file", self.content)
+
+    def test_lists_add_checklist(self):
+        self.assertIn("add-checklist", self.content)
+
+    def test_lists_invite_member(self):
+        self.assertIn("invite-member", self.content)
+
+    def test_lists_get_board_members(self):
+        self.assertIn("get-board-members", self.content)
+
+    def test_batch_processing(self):
+        self.assertIn("lotes de 5", self.content)
+
+    def test_verify_before_create_lists(self):
+        self.assertIn("Verificar antes de crear listas", self.content)
+
+    def test_id_members_support(self):
+        self.assertIn("idMembers", self.content)
+
+    def test_12_tools_listed(self):
+        tools = ["verify-credentials", "list-boards", "get-board",
+                 "create-board", "manage-lists", "manage-labels",
+                 "create-cards", "search-cards", "add-checklist",
+                 "attach-file", "get-board-members", "invite-member"]
+        for tool in tools:
+            self.assertIn(tool, self.content,
+                          f"Publisher no lista herramienta: {tool}")
+
+
+# ---------------------------------------------------------------------------
+# Onboarding: AskUserQuestion obligatorio
+# ---------------------------------------------------------------------------
+
+class TestOnboardingAskUserQuestion(unittest.TestCase):
+    """Onboarding debe usar AskUserQuestion y no (s/n)."""
+
+    def setUp(self):
+        self.content = read_file("skills/onboarding/SKILL.md")
+
+    def test_uses_ask_user_question(self):
+        self.assertIn("AskUserQuestion", self.content)
+
+    def test_no_sn_confirmations(self):
+        self.assertNotIn("(s/n)", self.content,
+                          "Onboarding no debe usar confirmaciones (s/n)")
+
+    def test_board_selection_interactive(self):
+        self.assertIn("Que tablero quieres usar", self.content)
+
+    def test_retry_on_failure_interactive(self):
+        self.assertIn("Reintentar API Key", self.content)
+
+
+# ---------------------------------------------------------------------------
+# Hooks: bloqueo de bash con Trello
+# ---------------------------------------------------------------------------
+
+class TestHooksConfig(unittest.TestCase):
+    """hooks.json debe bloquear bash con Trello."""
+
+    def setUp(self):
+        import json
+        with open(os.path.join(PLUGIN_ROOT, "hooks", "hooks.json")) as f:
+            self.hooks = json.load(f)
+
+    def test_bash_hook_exists(self):
+        matchers = [h["matcher"] for h in self.hooks["hooks"]["PreToolUse"]]
+        self.assertIn("Bash", matchers,
+                       "No hay hook PreToolUse para Bash")
+
+    def test_block_trello_bash_script_exists(self):
+        path = os.path.join(PLUGIN_ROOT, "hooks", "scripts", "block-trello-bash.sh")
+        self.assertTrue(os.path.exists(path),
+                         "Script block-trello-bash.sh no existe")
+
 
 class TestGenerateStoriesFlow(unittest.TestCase):
     """Generate stories debe tener edge cases, estimacion y culture-guardian."""
@@ -149,6 +267,18 @@ class TestGenerateStoriesFlow(unittest.TestCase):
         for size in ["S = 1", "M = 2", "L = 3", "XL = 5"]:
             self.assertIn(size, self.content,
                           f"Falta talla de estimacion: {size}")
+
+    def test_clear_step_order(self):
+        self.assertIn("6a.", self.content,
+                       "generate-stories no tiene paso 6a (save-docs primero)")
+        self.assertIn("6b.", self.content,
+                       "generate-stories no tiene paso 6b (culture-guardian)")
+        self.assertIn("6c.", self.content,
+                       "generate-stories no tiene paso 6c (auditoria)")
+        self.assertIn("6d.", self.content,
+                       "generate-stories no tiene paso 6d (presentar)")
+        self.assertIn("6e.", self.content,
+                       "generate-stories no tiene paso 6e (validate)")
 
 
 # ---------------------------------------------------------------------------

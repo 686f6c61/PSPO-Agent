@@ -61,14 +61,15 @@ Velocidad del sprint: {dias_equiv_completados} dias equiv. de {dias_equiv_total}
 
 ### Paso 4: Decidir cierre
 
-```
-Quieres cerrar este sprint? (s/n)
+Usa AskUserQuestion para preguntar:
+- Pregunta: "Quieres cerrar este sprint y archivar los resultados?"
+- Opciones:
+  - **"Cerrar sprint"** (description: "Archiva los resultados en docs/sprints/ y marca las historias como completadas")
+  - **"Continuar sin cerrar"** (description: "Vuelve sin hacer cambios, puedes seguir trabajando en las historias")
 
-  [s] Cerrar y archivar resultados
-  [n] Volver sin cerrar (puedes seguir trabajando en las historias)
-```
+IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones como texto plano.
 
-Si el usuario dice no, termina sin hacer cambios.
+Si el usuario elige continuar sin cerrar, termina sin hacer cambios.
 
 ### Paso 5: Archivar sprint
 

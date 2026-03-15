@@ -63,6 +63,48 @@ El asistente de onboarding te guiara para configurar las credenciales de Trello 
 | culture-guardian | Revisor de estilo: normas RAE, tono profesional, aprende del proyecto. |
 | senior-auditor | Auditoria de fondo: completitud, coherencia, HU que faltan/sobran. |
 
+## Servidor MCP
+
+12 herramientas en Python puro (stdlib, 0 dependencias):
+
+| Herramienta | Proposito |
+|-------------|-----------|
+| verify-credentials | Verificar API Key + Token |
+| list-boards | Listar tableros del usuario |
+| get-board | Obtener tablero con listas y etiquetas |
+| create-board | Crear tablero nuevo |
+| manage-lists | Crear, renombrar, reordenar, archivar listas |
+| manage-labels | Crear, actualizar, eliminar etiquetas |
+| create-cards | Crear tarjetas con etiquetas y miembros asignados |
+| search-cards | Buscar tarjetas por titulo (deteccion de duplicados) |
+| add-checklist | Anadir checklist de DoD a tarjetas |
+| attach-file | Adjuntar fichero .md completo a tarjetas |
+| get-board-members | Obtener miembros del tablero con sus IDs |
+| invite-member | Invitar miembros al tablero por email |
+
+## Hooks de seguridad
+
+| Hook | Evento | Funcion |
+|------|--------|---------|
+| check-env.sh | PreToolUse (MCP) | Bloquea llamadas MCP si faltan credenciales en .env |
+| block-trello-bash.sh | PreToolUse (Bash) | Bloquea acceso directo a Trello via curl/bash |
+| check-gitignore.sh | PostToolUse (Write) | Verifica que .env esta en .gitignore |
+
+## Configuracion
+
+El fichero `settings.json` permite personalizar el comportamiento del plugin:
+
+| Parametro | Defecto | Descripcion |
+|-----------|---------|-------------|
+| sprint.ai_agent_factor | 0.65 | Factor de productividad con agentes IA (65%) |
+| sprint.ai_agent_factor_recommended | 0.70 | Factor recomendado (70%) |
+| sprint.ai_agent_factor_range | [0.30, 0.80] | Rango configurable |
+| sprint.duration_days | 10 | Duracion del sprint en dias |
+| stories.estimation_sizes | S=1, M=2, L=3, XL=5 | Tallas t-shirt en dias |
+| trello.default_lists | Backlog, Sprint actual, En progreso, En revision, Hecho | Columnas por defecto |
+| trello.default_labels | Critica, Alta, Media, Baja | Etiquetas de prioridad |
+| docs.date_format | DD/MM/AAAA | Formato de fechas |
+
 ## Estructura del proyecto
 
 ```
@@ -73,11 +115,11 @@ pspo-agent/
 ├── agents/                  # 6 agentes especializados
 ├── skills/                  # 14 skills
 ├── servers/
-│   └── trello-mcp.py       # Servidor MCP (Python puro, 11 herramientas, 0 dependencias)
+│   └── trello-mcp.py       # Servidor MCP (Python puro, 12 herramientas, 0 dependencias)
 ├── hooks/
-│   └── scripts/             # Hooks de seguridad (.env, .gitignore)
-├── tests/                   # Tests unitarios, integracion y e2e
-├── docs/                    # ADRs, arquitectura, PRD, planes
+│   └── scripts/             # 3 hooks de seguridad
+├── tests/                   # 239 tests (unitarios, contenido, e2e)
+├── docs/                    # ADRs, arquitectura
 ├── .mcp.json
 ├── .env.example
 ├── settings.json

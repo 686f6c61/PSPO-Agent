@@ -204,9 +204,26 @@ Antes de presentar las historias al usuario, pasa todo el contenido generado por
 
 Solo despues de la revision de estilo se presentan las historias al usuario.
 
-### Auditoria automatica (primera generacion)
+### Paso 6: Persistir, revisar y encadenar
 
-Si NO existe `docs/auditoria-hu.md` (es la primera vez que se generan historias en este proyecto), ejecuta automaticamente `/pspo-agent:audit` ANTES de pasar a validacion.
+Este paso tiene un orden ESTRICTO. Ejecuta las sub-etapas en este orden exacto:
+
+#### 6a. Guardar ficheros (OBLIGATORIO, PRIMERO)
+
+Ejecuta /pspo-agent:save-docs para guardar:
+- Cada historia como fichero individual en docs/historias/HU-XX-titulo.md
+- El backlog actualizado en docs/backlog.md
+- La vision en docs/vision.md (si existe)
+
+Este paso es OBLIGATORIO y va PRIMERO. Las historias deben estar persistidas en disco antes de cualquier otra accion. Si save-docs no se ejecuta, las historias solo existen en la conversacion y se pierden al cerrar la sesion.
+
+#### 6b. Revision de estilo (culture-guardian)
+
+Pasa todo el contenido generado por el agente `culture-guardian`. Este paso ya se describio arriba pero se ejecuta DESPUES de guardar y ANTES de presentar.
+
+#### 6c. Auditoria automatica (solo primera generacion)
+
+Si NO existe `docs/auditoria-hu.md` (primera vez que se generan historias), ejecuta automaticamente `/pspo-agent:audit`.
 
 El agente `senior-auditor` revisara:
 - Completitud contra el documento original (si existe)
@@ -214,22 +231,13 @@ El agente `senior-auditor` revisara:
 - Calidad de contenido de cada HU
 - HU que faltan o sobran
 
-Si la auditoria detecta hallazgos, los presenta al usuario para que decida si aplicar correcciones. Solo despues de la auditoria (o si ya se hizo antes) se pasa a validacion.
+Si la auditoria detecta hallazgos, los presenta al usuario para que decida si aplicar correcciones.
 
-Si `docs/auditoria-hu.md` ya existe (ya se audito antes), salta este paso y pasa directo a presentar.
+Si `docs/auditoria-hu.md` ya existe (ya se audito antes), salta este sub-paso.
 
-### Paso 6b: Guardar ficheros individuales
+#### 6d. Presentar al usuario
 
-ANTES de presentar las historias al usuario, ejecuta /pspo-agent:save-docs para guardar:
-- Cada historia como fichero individual en docs/historias/HU-XX-titulo.md
-- El backlog actualizado en docs/backlog.md
-- La vision en docs/vision.md (si existe)
-
-Este paso es OBLIGATORIO. Las historias deben estar persistidas en disco antes de presentarse al usuario. Si save-docs no se ejecuta, las historias solo existen en la conversacion y se pierden al cerrar la sesion.
-
-### Paso 6: Presentar y encadenar a validacion
-
-Presenta las historias al usuario con un resumen inicial:
+Presenta las historias con un resumen inicial:
 
 ```
 He generado {N} historias de usuario basandome en el descubrimiento:
@@ -246,14 +254,9 @@ si la apruebas, quieres cambios, o la descartamos.
 
 Despues del resumen, muestra cada historia completa.
 
-### Transicion automatica
+#### 6e. Transicion automatica a validacion
 
-Despues de guardar los ficheros y pasar por la revision de estilo:
-
-1. Si es la primera generacion (no existe docs/auditoria-hu.md), ejecuta automaticamente /pspo-agent:audit.
-2. Despues de la auditoria (o si ya se audito antes), pasa automaticamente a /pspo-agent:validate.
-
-No preguntes al usuario si quiere validar. Es el paso natural. Si quiere parar, lo dira el.
+Pasa automaticamente a /pspo-agent:validate. No preguntes al usuario si quiere validar. Es el paso natural. Si quiere parar, lo dira el.
 
 ## Que NO haces en esta skill
 

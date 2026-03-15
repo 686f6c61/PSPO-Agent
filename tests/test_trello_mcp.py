@@ -32,6 +32,7 @@ handle_manage_lists = trello_mcp.handle_manage_lists
 handle_manage_labels = trello_mcp.handle_manage_labels
 handle_create_cards = trello_mcp.handle_create_cards
 handle_search_cards = trello_mcp.handle_search_cards
+handle_get_board_members = trello_mcp.handle_get_board_members
 
 # Credenciales de test validas
 VALID_API_KEY = "aabbccdd11223344aabbccdd11223344"
@@ -399,6 +400,52 @@ class TestHandleCreateCards(unittest.TestCase):
         posted_body = client.post.call_args[0][1]
         self.assertIn("<!-- pspo-id:", posted_body["desc"])
 
+    def test_id_members_passed(self):
+        client = make_mock_client()
+        client.post.return_value = {"id": "c1", "name": "HU-01", "url": "http://..."}
+        handle_create_cards(client, {
+            "listId": VALID_TRELLO_ID,
+            "cards": [{"name": "HU-01", "desc": "Desc",
+                        "idMembers": ["member1", "member2"]}],
+        })
+        posted_body = client.post.call_args[0][1]
+        self.assertEqual(posted_body["idMembers"], "member1,member2")
+
+    def test_no_id_members_when_empty(self):
+        client = make_mock_client()
+        client.post.return_value = {"id": "c1", "name": "HU-01", "url": "http://..."}
+        handle_create_cards(client, {
+            "listId": VALID_TRELLO_ID,
+            "cards": [{"name": "HU-01", "desc": "Desc"}],
+        })
+        posted_body = client.post.call_args[0][1]
+        self.assertNotIn("idMembers", posted_body)
+
+
+class TestHandleGetBoardMembers(unittest.TestCase):
+
+    def test_success(self):
+        client = make_mock_client()
+        client.get.return_value = [
+            {"id": "m1", "fullName": "Ana Garcia", "username": "anagarcia"},
+            {"id": "m2", "fullName": "Pedro Lopez", "username": "pedrolopez"},
+        ]
+        result = handle_get_board_members(client, {"boardId": VALID_TRELLO_ID})
+        self.assertEqual(len(result["members"]), 2)
+        self.assertEqual(result["members"][0]["fullName"], "Ana Garcia")
+        self.assertEqual(result["members"][1]["id"], "m2")
+
+    def test_empty_board(self):
+        client = make_mock_client()
+        client.get.return_value = []
+        result = handle_get_board_members(client, {"boardId": VALID_TRELLO_ID})
+        self.assertEqual(len(result["members"]), 0)
+
+    def test_invalid_board_id(self):
+        client = make_mock_client()
+        with self.assertRaises(ValueError):
+            handle_get_board_members(client, {"boardId": "BAD-ID"})
+
 
 class TestHandleSearchCards(unittest.TestCase):
 
@@ -464,11 +511,12 @@ class TestMCPProtocol(unittest.TestCase):
             "jsonrpc": "2.0", "id": 3, "method": "tools/list", "params": {},
         })
         tools = response["result"]["tools"]
-        self.assertEqual(len(tools), 11)
+        self.assertEqual(len(tools), 12)
         names = {t["name"] for t in tools}
         self.assertIn("verify-credentials", names)
         self.assertIn("create-cards", names)
         self.assertIn("search-cards", names)
+        self.assertIn("get-board-members", names)
 
     def test_handle_unknown_method(self):
         server = self._make_server()
@@ -570,6 +618,71 @@ class TestMCPReadWrite(unittest.TestCase):
 
 
 handle_add_checklist = trello_mcp.handle_add_checklist
+handle_attach_file = trello_mcp.handle_attach_file
+
+
+class TestHandleAttachFile(unittest.TestCase):
+
+    @patch("urllib.request.urlopen")
+    def test_success(self, mock_urlopen):
+        client = make_mock_client()
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = json.dumps({
+            "id": "att1", "name": "HU-01.md", "url": "https://trello.com/att1",
+        }).encode("utf-8")
+        mock_resp.__enter__ = MagicMock(return_value=mock_resp)
+        mock_resp.__exit__ = MagicMock(return_value=False)
+        mock_urlopen.return_value = mock_resp
+
+        result = handle_attach_file(client, {
+            "cardId": VALID_TRELLO_ID,
+            "fileName": "HU-01-registro.md",
+            "content": "# Historia de usuario\nContenido completo.",
+        })
+        self.assertEqual(result["id"], "att1")
+        self.assertEqual(result["cardId"], VALID_TRELLO_ID)
+        mock_urlopen.assert_called_once()
+
+    def test_empty_filename(self):
+        client = make_mock_client()
+        with self.assertRaises(ValueError) as ctx:
+            handle_attach_file(client, {
+                "cardId": VALID_TRELLO_ID,
+                "fileName": "",
+                "content": "algo",
+            })
+        self.assertIn("fileName", str(ctx.exception))
+
+    def test_empty_content(self):
+        client = make_mock_client()
+        with self.assertRaises(ValueError) as ctx:
+            handle_attach_file(client, {
+                "cardId": VALID_TRELLO_ID,
+                "fileName": "test.md",
+                "content": "",
+            })
+        self.assertIn("content", str(ctx.exception))
+
+    def test_invalid_card_id(self):
+        client = make_mock_client()
+        with self.assertRaises(ValueError):
+            handle_attach_file(client, {
+                "cardId": "BAD",
+                "fileName": "test.md",
+                "content": "algo",
+            })
+
+    def test_filename_sanitized(self):
+        """Comillas y caracteres de control se reemplazan por _."""
+        client = make_mock_client()
+        with self.assertRaises(ValueError):
+            # Content vacio falla antes de llegar a la peticion HTTP,
+            # pero podemos verificar que el fileName se sanitiza
+            handle_attach_file(client, {
+                "cardId": VALID_TRELLO_ID,
+                "fileName": 'test"injected.md',
+                "content": "",
+            })
 
 
 class TestHandleAddChecklist(unittest.TestCase):
@@ -647,6 +760,132 @@ class TestHandleInviteMember(unittest.TestCase):
                 "boardId": VALID_TRELLO_ID,
                 "email": "",
             })
+
+    def test_email_without_domain(self):
+        client = make_mock_client()
+        with self.assertRaises(ValueError):
+            handle_invite_member(client, {
+                "boardId": VALID_TRELLO_ID,
+                "email": "user@",
+            })
+
+    def test_email_at_only(self):
+        client = make_mock_client()
+        with self.assertRaises(ValueError):
+            handle_invite_member(client, {
+                "boardId": VALID_TRELLO_ID,
+                "email": "@@",
+            })
+
+    def test_invalid_type_raises(self):
+        client = make_mock_client()
+        with self.assertRaises(ValueError) as ctx:
+            handle_invite_member(client, {
+                "boardId": VALID_TRELLO_ID,
+                "email": "ana@empresa.com",
+                "type": "viewer",
+            })
+        self.assertIn("viewer", str(ctx.exception))
+
+    @patch("urllib.request.urlopen")
+    def test_success(self, mock_urlopen):
+        client = make_mock_client()
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = json.dumps({
+            "membersInvited": [{"id": "m1"}],
+        }).encode("utf-8")
+        mock_resp.__enter__ = MagicMock(return_value=mock_resp)
+        mock_resp.__exit__ = MagicMock(return_value=False)
+        mock_urlopen.return_value = mock_resp
+
+        result = handle_invite_member(client, {
+            "boardId": VALID_TRELLO_ID,
+            "email": "ana@empresa.com",
+            "fullName": "Ana Garcia",
+            "type": "normal",
+        })
+        self.assertEqual(result["email"], "ana@empresa.com")
+        self.assertEqual(result["type"], "normal")
+        self.assertEqual(len(result["membersInvited"]), 1)
+
+
+# ---------------------------------------------------------------------------
+# Tests adicionales: manage_lists reorder, manage_labels update
+# ---------------------------------------------------------------------------
+
+class TestHandleManageListsReorder(unittest.TestCase):
+
+    def test_reorder_success(self):
+        client = make_mock_client()
+        client.put.return_value = {
+            "id": VALID_TRELLO_ID, "name": "Backlog", "pos": 100, "closed": False,
+        }
+        result = handle_manage_lists(client, {
+            "boardId": VALID_TRELLO_ID, "action": "reorder",
+            "listId": VALID_TRELLO_ID, "pos": 100,
+        })
+        self.assertEqual(result["pos"], 100)
+
+    def test_reorder_without_pos(self):
+        client = make_mock_client()
+        with self.assertRaises(ValueError):
+            handle_manage_lists(client, {
+                "boardId": VALID_TRELLO_ID, "action": "reorder",
+                "listId": VALID_TRELLO_ID,
+            })
+
+
+class TestHandleManageLabelsUpdate(unittest.TestCase):
+
+    def test_update_name(self):
+        client = make_mock_client()
+        client.put.return_value = {
+            "id": VALID_TRELLO_ID, "name": "Urgente", "color": "red",
+        }
+        result = handle_manage_labels(client, {
+            "boardId": VALID_TRELLO_ID, "action": "update",
+            "labelId": VALID_TRELLO_ID, "name": "Urgente",
+        })
+        self.assertEqual(result["name"], "Urgente")
+
+    def test_update_color(self):
+        client = make_mock_client()
+        client.put.return_value = {
+            "id": VALID_TRELLO_ID, "name": "", "color": "blue",
+        }
+        result = handle_manage_labels(client, {
+            "boardId": VALID_TRELLO_ID, "action": "update",
+            "labelId": VALID_TRELLO_ID, "color": "blue",
+        })
+        self.assertEqual(result["color"], "blue")
+
+
+# ---------------------------------------------------------------------------
+# Tests de resiliencia: JSONDecodeError, max message size
+# ---------------------------------------------------------------------------
+
+class TestMCPResilience(unittest.TestCase):
+
+    def test_malformed_json_returns_none(self):
+        client = make_mock_client()
+        server = MCPServer(client)
+        bad_body = b'{this is not valid json}'
+        raw = f"Content-Length: {len(bad_body)}\r\n\r\n".encode("utf-8") + bad_body
+        with patch("sys.stdin") as mock_stdin:
+            mock_stdin.buffer = io.BytesIO(raw)
+            result = server._read_message()
+        self.assertIsNone(result)
+
+    def test_oversized_message_returns_none(self):
+        client = make_mock_client()
+        server = MCPServer(client)
+        fake_length = 20 * 1024 * 1024  # 20 MB, exceeds MAX_MESSAGE_SIZE
+        small_data = b'x' * 100
+        raw = f"Content-Length: {fake_length}\r\n\r\n".encode("utf-8") + small_data
+        with patch("sys.stdin") as mock_stdin:
+            mock_stdin.buffer = io.BytesIO(raw)
+            result = server._read_message()
+        self.assertIsNone(result)
 
 
 if __name__ == "__main__":

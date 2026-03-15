@@ -111,14 +111,16 @@ IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes op
 
 #### Si el usuario rechaza (R):
 
-1. Pide confirmacion:
-   ```
-   Vas a descartar HU-{XX}: {titulo}. Quieres confirmar? (s/n)
-   Si prefieres, puedo modificarla en vez de descartarla.
-   ```
+Usa AskUserQuestion para confirmar:
+- Pregunta: "Vas a descartar HU-{XX}: {titulo}. Que quieres hacer?"
+- Opciones:
+  - **"Confirmar rechazo"** (description: "Descarta esta historia definitivamente")
+  - **"Modificar en vez de descartar"** (description: "Pide cambios a la historia en vez de descartarla")
 
-2. Si confirma: marca como "Rechazada" y avanza a la siguiente.
-3. Si no confirma: trata como peticion de cambios (C).
+IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA uses confirmaciones de texto plano.
+
+- Si confirma rechazo: marca como "Rechazada" y avanza a la siguiente.
+- Si elige modificar: trata como peticion de cambios (C).
 
 ### Paso 4: Resumen de la revision
 
