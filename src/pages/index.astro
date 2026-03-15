@@ -3,7 +3,7 @@
  * Pagina raiz de la web publica de PSPO Agent.
  *
  * Monta todas las secciones de la onepage en orden canonico:
- * Hero > Features > Flow > Installation > Architecture > AiStudies > Stories > CallToAction > FAQ.
+ * Hero > CallToAction > Features > Flow > Installation > Architecture > AiStudies > Stories > FAQ.
  * El layout (head, header y footer) lo aporta BaseLayout.
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
@@ -20,12 +20,12 @@ import Faq from '../components/sections/Faq.astro';
 
 <BaseLayout>
   <Hero />
+  <CallToAction />
   <Features />
   <Flow />
   <Installation />
   <Architecture />
   <AiStudies />
   <Stories />
-  <CallToAction />
   <Faq />
 </BaseLayout>

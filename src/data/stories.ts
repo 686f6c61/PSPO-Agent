@@ -149,7 +149,7 @@ export const stories: UserStory[] = [
         given: 'el usuario elige crear un tablero nuevo',
         when: 'introduce el nombre del tablero',
         then: [
-          'crea el tablero con columnas: Backlog, Sprint actual, En progreso, En revisión, Hecho',
+          'crea el tablero con columnas: Backlog, Sprint activo, Bloqueada, En progreso, En revision, Hecho',
           'crea etiquetas de prioridad: Crítica (rojo), Alta (naranja), Media (amarillo), Baja (azul)',
           'guarda el TRELLO_BOARD_ID en .env',
           'muestra la URL del tablero creado',
@@ -234,7 +234,7 @@ export const stories: UserStory[] = [
       {
         name: 'Tamaño manejable',
         given: 'el agente genera historias de usuario',
-        when: 'una historia es demasiado grande (más de 3 días de trabajo)',
+        when: 'una historia es demasiado grande (más de 16 horas efectivas de trabajo)',
         then: [
           'la descompone en historias más pequeñas',
           'explica cómo se relacionan entre sí',
@@ -353,7 +353,7 @@ export const stories: UserStory[] = [
     scenarios: [
       {
         name: 'Detección de equipo no definido',
-        given: 'el usuario tiene historias aprobadas y no existe team.csv en la raíz del proyecto',
+        given: 'el usuario tiene historias aprobadas y no existe ningún CSV de equipo compatible en la raíz del proyecto ni en .pspo-agent/inbox',
         when: 'solicita planificar un sprint o distribuir historias al equipo',
         then: [
           'detecta que no hay equipo definido',
@@ -375,9 +375,9 @@ export const stories: UserStory[] = [
         given: 'el usuario ha confirmado la composición del equipo',
         when: 'el plugin guarda los datos',
         then: [
-          'escribe team.csv con cabecera de 6 campos: nombre,email,rol,categoria,dedicacion,usa_agente_ia',
+          'escribe o actualiza un CSV compatible con cabecera de 6 campos: nombre,email,rol,categoria,dedicacion,usa_agente_ia',
           'valida el email (contiene @ y punto), la dedicación (entre 0 y 100) y usa_agente_ia (solo sí o no)',
-          'en futuras sesiones, lee team.csv automáticamente y muestra el equipo con opciones de editar, añadir o eliminar',
+          'en futuras sesiones, lee ese CSV automáticamente y muestra el equipo con opciones de editar, añadir o eliminar',
         ],
       },
     ],
@@ -389,29 +389,29 @@ export const stories: UserStory[] = [
     title: 'Distribución inteligente de historias al equipo',
     role: 'tech lead que tiene historias aprobadas y un equipo definido',
     action:
-      'que el PSPO estime las historias por tallas (S/M/L/XL), calcule la capacidad del equipo con factor IA y sugiera una distribución equilibrada',
+      'que el PSPO estime las historias por tallas (XS/S/M/L/XL), calcule la capacidad del equipo en horas efectivas con factor IA y sugiera una distribución equilibrada',
     benefit:
       'no tener que repartir el trabajo a ojo y saber si el sprint es viable antes de empezar',
     context:
-      'El tech lead pierde tiempo decidiendo quién hace cada historia y si cabe en el sprint. El PSPO calcula la capacidad equivalente del equipo (con factor de corrección del 65% para quienes usan agentes IA) y cruza con las estimaciones por tallas.',
+      'El tech lead pierde tiempo decidiendo quién hace cada historia y si cabe en un sprint de una semana. El PSPO calcula la capacidad equivalente del equipo con foco real y factor de corrección del 65% para quienes usan agentes IA, y cruza ese dato con estimaciones por tallas.',
     scenarios: [
       {
         name: 'Estimación por tallas con conversión configurable',
         given: 'hay historias aprobadas en docs/historias/ y el usuario ejecuta la planificación de sprint',
         when: 'el agente presenta las historias para estimar',
         then: [
-          'muestra la tabla de conversión configurable en settings.json: S=1 día, M=2 días, L=3 días, XL=5 días',
+          'muestra la tabla de conversión configurable en settings.json: XS=1 h, S=2 h, M=4 h, L=8 h, XL=16 h',
           'permite asignar tallas en formato rápido (ej: "1=M 2=XL 3=S")',
-          'recalcula el total en días equivalentes tras cada ajuste y espera confirmación explícita',
+          'recalcula el total en horas efectivas tras cada ajuste y espera confirmación explícita',
         ],
       },
       {
         name: 'Propuesta de distribución basada en roles y factor IA',
-        given: 'las historias están estimadas y el equipo está definido en team.csv con dedicación y usa_agente_ia',
+        given: 'las historias están estimadas y el equipo está definido en un CSV compatible con dedicación y usa_agente_ia',
         when: 'el PSPO calcula la capacidad del equipo para el sprint',
         then: [
-          'calcula días reales por miembro (duración x dedicación/100)',
-          'aplica el factor IA a los miembros que usan agente: capacidad_equiv = días_reales / (1 - factor_ia)',
+          'calcula horas reales de foco por miembro según duración del sprint, dedicación y horas de foco por día',
+          'aplica el factor IA a los miembros que usan agente: capacidad_equiv = horas_reales / (1 - factor_ia)',
           'compara el total de historias contra la capacidad equivalente y muestra el porcentaje de ocupación',
           'si el sprint desborda, sugiere recortar las historias de menor prioridad o puntuación',
         ],
@@ -468,7 +468,7 @@ export const stories: UserStory[] = [
         then: [
           'recorre la cadena de dependencias hacia abajo desde esa historia',
           'muestra las historias afectadas directa e indirectamente con sus asignaciones',
-          'calcula el radio de impacto total en días equivalentes de trabajo bloqueado',
+          'calcula el radio de impacto total en horas efectivas de trabajo bloqueado',
         ],
       },
     ],
@@ -504,7 +504,7 @@ export const stories: UserStory[] = [
         then: [
           'busca cada miembro asignado por email en los miembros del tablero',
           'si existe, lo asigna a la tarjeta correspondiente',
-          'si no existe en el tablero, ofrece invitarle o registrar la asignación solo localmente',
+          'si no existe en el tablero, lo invita por email y reutiliza el memberId devuelto antes de dar la sincronización por completada',
         ],
       },
       {
@@ -612,28 +612,28 @@ export const stories: UserStory[] = [
   },
   {
     id: 'HU-14',
-    title: 'Estimación por tallas (t-shirt sizing)',
+    title: 'Estimación por tallas en horas efectivas',
     role: 'tech lead que planifica un sprint',
     action:
-      'asignar tallas S, M, L o XL a las historias aprobadas con conversión configurable a días equivalentes',
+      'asignar tallas XS, S, M, L o XL a las historias aprobadas con conversión configurable a horas efectivas',
     benefit:
-      'saber si el sprint es viable comparando el total estimado contra la capacidad del equipo, sin necesidad de estimar en horas',
+      'saber si el sprint es viable comparando el total estimado contra la capacidad equivalente del equipo asistido por agentes',
     context:
-      'Las tallas se configuran en settings.json (por defecto S=1, M=2, L=3, XL=5 días). La estimación se integra en el flujo de sprint-plan y opcionalmente en generate-stories para asignar tallas en el momento de la generación.',
+      'Las tallas se configuran en settings.json (por defecto XS=1 h, S=2 h, M=4 h, L=8 h, XL=16 h). La estimación se integra en sprint-plan y permite ajustar el sprint a una ventana máxima de 5 días.',
     scenarios: [
       {
         name: 'Asignación rápida de tallas',
         given: 'hay historias aprobadas en docs/historias/ y el usuario ejecuta la planificación de sprint',
         when: 'el agente presenta las historias para estimar',
         then: [
-          'muestra la tabla de conversión actual (S=1, M=2, L=3, XL=5 días por defecto)',
+          'muestra la tabla de conversión actual (XS=1, S=2, M=4, L=8, XL=16 horas por defecto)',
           'permite asignar tallas en formato rápido con una sola línea (ej: "1=M 2=XL 3=S")',
-          'calcula el total en días equivalentes y muestra una tabla resumen con historia, talla, días y prioridad',
+          'calcula el total en horas efectivas y muestra una tabla resumen con historia, talla, horas y prioridad',
         ],
       },
       {
         name: 'Conversión configurable en settings.json',
-        given: 'el usuario ha modificado los valores de conversión en settings.json (ej: S=2, M=4, L=6, XL=10)',
+        given: 'el usuario ha modificado los valores de conversión en settings.json (ej: XS=2, S=3, M=6, L=10, XL=16)',
         when: 'el agente lee la configuración al iniciar la estimación',
         then: [
           'usa los valores personalizados del usuario en lugar de los valores por defecto',
@@ -643,10 +643,10 @@ export const stories: UserStory[] = [
       },
       {
         name: 'Integración con capacidad del equipo',
-        given: 'las tallas están asignadas y confirmadas, y el equipo está definido en team.csv',
+        given: 'las tallas están asignadas y confirmadas, y el equipo está definido en un CSV compatible',
         when: 'el agente calcula el veredicto del sprint',
         then: [
-          'compara el total de días equivalentes de las historias contra la capacidad equivalente del equipo (con factor IA aplicado)',
+          'compara el total de horas efectivas de las historias contra la capacidad equivalente del equipo (con factor IA aplicado)',
           'muestra el porcentaje de ocupación del sprint',
           'si la ocupación supera el 100%, sugiere recortar las historias de menor prioridad o puntuación hasta que el sprint sea viable',
         ],

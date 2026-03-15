@@ -63,6 +63,7 @@ const ogImageUrl = new URL(ogImage, site.url);
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageUrl} />
+    <meta name="twitter:image:alt" content="PSPO Agent - Product Owner con IA para Claude Code" />
 
     <!-- Datos estructurados JSON-LD -->
     <script type="application/ld+json" set:html={JSON.stringify({
@@ -83,7 +84,7 @@ const ogImageUrl = new URL(ogImage, site.url);
         "name": site.author
       },
       "license": "https://opensource.org/licenses/MIT",
-      "softwareVersion": "1.0.3",
+      "softwareVersion": site.version,
       "programmingLanguage": ["Python", "Markdown"],
       "codeRepository": site.repository
     })} />
@@ -92,7 +93,7 @@ const ogImageUrl = new URL(ogImage, site.url);
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
     <!-- Sitemap -->
-    <link rel="sitemap" href="/sitemap.xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
 
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-6WVDZKY296"></script>
@@ -104,10 +105,15 @@ const ogImageUrl = new URL(ogImage, site.url);
     </script>
   </head>
   <body class="min-h-screen antialiased">
-    <Header />
-    <main>
+    <div class="site-grid" aria-hidden="true"></div>
+    <div class="relative z-[3]">
+      <Header />
+    </div>
+    <main class="relative z-[1]">
       <slot />
     </main>
-    <Footer />
+    <div class="relative z-[1]">
+      <Footer />
+    </div>
   </body>
 </html>

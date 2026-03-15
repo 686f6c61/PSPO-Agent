@@ -3,27 +3,12 @@
  * Seccion hero: primera pantalla de la onepage.
  *
  * Muestra la propuesta de valor del plugin, dos CTAs (instalar y ver
- * funcionalidades) y las tarjetas de publico objetivo (desarrollador
- * independiente y tech lead). Todo el contenido es estatico.
+ * funcionalidades) y las tarjetas de publico objetivo. Todo el
+ * contenido es estatico.
  */
 ---
 
-<section id="hero" class="relative overflow-hidden bg-gradient-to-br from-primary-100 via-white to-primary-50/50 pt-24 pb-16 sm:pt-32 sm:pb-24">
-  <!-- Decorative grid pattern -->
-  <div class="absolute inset-0 opacity-[0.03]" aria-hidden="true">
-    <svg class="h-full w-full" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" stroke-width="1"/>
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#grid)" />
-    </svg>
-  </div>
-  <!-- Decorative gradient blob -->
-  <div class="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-primary-200/30 blur-3xl" aria-hidden="true"></div>
-  <div class="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-primary-200/20 blur-3xl" aria-hidden="true"></div>
-
+<section id="hero" class="relative overflow-hidden bg-transparent pt-24 pb-16 sm:pt-32 sm:pb-24">
   <div class="relative mx-auto max-w-6xl px-4 sm:px-6">
     <div class="text-center">
       <div class="mb-6 inline-flex items-center gap-3 rounded-full border border-primary-200/60 bg-white/80 px-5 py-2.5 shadow-sm backdrop-blur-sm">
@@ -33,15 +18,20 @@
         <span class="text-sm font-medium text-text-secondary">Plugin para</span>
         <span class="rounded-md bg-gray-900 px-2.5 py-1 font-mono text-xs font-semibold text-white tracking-wide">Claude Code</span>
       </div>
+      <div class="mb-4 flex justify-center">
+        <span class="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
+          Plugin no oficial de Claude Code
+        </span>
+      </div>
       <h1 class="text-4xl font-extrabold tracking-tight text-text-primary sm:text-5xl lg:text-6xl">
         PSPO Agent
       </h1>
       <p class="mx-auto mt-6 max-w-2xl text-lg text-text-secondary leading-relaxed sm:text-xl">
         Plugin de Claude Code que actúa como
         <strong class="text-primary-600">Product Owner profesional</strong>.
-        Descubrimiento de producto, historias de usuario con criterios de aceptación
-        y publicación en Trello.
-        Para desarrolladores y equipos pequeños que quieren construir producto, no gestionar producto.
+        Descubrimiento de producto, historias de usuario, asignación operativa,
+        dependencias, sprint con agentes y publicación en Trello.
+        Para desarrolladores, tech leads y equipos medianos que quieren construir producto, no coordinarlo a mano.
       </p>
       <div class="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
         <a
@@ -63,7 +53,7 @@
     </div>
 
     <!-- Para quien es -->
-    <div class="mt-16 grid gap-6 sm:grid-cols-2 max-w-3xl mx-auto">
+    <div class="mx-auto mt-16 grid max-w-5xl gap-6 lg:grid-cols-3">
       <div class="rounded-xl border border-surface-200 bg-white p-6 shadow-md hover:shadow-lg transition-shadow">
         <div class="flex items-center gap-3 mb-3">
           <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 shadow-sm">
@@ -90,6 +80,20 @@
         <p class="text-sm text-text-secondary leading-relaxed">
           Haces de PO a tiempo parcial además de tu trabajo técnico.
           PSPO Agent estandariza la calidad de las historias, distribuye el trabajo y detecta dependencias entre tareas.
+        </p>
+      </div>
+      <div class="rounded-xl border border-surface-200 bg-white p-6 shadow-md hover:shadow-lg transition-shadow">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 shadow-sm">
+            <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6h16.5M6 3.75v4.5m12-4.5v4.5M4.5 9.75h15a.75.75 0 01.75.75v7.5a2.25 2.25 0 01-2.25 2.25h-12A2.25 2.25 0 013.75 18v-7.5a.75.75 0 01.75-.75zm3.75 3h3m-3 3h6" />
+            </svg>
+          </div>
+          <h3 class="font-semibold text-text-primary">Equipo mediano con varias manos</h3>
+        </div>
+        <p class="text-sm text-text-secondary leading-relaxed">
+          Ya no te falla definir historias, te falla coordinarlas bien entre backend, frontend, QA y negocio.
+          PSPO Agent convierte un brief en backlog operativo, reparte ownership, visibiliza bloqueos y deja Trello listo para ejecutar.
         </p>
       </div>
     </div>

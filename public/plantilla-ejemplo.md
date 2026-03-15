@@ -30,12 +30,12 @@ Este archivo muestra los artefactos que PSPO Agent genera para tu proyecto.
 Given que estoy autenticado en el tablero
 When accedo a la vista "Mis tareas"
 Then veo solo las tarjetas asignadas a mi
-And estan organizadas por columnas: Pendiente, En progreso, En revision, Hecho
+And estan organizadas por columnas: Backlog, Sprint activo, En progreso, En revision, Hecho
 ```
 
 **Escenario positivo: Mover tarea de estado**
 ```gherkin
-Given que tengo una tarea en "Pendiente"
+Given que tengo una tarea en "Backlog"
 When arrastro la tarjeta a "En progreso"
 Then la tarjeta cambia de columna
 And se registra la fecha del cambio de estado
@@ -64,8 +64,8 @@ Then la tarea sin asignar no aparece en mi vista
 
 **Escenario positivo: Sprint viable**
 ```gherkin
-Given que el equipo tiene 3 miembros definidos en team.csv
-And hay 5 historias aprobadas estimadas en 18 dias
+Given que el equipo tiene 3 miembros definidos en un CSV compatible (por ejemplo, equipo-core.csv)
+And hay 5 historias aprobadas estimadas en 22 horas efectivas
 When ejecuto /pspo-agent:sprint-plan
 Then veo la capacidad del equipo con y sin agentes IA
 And el veredicto indica que el sprint cabe
@@ -73,7 +73,7 @@ And el veredicto indica que el sprint cabe
 
 **Escenario negativo: Sprint desbordado**
 ```gherkin
-Given que las historias suman mas dias que la capacidad del equipo
+Given que las historias suman mas horas efectivas que la capacidad del equipo
 When ejecuto /pspo-agent:sprint-plan
 Then veo el porcentaje de desbordamiento
 And el agente sugiere que historias recortar por prioridad
@@ -81,7 +81,7 @@ And el agente sugiere que historias recortar por prioridad
 
 ---
 
-## Equipo (team.csv)
+## Equipo (CSV compatible)
 
 ```csv
 nombre,email,rol,categoria,dedicacion,usa_agente_ia
@@ -113,13 +113,13 @@ Laura Ruiz,laura@empresa.com,fullstack,Junior,80,si
 
 ## Backlog priorizado
 
-| ID    | Historia                              | Prioridad | Dias est. | Estado    |
-|-------|---------------------------------------|-----------|-----------|-----------|
-| HU-01 | Tablero de tareas por estado          | Must      | 3         | Pendiente |
-| HU-02 | Capacidad del equipo por sprint       | Must      | 2         | Pendiente |
-| HU-03 | Notificaciones de cambio de estado    | Should    | 4         | Pendiente |
-| HU-04 | Filtro por etiqueta y miembro         | Could     | 2         | Pendiente |
+| ID    | Historia                              | Prioridad | Horas est. | Estado  |
+|-------|---------------------------------------|-----------|------------|---------|
+| HU-01 | Tablero de tareas por estado          | Must      | 8          | Backlog |
+| HU-02 | Capacidad del equipo por sprint       | Must      | 4          | Backlog |
+| HU-03 | Notificaciones de cambio de estado    | Should    | 8          | Backlog |
+| HU-04 | Filtro por etiqueta y miembro         | Could     | 4          | Backlog |
 
 ---
 
-*Generado por PSPO Agent - Plugin de Claude Code*
+*Generado por PSPO Agent - Plugin no oficial de Claude Code*

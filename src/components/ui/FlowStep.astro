@@ -18,8 +18,8 @@ interface Props {
 const { step, title, description, icon, isLast = false } = Astro.props;
 ---
 
-<div class="flex flex-col items-center text-center relative">
-  <div class="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-lg shadow-primary-500/30">
+<div class="relative flex flex-col items-center text-center">
+  <div class="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-primary-200/70 bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-sm">
     {icon ? (
       <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" d={icon} />
@@ -27,7 +27,7 @@ const { step, title, description, icon, isLast = false } = Astro.props;
     ) : (
       <span class="font-bold text-xl">{step}</span>
     )}
-    <span class="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-primary-700 text-[10px] font-bold shadow-sm border border-primary-200">
+    <span class="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-primary-200 bg-white text-[10px] font-bold text-primary-700">
       {step}
     </span>
   </div>

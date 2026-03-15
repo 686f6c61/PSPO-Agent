@@ -39,10 +39,21 @@ export const features: Feature[] = [
     categoryLabel: 'Configuración',
     title: 'Onboarding guiado',
     description:
-      'Configura Trello sin conocimiento de APIs. El plugin detecta que es tu primera ejecución y te guía paso a paso para obtener las credenciales, generar el token y configurar el tablero.',
+      'Empieza con /pspo-agent:start. El plugin detecta si faltan credenciales o tablero y te guía paso a paso para dejar Trello listo sin tocar ficheros a mano.',
     command: '/pspo-agent:start',
     icon: 'M15.59 14.37a6 6 0 0 0-5.84 7.38c.06.3.15.59.27.86M12 2a10 10 0 0 0-6.88 17.23l1.17-1.17A8 8 0 1 1 20 12a7.95 7.95 0 0 1-2.32 5.64l1.17 1.17A10 10 0 0 0 12 2zm0 4a6 6 0 0 0-4.24 10.24l1.17-1.17A4 4 0 1 1 16 12a3.98 3.98 0 0 1-1.17 2.83l1.17 1.17A6 6 0 0 0 12 6zm0 4a2 2 0 1 0 0 4 2 2 0 0 0 0-4z',
     huReference: 'HU-01',
+  },
+  {
+    id: 'autopilot',
+    category: 'configuracion',
+    categoryLabel: 'Configuración',
+    title: 'Autopilot por carpeta',
+    description:
+      'Deja un brief, una visión opcional y un CSV de equipo compatible en una carpeta. /pspo-agent:autopilot analiza, genera, guarda y audita sin menús intermedios hasta la gate final.',
+    command: '/pspo-agent:autopilot',
+    icon: 'M3.75 13.5l7.5-7.5m0 0 7.5 7.5m-7.5-7.5v18',
+    huReference: '',
   },
   {
     id: 'discovery',
@@ -83,7 +94,7 @@ export const features: Feature[] = [
     categoryLabel: 'Publicación',
     title: 'Publicación en Trello',
     description:
-      'Publica las historias aprobadas como tarjetas en el tablero de Trello. Muestra vista previa antes de ejecutar. Detecta duplicados por título. Si falla, guarda localmente para reintentar.',
+      'Publica o sincroniza historias en Trello con resumen corto, adjunto .md, DoD, dependencias y miembros reales. Detecta duplicados, muestra vista previa y guarda siempre en local antes de tocar Trello.',
     command: '/pspo-agent:publish',
     icon: 'M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5',
     huReference: 'HU-05',
@@ -116,9 +127,31 @@ export const features: Feature[] = [
     categoryLabel: 'Planificación',
     title: 'Gestión de equipo',
     description:
-      'Define los miembros del equipo con rol, categoría, porcentaje de dedicación y si usan agentes de IA para desarrollar. Importa desde CSV (plantilla descargable desde la web) o usa el asistente guiado. La información del equipo alimenta la planificación de sprint y el cálculo de capacidad.',
+      'Define los miembros del equipo con rol, categoría, dedicación y uso de agentes IA. Acepta cualquier CSV compatible, no solo team.csv, o usa el asistente guiado.',
     command: '/pspo-agent:team',
     icon: 'M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0z',
+    huReference: '',
+  },
+  {
+    id: 'assign',
+    category: 'planificacion',
+    categoryLabel: 'Planificación',
+    title: 'Asignación operativa',
+    description:
+      'Reparte ownership del backlog con criterio: encaje de rol, carga real en horas efectivas, continuidad funcional y reducción de bloqueos entre personas.',
+    command: '/pspo-agent:assign',
+    icon: 'M17.25 6.75v10.5m-10.5-10.5v10.5m-3-7.5h16.5',
+    huReference: '',
+  },
+  {
+    id: 'dependencies',
+    category: 'planificacion',
+    categoryLabel: 'Planificación',
+    title: 'Mapa de dependencias',
+    description:
+      'Detecta dependencias confirmadas e inferidas, genera docs/dependencias.md con Mermaid y deja visibles las personas impactadas antes de que aparezcan bloqueos en mitad del sprint.',
+    command: '/pspo-agent:dependencies',
+    icon: 'M7.5 6h9m-9 12h9M6 6a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm12 9a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3ZM6 15a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm12-9a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z',
     huReference: '',
   },
   {
@@ -127,7 +160,7 @@ export const features: Feature[] = [
     categoryLabel: 'Planificación',
     title: 'Planificación de sprint con estimación',
     description:
-      'Estima historias con tallas (S/M/L/XL) y calcula la capacidad del equipo con factor de corrección por agentes IA (65% por defecto, 70% recomendado). Detecta si el sprint está desbordado, sugiere recortes por prioridad y ofrece priorización asistida con matriz de valor, riesgo y dependencias.',
+      'Propone horas efectivas con agentes (XS=1, S=2, M=4, L=8, XL=16), calcula capacidad real del equipo y no infla trabajo sencillo por costumbre. Si no cabe, recorta con criterio.',
     command: '/pspo-agent:sprint-plan',
     icon: 'M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5',
     huReference: '',
@@ -193,7 +226,7 @@ export const features: Feature[] = [
     categoryLabel: 'Publicación',
     title: 'Invitación al tablero por email',
     description:
-      'Invita automáticamente a los miembros del equipo al tablero de Trello usando los emails del CSV. Trello envía las invitaciones. Se ejecuta antes de publicar las tarjetas.',
+      'Invita automáticamente a los miembros del equipo al tablero de Trello usando los emails del CSV compatible y reutiliza el memberId devuelto para asignar tarjetas reales.',
     command: '',
     icon: 'M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75',
     huReference: '',

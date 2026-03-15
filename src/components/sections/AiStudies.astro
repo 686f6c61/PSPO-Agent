@@ -20,7 +20,7 @@ const referenceStudies = [
 ];
 ---
 
-<section id="estudios-ia" class="py-8 sm:py-12 bg-gradient-to-b from-white to-primary-50/30">
+<section id="estudios-ia" class="py-8 sm:py-12 bg-transparent">
   <div class="mx-auto max-w-6xl px-4 sm:px-6">
     <SectionHeading
       id="estudios-ia-heading"
@@ -35,7 +35,8 @@ const referenceStudies = [
         el tiempo necesario para completar tareas de desarrollo se reduce significativamente.
         PSPO Agent aplica un <strong>factor de corrección del 65%</strong> por defecto
         (<strong>70% recomendado</strong>, configurable entre 30% y 80%) al calcular la
-        capacidad del equipo en la planificación de sprint.
+        capacidad del equipo en la planificación de sprint, que en el plugin se limita a un máximo
+        de 5 días y trabaja con horas efectivas de foco.
       </p>
       <p class="text-text-secondary leading-relaxed">
         Este factor está respaldado por los siguientes estudios con agentes autónomos.
@@ -68,23 +69,23 @@ const referenceStudies = [
     <div class="mb-10 rounded-xl bg-white border border-surface-200 p-6 shadow-sm">
       <h3 class="text-lg font-semibold text-text-primary mb-4">Ejemplo práctico</h3>
       <p class="text-sm text-text-secondary mb-4">
-        Una historia estimada en <strong>10 días</strong> de desarrollo sin agente IA,
-        con un factor del 65%, se completa en <strong>3.5 días</strong> con agente.
-        Con el factor recomendado del 70%, en <strong>3 días</strong>.
+        Una persona con <strong>30 horas reales de foco</strong> en un sprint de 5 días,
+        con un factor del 65%, aporta unas <strong>85.7 horas equivalentes</strong>.
+        Con el factor recomendado del 70%, subiría hasta <strong>100 horas equivalentes</strong>.
       </p>
       <div class="grid gap-3 sm:grid-cols-2">
         <div class="rounded-lg bg-surface-50 p-4">
-          <div class="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">Sin agente IA</div>
+          <div class="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">Capacidad real</div>
           <div class="flex items-baseline gap-2">
-            <span class="text-2xl font-bold text-text-primary">10</span>
-            <span class="text-sm text-text-secondary">días de trabajo</span>
+            <span class="text-2xl font-bold text-text-primary">30</span>
+            <span class="text-sm text-text-secondary">horas de foco</span>
           </div>
         </div>
         <div class="rounded-lg bg-primary-50 border border-primary-200 p-4">
-          <div class="text-xs font-semibold text-primary-600 uppercase tracking-wide mb-2">Con agente IA (65%)</div>
+          <div class="text-xs font-semibold text-primary-600 uppercase tracking-wide mb-2">Capacidad equivalente (65%)</div>
           <div class="flex items-baseline gap-2">
-            <span class="text-2xl font-bold text-primary-700">3.5</span>
-            <span class="text-sm text-text-secondary">días de trabajo</span>
+            <span class="text-2xl font-bold text-primary-700">85.7</span>
+            <span class="text-sm text-text-secondary">horas equivalentes</span>
           </div>
         </div>
       </div>

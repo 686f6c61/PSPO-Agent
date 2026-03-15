@@ -8,9 +8,10 @@
  */
 export const site = {
   name: 'PSPO Agent',
-  title: 'PSPO Agent - Product Owner con IA para Claude Code',
+  version: '1.0.4',
+  title: 'PSPO Agent - Plugin no oficial de Product Owner para Claude Code',
   description:
-    'Plugin de Claude Code que actúa como Product Owner profesional. Descubrimiento de producto, historias de usuario con criterios de aceptación y publicación en Trello.',
+    'Plugin no oficial de Claude Code para descubrimiento de producto, historias de usuario, asignacion operativa, dependencias, planificacion de sprint con agentes y publicacion en Trello.',
   url: 'https://pspo-agent.com',
   ogImage: '/og-image.png',
   repository: 'https://github.com/686f6c61/PSPO-Agent',

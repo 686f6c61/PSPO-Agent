@@ -2,17 +2,17 @@
 /**
  * Seccion de instalacion del plugin.
  *
- * Organiza las instrucciones de instalacion en tres pestanas (Linux, macOS,
- * Windows) usando TabGroup. La pestana activa por defecto se detecta por
- * User-Agent en el script de tab-group.ts. Ademas incluye los pasos de
- * configuracion de Trello y un acordeon de resolucion de problemas.
+ * Organiza las instrucciones por sistema operativo y deja visible el flujo
+ * recomendado: instalar, reiniciar Claude Code y lanzar /pspo-agent:start.
+ * Tambien explica el modo carpeta para autopilot y la configuracion
+ * guiada de Trello.
  *
  * Todos los datos vienen de src/data/installation.ts.
  */
 import SectionHeading from '../ui/SectionHeading.astro';
 import TabGroup from '../ui/TabGroup.astro';
 import CodeBlock from '../ui/CodeBlock.astro';
-import { installations, troubleshooting, trelloSetupSteps } from '../../data/installation';
+import { installations, trelloSetupSteps } from '../../data/installation';
 
 const tabs = installations.map((inst) => ({
   id: inst.os,
@@ -22,77 +22,170 @@ const tabs = installations.map((inst) => ({
 const groupId = 'os-install';
 ---
 
-<section id="instalacion" class="py-8 sm:py-12 bg-surface-50">
-  <div class="mx-auto max-w-4xl px-4 sm:px-6">
+<section id="instalacion" class="relative overflow-hidden bg-transparent py-8 sm:py-12">
+  <div class="relative mx-auto max-w-4xl px-4 sm:px-6">
     <SectionHeading
       id="instalacion-heading"
       title="Instalación"
-      subtitle="Instala el plugin en menos de 5 minutos. Sin conocimientos previos de APIs."
+      subtitle="Instala el plugin no oficial, reinicia Claude Code y arranca el flujo correcto desde /pspo-agent:start o desde tu carpeta inbox."
     />
 
-    <TabGroup tabs={tabs} groupId={groupId} ariaLabel="Seleccionar sistema operativo">
-      {installations.map((inst) => (
-        <div
-          id={`panel-${groupId}-${inst.os}`}
-          role="tabpanel"
-          aria-labelledby={`tab-${groupId}-${inst.os}`}
-          data-tab-panel={inst.os}
-          hidden={inst.os !== 'linux'}
-        >
-          <div class="space-y-6">
-            {inst.steps.map((step, index) => (
-              <div class="rounded-lg border border-surface-200 bg-white p-5">
-                <div class="flex items-start gap-3">
-                  <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-700">
-                    {index + 1}
-                  </span>
-                  <div class="flex-1">
-                    <h4 class="font-semibold text-text-primary">{step.title}</h4>
-                    <p class="mt-1 text-sm text-text-secondary">{step.description}</p>
-                    {step.code && (
-                      <div class="mt-3">
-                        <CodeBlock code={step.code} language={step.language} />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+    <div class="mb-10 grid gap-4 xl:grid-cols-[1.18fr_0.82fr]">
+      <div class="rounded-[1.75rem] bg-slate-950 p-6 text-white shadow-[0_18px_48px_rgba(15,23,42,0.16)] sm:p-8">
+        <div class="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-slate-300">
+          Flujo recomendado
+        </div>
+        <h3 class="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">
+          Instala, reinicia y deja que PSPO Agent continúe solo.
+        </h3>
+        <p class="mt-3 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">
+          Si faltan las credenciales de Trello, el onboarding se lanza automáticamente. Si ya
+          tienes un brief y un CSV de equipo compatible, puedes saltar directamente al modo
+          carpeta y dejar que el flujo continúe solo.
+        </p>
+        <div class="mt-4 flex flex-wrap items-center gap-2 text-xs">
+          <span class="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 font-medium uppercase tracking-[0.16em] text-slate-300">
+            Modo carpeta
+          </span>
+          <code>.pspo-agent/inbox</code>
+          <span class="text-slate-500">+</span>
+          <code>/pspo-agent:autopilot</code>
+        </div>
+
+        <div class="mt-6 grid gap-3 sm:grid-cols-3">
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div class="text-xs uppercase tracking-[0.16em] text-slate-400">Paso 1</div>
+            <div class="mt-2 font-semibold">Instalar</div>
+            <p class="mt-2 text-sm text-slate-300">Un script y sin dependencias de Node para el plugin.</p>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div class="text-xs uppercase tracking-[0.16em] text-slate-400">Paso 2</div>
+            <div class="mt-2 font-semibold">Reiniciar Claude Code</div>
+            <p class="mt-2 text-sm text-slate-300">Los comandos, skills y hooks quedan cargados al volver a abrirlo.</p>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div class="text-xs uppercase tracking-[0.16em] text-slate-400">Paso 3</div>
+            <div class="mt-2 font-semibold">Lanzar start</div>
+            <p class="mt-2 text-sm text-slate-300">Desde ahí guía onboarding, documentación, equipo, sprint y publicación.</p>
           </div>
         </div>
-      ))}
-    </TabGroup>
+      </div>
 
-    <!-- Configuracion de Trello -->
-    <div class="mt-12">
-      <h3 class="text-xl font-semibold text-text-primary mb-6">Configuración de Trello</h3>
-      <p class="text-text-secondary mb-6">
-        El plugin guía la configuración de Trello automáticamente en la primera ejecución.
-        No necesitas editar ficheros manualmente. El asistente te lleva paso a paso:
-      </p>
-      <div class="space-y-4">
-        {trelloSetupSteps.map((step) => (
-          <div class="flex items-start gap-3 rounded-lg border border-surface-200 bg-white p-4">
-            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-100 text-xs font-bold text-primary-700">
-              {step.step}
-            </span>
-            <div>
-              <h4 class="font-semibold text-text-primary">{step.title}</h4>
-              <p class="mt-1 text-sm text-text-secondary">{step.description}</p>
-              {step.link && (
-                <a
-                  href={step.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="mt-1 inline-flex items-center text-sm text-primary-600 hover:text-primary-700"
-                >
-                  {step.link}
-                  <svg class="ml-1 h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fill-rule="evenodd" d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 17h-8.5A2.25 2.25 0 012 14.75v-8.5A2.25 2.25 0 014.25 4h5a.75.75 0 010 1.5h-5zm7.5-3a.75.75 0 01.75-.75h4.5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0V4.06l-5.22 5.22a.75.75 0 11-1.06-1.06l5.22-5.22h-2.69a.75.75 0 01-.75-.75z" clip-rule="evenodd" />
-                  </svg>
-                </a>
-              )}
+      <div class="rounded-[1.75rem] border border-primary-200 bg-white/90 p-6 shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8">
+        <div class="inline-flex rounded-full bg-primary-100 px-3 py-1 text-xs font-medium uppercase tracking-[0.16em] text-primary-700">
+          Modo carpeta
+        </div>
+        <h3 class="mt-4 text-xl font-semibold text-text-primary">Autopilot desde inbox</h3>
+        <p class="mt-3 text-sm leading-relaxed text-text-secondary">
+          Deja tu brief y cualquier CSV compatible de equipo en <code>.pspo-agent/inbox</code>.
+          El agente genera visión, HU, backlog y artefactos locales antes de pedir la revisión final.
+        </p>
+        <div class="mt-4">
+          <CodeBlock
+            code={`.pspo-agent/inbox/\n├── brief.md\n└── equipo-core.csv\n\n/pspo-agent:autopilot`}
+            language="bash"
+            label="Entrada recomendada"
+          />
+        </div>
+        <div class="mt-4 flex flex-wrap gap-2 text-xs">
+          <span class="rounded-full bg-primary-50 px-3 py-1 font-medium text-primary-700">Brief libre</span>
+          <span class="rounded-full bg-surface-100 px-3 py-1 font-medium text-text-secondary">CSV compatible</span>
+          <span class="rounded-full bg-surface-100 px-3 py-1 font-medium text-text-secondary">Revisión al final</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-[1.75rem] border border-surface-200 bg-white/[0.85] p-4 shadow-lg shadow-primary-500/[0.08] backdrop-blur sm:p-6">
+      <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h3 class="text-xl font-semibold text-text-primary">Instalación guiada por sistema operativo</h3>
+          <p class="mt-2 max-w-2xl text-sm text-text-secondary">
+            Los scripts instalan el plugin y el flujo real empieza al reiniciar Claude Code.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs">
+          <span class="rounded-full bg-primary-50 px-3 py-1 font-medium text-primary-700">Claude Code + Python 3.8+</span>
+          <span class="rounded-full bg-surface-100 px-3 py-1 font-medium text-text-secondary">17 skills · 6 agentes</span>
+          <span class="rounded-full bg-surface-100 px-3 py-1 font-medium text-text-secondary">Onboarding automático</span>
+        </div>
+      </div>
+
+      <TabGroup tabs={tabs} groupId={groupId} ariaLabel="Seleccionar sistema operativo">
+        {installations.map((inst) => (
+          <div
+            id={`panel-${groupId}-${inst.os}`}
+            role="tabpanel"
+            aria-labelledby={`tab-${groupId}-${inst.os}`}
+            data-tab-panel={inst.os}
+            hidden={inst.os !== 'linux'}
+          >
+            <div class="space-y-4">
+              {inst.steps.map((step, index) => (
+                <article class="relative overflow-hidden rounded-2xl border border-surface-200 bg-white p-5 shadow-sm">
+                  <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary-300 to-transparent"></div>
+                  <div class="flex items-start gap-4">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-sm font-bold text-primary-700 shadow-inner shadow-white/70">
+                      {index + 1}
+                    </span>
+                    <div class="flex-1">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <h4 class="font-semibold text-text-primary">{step.title}</h4>
+                        <span class="rounded-full bg-surface-100 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-text-muted">
+                          {index === 0 ? 'Base' : index === 1 ? 'Instalación' : 'Primer arranque'}
+                        </span>
+                      </div>
+                      <p class="mt-2 text-sm leading-relaxed text-text-secondary">{step.description}</p>
+                      {step.code && (
+                        <div class="mt-4">
+                          <CodeBlock code={step.code} language={step.language} label={inst.label} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              ))}
             </div>
+          </div>
+        ))}
+      </TabGroup>
+    </div>
+
+    <div class="mt-12 rounded-[1.75rem] border border-surface-200 bg-white/90 p-6 shadow-lg shadow-primary-500/[0.08] backdrop-blur">
+      <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h3 class="text-xl font-semibold text-text-primary">Configuración de Trello</h3>
+          <p class="mt-2 max-w-2xl text-sm text-text-secondary">
+            El primer arranque guía estos tres pasos sin obligarte a tocar el <code>.env</code> a mano.
+          </p>
+        </div>
+        <div class="rounded-full bg-primary-50 px-3 py-1 text-xs font-medium text-primary-700">
+          Credenciales ocultas en logs y hooks activos
+        </div>
+      </div>
+
+      <div class="grid gap-4 lg:grid-cols-3">
+        {trelloSetupSteps.map((step) => (
+          <div class="rounded-2xl border border-surface-200 bg-surface-50/70 p-5">
+            <div class="flex items-center gap-3">
+              <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary-600 text-sm font-bold text-white">
+                {step.step}
+              </span>
+              <h4 class="font-semibold text-text-primary">{step.title}</h4>
+            </div>
+            <p class="mt-3 text-sm leading-relaxed text-text-secondary">{step.description}</p>
+            {step.link && (
+              <a
+                href={step.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="mt-4 inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-700"
+              >
+                Abrir enlace
+                <svg class="ml-1 h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 17h-8.5A2.25 2.25 0 012 14.75v-8.5A2.25 2.25 0 014.25 4h5a.75.75 0 010 1.5h-5zm7.5-3a.75.75 0 01.75-.75h4.5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0V4.06l-5.22 5.22a.75.75 0 11-1.06-1.06l5.22-5.22h-2.69a.75.75 0 01-.75-.75z" clip-rule="evenodd" />
+                </svg>
+              </a>
+            )}
           </div>
         ))}
       </div>

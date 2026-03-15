@@ -42,7 +42,7 @@ const faqCategories = [
     items: [
       {
         question: 'Las credenciales de Trello no funcionan',
-        answer: 'La API Key tiene 32 caracteres hexadecimales (no confundir con el Secret). El token empieza por ATTA y tiene minimo 41 caracteres. Los tokens caducan a los 30 dias.',
+        answer: 'La API Key tiene 32 caracteres hexadecimales y el token empieza por ATTA. El plugin valida ambos y evita mostrar la clave completa en pantalla o en logs durante el onboarding.',
       },
       {
         question: 'El token ha caducado',
@@ -51,7 +51,7 @@ const faqCategories = [
       },
       {
         question: 'Donde se guardan las credenciales?',
-        answer: 'Solo en el fichero .env de la raiz del proyecto, con permisos 600 (solo lectura para el propietario). El fichero esta en .gitignore para que nunca se suba al repositorio. Las credenciales nunca se guardan en memoria de Claude Code ni en ficheros .local.md.',
+        answer: 'En el fichero .env de la raiz del proyecto. El flujo del plugin comprueba que no se versionen y añade barreras para evitar exponerlas en lecturas o llamadas directas a Trello fuera del MCP.',
       },
     ],
   },
@@ -65,11 +65,11 @@ const faqCategories = [
       },
       {
         question: 'Como funciona el flujo autonomo entre fases?',
-        answer: 'El plugin avanza automaticamente entre fases (generar, auditar, validar, publicar) sin preguntarte "quieres pasar a la siguiente fase". Solo se detiene cuando necesita tu decision sobre el contenido: aprobar una historia, elegir opciones o confirmar la publicacion.',
+        answer: 'El flujo recomendado es /pspo-agent:start y, si trabajas por carpeta, /pspo-agent:autopilot. El plugin avanza onboarding, documentación, equipo, asignaciones, dependencias, sprint y auditoría sin menús intermedios. Solo se detiene cuando necesita una decisión real: aprobar contenido, resolver un bloqueo o autorizar la publicación final.',
       },
       {
         question: 'Que pasa si tengo mas de 10 historias de usuario?',
-        answer: 'El plugin procesa las tarjetas en lotes de 5 para evitar perdida de contexto. Cada lote ejecuta las 3 operaciones obligatorias por tarjeta (crear tarjeta + adjuntar MD + checklist DoD). No tienes que hacer nada diferente.',
+        answer: 'No necesitas cambiar tu forma de trabajar. Si el contexto se vuelve demasiado grande, el plugin puede repartir análisis o publicación en varias tandas o en varios agentes, pero mantiene el mismo contrato: resumen corto en la tarjeta, fichero .md adjunto, DoD y dependencias cuando apliquen.',
       },
       {
         question: 'Puedo exportar las historias a Jira u otras herramientas?',
@@ -97,12 +97,12 @@ const faqCategories = [
       },
       {
         question: 'Como funciona la asignacion de miembros a tarjetas?',
-        answer: 'El plugin invita a los miembros del equipo al tablero de Trello usando su email (Trello envia la invitacion automaticamente). Al publicar tarjetas, asigna cada historia al miembro correspondiente usando su ID de Trello, de forma que aparecen en la columna "Miembros" de la tarjeta.',
+        answer: 'El plugin toma los emails desde cualquier CSV de equipo compatible, invita a quien falte al tablero y reutiliza el memberId real de Trello para asignar la tarjeta. Si la asignación no se puede resolver, la sincronización no se da por cerrada.',
       },
       {
         question: 'Que metodologia de estimacion usa el plugin?',
-        answer: 'T-shirt sizing: cada historia se estima con una talla (S, M, L, XL) que equivale a dias de trabajo de un desarrollador sin agente IA. Es una tecnica agil que evita la falsa precision de estimar en horas. El equipo asigna tallas por comparacion relativa entre historias, no por calculo exacto. Las equivalencias son configurables en settings.json.',
-        code: '"estimation_sizes": {\n  "S": 1,   // 1 dia\n  "M": 2,   // 2 dias\n  "L": 3,   // 3 dias\n  "XL": 5   // 5 dias (1 semana)\n}',
+        answer: 'T-shirt sizing convertido a horas efectivas con agentes. El plugin propone tallas XS, S, M, L y XL, cruza ese esfuerzo con un sprint máximo de 5 días, 6 horas de foco por día y el factor IA configurado. Así evita inflar tareas simples como un login y mantiene estimaciones más creíbles para equipos asistidos por agentes.',
+        code: '"estimation_sizes": {\n  "XS": 1,\n  "S": 2,\n  "M": 4,\n  "L": 8,\n  "XL": 16\n}',
       },
     ],
   },
@@ -125,7 +125,7 @@ const faqJsonLd = {
 };
 ---
 
-<section id="faq" class="py-8 sm:py-12 bg-surface-50">
+<section id="faq" class="py-8 sm:py-12 bg-transparent">
   <div class="mx-auto max-w-4xl px-4 sm:px-6">
     <SectionHeading
       id="faq-heading"
