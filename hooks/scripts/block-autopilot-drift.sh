@@ -44,6 +44,8 @@ next_plan_publish_skill="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field ne
 active_skill="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field active_skill "${CWD}")"
 start_bootstrap="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field start_bootstrap "${CWD}")"
 onboarding_bootstrap="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field onboarding_bootstrap "${CWD}")"
+publish_provider="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field publish_provider "${CWD}")"
+provider_needs_choice="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field publish_provider_needs_choice "${CWD}")"
 is_autopilot_entry=0
 if [[ -z "${active_skill}" || "${active_skill}" == "pspo-agent:autopilot" ]]; then
     is_autopilot_entry=1
@@ -75,11 +77,11 @@ case "${phase}" in
     inactive)
         if [[ "${active_skill}" == "pspo-agent:start" ]]; then
             if [[ "${start_bootstrap}" != "done" ]]; then
-                emit_block "En /pspo-agent:start no explores el workspace ni uses ToolSearch todavia. Primera accion valida: Bash(\".pspo-agent/runtime/trello-fallback.sh env-status --pretty\")."
+                emit_block "En /pspo-agent:start no explores el workspace ni uses ToolSearch todavia. Primera accion valida: Bash(\".pspo-agent/runtime/trello-fallback.sh env-status --pretty\"), Bash(\".pspo-agent/runtime/notion-fallback.sh env-status --pretty\") o Bash(\".pspo-agent/runtime/publish-provider.py .\")."
                 exit 2
             fi
             if [[ "${TOOL_NAME}" == "ToolSearch" || "${TOOL_NAME}" == "TodoWrite" ]]; then
-                emit_block "En /pspo-agent:start no uses ToolSearch ni TodoWrite. Tras env-status, continua con publisher para verify-credentials/get-board o con globs concretos del proyecto."
+                emit_block "En /pspo-agent:start no uses ToolSearch ni TodoWrite. Tras env-status y publish-provider, continua con publisher o trello-fallback para Trello, notion-fallback para Notion, o con globs concretos del proyecto."
                 exit 2
             fi
             if [[ "${TOOL_NAME}" == "Glob" ]]; then
@@ -96,11 +98,24 @@ case "${phase}" in
         fi
         if [[ "${active_skill}" == "pspo-agent:onboarding" ]]; then
             if [[ "${onboarding_bootstrap}" != "done" ]]; then
-                emit_block "En /pspo-agent:onboarding no explores rutas laterales todavia. Primera accion valida: Bash(\".pspo-agent/runtime/trello-fallback.sh env-status --pretty\")."
+                emit_block "En /pspo-agent:onboarding no explores rutas laterales todavia. Primera accion valida: Bash(\".pspo-agent/runtime/trello-fallback.sh env-status --pretty\"), Bash(\".pspo-agent/runtime/notion-fallback.sh env-status --pretty\") o Bash(\".pspo-agent/runtime/publish-provider.py .\")."
                 exit 2
             fi
             if [[ "${TOOL_NAME}" == "ToolSearch" || "${TOOL_NAME}" == "TodoWrite" ]]; then
-                emit_block "En /pspo-agent:onboarding no uses ToolSearch ni TodoWrite. Tras env-status, sigue con publisher para verify-credentials, list-boards o create-board."
+                emit_block "En /pspo-agent:onboarding no uses ToolSearch ni TodoWrite. Tras env-status y publish-provider, sigue por el carril oficial del proveedor: publisher/trello-fallback para Trello o notion-fallback para Notion."
+                exit 2
+            fi
+        fi
+        if [[ "${active_skill}" == "pspo-agent:publish" ]]; then
+            if [[ "${TOOL_NAME}" == "ToolSearch" || "${TOOL_NAME}" == "TodoWrite" ]]; then
+                emit_block "En /pspo-agent:publish no uses ToolSearch ni TodoWrite. Lee solo docs/backlog.md, docs/vision.md, docs/historias/HU-*.md y usa publish-provider/env-status si necesitas estado remoto."
+                exit 2
+            fi
+            if [[ "${TOOL_NAME}" == "Glob" || "${TOOL_NAME}" == "Read" ]] \
+                && [[ "${normalized_values}" == *".claude/"* \
+                    || "${normalized_values}" == *".local.md"* \
+                    || "${normalized_values}" == *"claude.md"* ]]; then
+                emit_block "En /pspo-agent:publish no uses .claude, *.local.md ni CLAUDE.md como fuente de verdad. Publica solo desde docs/, publish-provider y los wrappers oficiales."
                 exit 2
             fi
         fi
@@ -158,7 +173,19 @@ if [[ "${phase}" == "product-ready" ]]; then
                         || "${normalized_values}" == *"${inbox_glob_hint}"* ]]; then
                     exit 0
                 fi
-                emit_block "Durante onboarding desde autopilot no explores .claude global, caches ni rutas externas. Siguiente secuencia valida: Bash(\".pspo-agent/runtime/trello-fallback.sh env-status --pretty\"), luego el agente publisher para verify-credentials y despues list-boards/create-board. Solo puedes tocar .env.example, .gitignore, .claude/settings.local.json, .pspo-agent/runtime/autopilot-context.md y .pspo-agent/inbox/*."
+                if [[ "${provider_needs_choice}" == "1" || -z "${publish_provider}" ]]; then
+                    emit_block "Durante onboarding desde autopilot primero resuelve el proveedor remoto. Secuencia valida: Bash(\".pspo-agent/runtime/trello-fallback.sh env-status --pretty\"), Bash(\".pspo-agent/runtime/notion-fallback.sh env-status --pretty\") y Bash(\".pspo-agent/runtime/publish-provider.py .\"). Solo puedes tocar .env.example, .gitignore, .claude/settings.local.json, .pspo-agent/runtime/autopilot-context.md y .pspo-agent/inbox/*."
+                    exit 2
+                fi
+                if [[ "${publish_provider}" == "notion" ]]; then
+                    emit_block "Durante onboarding desde autopilot con proveedor Notion no explores .claude global, caches ni rutas externas. Siguiente secuencia valida: Bash(\".pspo-agent/runtime/notion-fallback.sh env-status --pretty\"), luego Bash(\".pspo-agent/runtime/notion-fallback.sh verify-credentials --pretty\"), despues retrieve-page/create-project/save-project-targets. Solo puedes tocar .env.example, .gitignore, .claude/settings.local.json, .pspo-agent/runtime/autopilot-context.md y .pspo-agent/inbox/*."
+                    exit 2
+                fi
+                if [[ "${publish_provider}" == "local" ]]; then
+                    emit_block "Durante onboarding desde autopilot con proveedor local no explores .claude global, caches ni rutas externas. No hay onboarding remoto: sal del carril lateral y continua con team/assign/dependencies/sprint-plan/publish local. Solo puedes tocar .env.example, .gitignore, .claude/settings.local.json, .pspo-agent/runtime/autopilot-context.md y .pspo-agent/inbox/*."
+                    exit 2
+                fi
+                emit_block "Durante onboarding desde autopilot con proveedor Trello no explores .claude global, caches ni rutas externas. Siguiente secuencia valida: Bash(\".pspo-agent/runtime/trello-fallback.sh env-status --pretty\"), luego el agente publisher o trello-fallback para verify-credentials y despues create-board/manage-lists/manage-labels. Solo puedes tocar .env.example, .gitignore, .claude/settings.local.json, .pspo-agent/runtime/autopilot-context.md y .pspo-agent/inbox/*."
                 exit 2
             fi
             if [[ -n "${branch_skill}" ]]; then

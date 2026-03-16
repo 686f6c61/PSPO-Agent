@@ -121,7 +121,7 @@ class TestAutopilotGuard(unittest.TestCase):
             self.assertEqual(state["gate_status"], "")
             self.assertEqual(state["branch_skill"], "")
             self.assertEqual(state["next_review_skill"], "pspo-agent:validate")
-            self.assertEqual(state["next_plan_publish_skill"], "pspo-agent:onboarding")
+            self.assertEqual(state["next_plan_publish_skill"], "pspo-agent:team")
             self.assertFalse(state["trello_credentials_ready"])
 
     def test_product_ready_exposes_pending_gate_status(self):
@@ -157,6 +157,37 @@ class TestAutopilotGuard(unittest.TestCase):
             state = self.module.compute_state(tmpdir)
             self.assertTrue(state["trello_credentials_ready"])
             self.assertFalse(state["trello_ready"])
+            self.assertEqual(state["publish_provider"], "trello")
+            self.assertEqual(state["publish_provider_source"], "auto-configured")
+
+    def test_multiple_ready_providers_require_choice_before_plan_publish(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            runtime_dir = os.path.join(tmpdir, ".pspo-agent", "runtime")
+            docs_dir = os.path.join(tmpdir, "docs")
+            historias_dir = os.path.join(docs_dir, "historias")
+            os.makedirs(runtime_dir)
+            os.makedirs(historias_dir)
+            with open(os.path.join(runtime_dir, "autopilot-context.md"), "w", encoding="utf-8") as handle:
+                handle.write("modo: analyze\n")
+            with open(os.path.join(runtime_dir, "product-phase.status"), "w", encoding="utf-8") as handle:
+                handle.write("done")
+            with open(os.path.join(tmpdir, ".env"), "w", encoding="utf-8") as handle:
+                handle.write(
+                    "TRELLO_API_KEY=0123456789abcdef0123456789abcdef\n"
+                    "TRELLO_TOKEN=ATTA1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ123456\n"
+                    "TRELLO_BOARD_ID=0123456789abcdef01234567\n"
+                    "NOTION_TOKEN=secret_notion_token\n"
+                    "NOTION_PARENT_PAGE_ID=9f8c1256-4f4d-4eef-8dc9-6a72c53da111\n"
+                )
+            for name in ("analisis-requisitos.md", "backlog.md", "auditoria-hu.md"):
+                with open(os.path.join(docs_dir, name), "w", encoding="utf-8") as handle:
+                    handle.write("# ok\n")
+            with open(os.path.join(historias_dir, "HU-01-login.md"), "w", encoding="utf-8") as handle:
+                handle.write("# HU-01\n")
+            state = self.module.compute_state(tmpdir)
+            self.assertTrue(state["publish_provider_needs_choice"])
+            self.assertEqual(state["next_plan_publish_skill"], "pspo-agent:onboarding")
+            self.assertEqual(set(state["configured_publish_providers"]), {"trello", "notion"})
 
     def test_next_plan_publish_skill_moves_to_publish_when_all_artifacts_and_board_exist(self):
         with tempfile.TemporaryDirectory() as tmpdir:

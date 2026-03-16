@@ -23,7 +23,7 @@ set -euo pipefail
 
 REPO="686f6c61/PSPO-Agent"
 PLUGIN_NAME="pspo-agent"
-VERSION="1.0.7"
+VERSION="1.0.8"
 
 # -- Colores ----------------------------------------------------------------
 

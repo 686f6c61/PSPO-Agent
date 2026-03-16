@@ -187,10 +187,26 @@ class TestPublishFlow(unittest.TestCase):
                       "Publish debe prohibir fallbacks manuales por terminal o HTTP")
         self.assertIn("`.pspo-agent/runtime/trello-fallback.sh`", self.content,
                       "Publish debe permitir solo el fallback oficial controlado")
+        self.assertIn("`.pspo-agent/runtime/notion-fallback.sh`", self.content,
+                      "Publish debe contemplar el fallback oficial de Notion")
         self.assertIn("puedes usar `Task` con `publisher`", self.content,
                       "Publish debe seguir documentando la via con publisher en modo interactivo")
         self.assertIn("trello-fallback.py", self.content,
                       "Publish debe documentar el fallback oficial controlado")
+
+    def test_publish_has_provider_routing_and_notion_path(self):
+        self.assertIn("Paso 0: Resolver proveedor remoto", self.content)
+        self.assertIn("Ruta Notion", self.content)
+        self.assertIn("resolve-user-by-email", self.content)
+        self.assertIn("upload-and-attach-markdown", self.content)
+        self.assertIn("NUNCA leas `.env` con `Read`", self.content)
+        self.assertIn(".pspo-agent/runtime/notion-fallback.sh env-status --pretty", self.content)
+        self.assertIn("ensure-dependency-relations", self.content)
+        self.assertIn("find-story-page", self.content)
+        self.assertIn("update-story-page", self.content)
+        self.assertIn("set-story-dependencies", self.content)
+        self.assertIn("Bloqueada_por", self.content)
+        self.assertIn("Bloquea", self.content)
 
 
 # ---------------------------------------------------------------------------
@@ -279,6 +295,11 @@ class TestFlexibleTeamCsv(unittest.TestCase):
         content = read_file("skills/autopilot/SKILL.md")
         self.assertIn("NUNCA improvises un flujo alternativo con Bash, Fetch, curl, wget o scripts Python ad hoc contra Trello", content)
         self.assertIn("trello-fallback.py", content)
+
+    def test_autopilot_mentions_provider_selection_runtime(self):
+        content = read_file("skills/autopilot/SKILL.md")
+        self.assertIn("publish-provider.json", content)
+        self.assertIn("proveedores remotos configurados", content)
 
     def test_autopilot_forbids_direct_agent_or_task(self):
         content = read_file("skills/autopilot/SKILL.md")
@@ -504,6 +525,37 @@ class TestHistoricalDocsWarnings(unittest.TestCase):
                           f"{path} debe indicar que es historico")
 
 
+class TestProviderDocs(unittest.TestCase):
+    """La documentación viva debe reflejar la capa de proveedores."""
+
+    def test_documents_readme_links_notion_integration(self):
+        content = read_file("Documents/README.md")
+        self.assertIn("notion-integration.md", content)
+        self.assertIn("publish-provider.json", content)
+
+    def test_configuration_mentions_notion_env(self):
+        content = read_file("Documents/configuration.md")
+        self.assertIn("NOTION_TOKEN", content)
+        self.assertIn("NOTION_PARENT_PAGE_ID", content)
+        self.assertIn("publish-provider.py", content)
+
+    def test_architecture_mentions_provider_layer(self):
+        content = read_file("Documents/architecture.md")
+        self.assertIn("publish-provider runtime", content)
+        self.assertIn("publish-provider.json", content)
+
+    def test_notion_integration_doc_exists_and_is_zero_template(self):
+        content = read_file("Documents/notion-integration.md")
+        self.assertIn("zero-template", content)
+        self.assertIn("NOTION_PARENT_PAGE_ID", content)
+        self.assertIn("HU-00 · Vision", content)
+
+    def test_env_example_includes_notion_variables(self):
+        content = read_file(".env.example")
+        self.assertIn("NOTION_TOKEN", content)
+        self.assertIn("NOTION_PARENT_PAGE_ID", content)
+
+
 # ---------------------------------------------------------------------------
 # Onboarding: AskUserQuestion obligatorio
 # ---------------------------------------------------------------------------
@@ -535,14 +587,23 @@ class TestOnboardingAskUserQuestion(unittest.TestCase):
 
     def test_env_is_source_of_truth_for_credentials(self):
         self.assertIn("`.env` es la fuente de verdad", self.content)
-        self.assertIn("NUNCA hagas AskUserQuestion para pedir credenciales otra vez", self.content)
         self.assertIn(".pspo-agent/runtime/trello-fallback.sh env-status --pretty", self.content)
-        self.assertIn("la **primera llamada de herramienta** debe ser exactamente", self.content)
-        self.assertIn("allowed-tools: Read, Grep, Glob, Write, Edit, Bash, Agent, Task, AskUserQuestion", self.content)
+        self.assertIn(".pspo-agent/runtime/notion-fallback.sh env-status --pretty", self.content)
+        self.assertIn("publish-provider.py", self.content)
+        self.assertIn("las **primeras llamadas validas**", self.content)
+        self.assertIn("allowed-tools: Write, Edit, Bash, Task, AskUserQuestion", self.content)
 
     def test_autopilot_board_creation_rule_exists(self):
         self.assertIn("NO hagas esta pregunta", self.content)
         self.assertIn("crear automaticamente un tablero nuevo", self.content)
+
+    def test_onboarding_has_notion_route(self):
+        self.assertIn("Ruta Notion", self.content)
+        self.assertIn("NOTION_TOKEN", self.content)
+        self.assertIn("NOTION_PARENT_PAGE_ID", self.content)
+        self.assertIn("create-project", self.content)
+        self.assertIn("crea automaticamente", self.content)
+        self.assertIn("no preguntes si quieres crearla", self.content)
 
 
 # ---------------------------------------------------------------------------
@@ -622,6 +683,12 @@ class TestHooksConfig(unittest.TestCase):
         self.assertTrue(os.path.exists(path),
                         "Script warn-sensitive-read.sh no existe")
 
+    def test_warn_sensitive_read_mentions_both_official_wrappers(self):
+        content = read_file("hooks/scripts/warn-sensitive-read.sh")
+        self.assertIn(".pspo-agent/runtime/trello-fallback.sh env-status --pretty", content)
+        self.assertIn(".pspo-agent/runtime/notion-fallback.sh env-status --pretty", content)
+        self.assertIn(".pspo-agent/runtime/publish-provider.py .", content)
+
     def test_block_autopilot_agent_script_exists(self):
         path = os.path.join(PLUGIN_ROOT, "hooks", "scripts", "block-autopilot-agent.sh")
         self.assertTrue(os.path.exists(path),
@@ -675,18 +742,38 @@ class TestHooksConfig(unittest.TestCase):
         self.assertIn("emit_block", drift_hook)
         self.assertIn("emit_block", trello_hook)
         self.assertIn("Nunca copies API keys ni tokens", secret_hook)
-        self.assertIn("trello-client/MCP", secret_hook)
+        self.assertIn("Trello o Notion", secret_hook)
         self.assertIn("Usa Glob para listar", bash_hook)
         self.assertIn("trello-fallback.sh", bash_hook)
+        self.assertIn("notion-fallback.sh", bash_hook)
+        self.assertIn("publish-provider.py", bash_hook)
         self.assertIn("Skill(\\\"pspo-agent:product-phase\\\")", agent_hook)
         self.assertIn("pspo-agent:product-phase", agent_hook)
+        self.assertIn("notion-fallback.sh verify-credentials", agent_hook)
         self.assertIn("no uses ToolSearch ni TodoWrite", drift_hook)
         self.assertIn("No leas docs, .claude, .env", drift_hook)
         self.assertIn(".pspo-agent/inbox", drift_hook)
         self.assertIn("Durante product-phase no inspecciones .claude, .env", drift_hook)
+        self.assertIn("publish-provider.py", drift_hook)
+        self.assertIn("notion-fallback.sh verify-credentials", drift_hook)
         self.assertIn("Trello va despues de la fase de producto", trello_hook)
         self.assertIn("product-phase.status", guard_script)
         self.assertIn("modo_producto", bootstrap_script)
+
+
+class TestStartProviderRouting(unittest.TestCase):
+    def test_start_mentions_provider_resolution(self):
+        content = read_file("skills/start/SKILL.md")
+        self.assertIn("Paso 0: Resolver proveedor remoto", content)
+        self.assertIn("Solo local", content)
+        self.assertIn("runtime/notion-fallback.sh", content)
+        self.assertIn("publish-provider.py", content)
+
+    def test_onboarding_forces_bash_first_call(self):
+        content = read_file("skills/onboarding/SKILL.md")
+        self.assertIn("Primera llamada obligatoria de herramienta", content)
+        self.assertIn("Empieza por `Bash`, no por `Glob`", content)
+        self.assertIn("publish-provider.py", content)
 
 
 class TestGenerateStoriesFlow(unittest.TestCase):

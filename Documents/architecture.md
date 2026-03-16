@@ -10,6 +10,8 @@ flowchart LR
     B --> C["Skill"]
     C --> D["Agent (si aplica)"]
     C --> E["Write/Edit local"]
+    C --> P["publish-provider runtime"]
+    P --> D
     D --> F["MCP Trello"]
     D --> G["Fallback oficial"]
     C --> H["Hooks / guardrails"]
@@ -21,6 +23,7 @@ Piezas principales:
 - comandos: [`../commands/`](../commands/)
 - skills: [`../skills/`](../skills/)
 - agentes: [`../agents/`](../agents/)
+- selector de proveedor: [`../hooks/scripts/publish-provider.py`](../hooks/scripts/publish-provider.py)
 - integración Trello: [`../servers/`](../servers/)
 - hooks: [`../hooks/`](../hooks/)
 
@@ -52,7 +55,7 @@ Recorrido típico:
 ```mermaid
 flowchart TD
     A["/pspo-agent:start"] --> B["env-status"]
-    B --> C{"Trello listo?"}
+    B --> C{"Proveedor remoto listo?"}
     C -- No --> D["onboarding"]
     C -- Sí --> E["analyze o discovery"]
     E --> F["generate-stories"]
@@ -141,11 +144,31 @@ Ficheros relevantes:
 | `active-skill.status` | skill PSPO activa |
 | `start-bootstrap.status` | bootstrap de `start` |
 | `onboarding-bootstrap.status` | bootstrap de `onboarding` |
+| `publish-provider.json` | proveedor de publicación elegido o auto-detectado |
 | `trello-fallback.sh` | wrapper runtime al fallback oficial |
 
 Lógica de estado:
 
 - [`../hooks/scripts/autopilot-guard.py`](../hooks/scripts/autopilot-guard.py)
+- [`../hooks/scripts/publish-provider.py`](../hooks/scripts/publish-provider.py)
+
+## Capa de proveedor de publicación
+
+PSPO Agent ya no debe asumir que "publicar" significa siempre Trello.
+
+Contrato actual:
+
+- `trello`: implementación completa
+- `notion`: implementación zero-template activa con fallback oficial
+- `local`: sin publicación remota, artefactos solo en `docs/`
+
+Reglas:
+
+- si hay un único proveedor configurado, el runtime lo auto-selecciona
+- si hay varios proveedores configurados, el runtime debe pedir una sola vez dónde publicar
+- la selección persiste en `.pspo-agent/runtime/publish-provider.json`
+- `product-phase` sigue siendo agnóstico al proveedor
+- `onboarding` y `publish` son los routers naturales por proveedor
 
 ## Estilo de arquitectura
 
@@ -153,7 +176,6 @@ El diseño actual intenta que el sistema mande más que el modelo:
 
 - guardrails en hooks
 - runtime persistido en disco
-- Trello encapsulado en MCP/fallback oficial
+- Trello y Notion encapsulados en carriles oficiales
 - menos delegación libre en `autopilot`
 - más rutas deterministas en `product-phase` y `publish`
-

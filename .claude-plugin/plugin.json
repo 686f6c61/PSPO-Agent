@@ -1,14 +1,14 @@
 {
   "name": "pspo-agent",
-  "description": "Product Owner profesional (PSPO) para Claude Code. Descubrimiento de producto, generacion de historias de usuario con criterios de aceptacion, y publicacion en Trello.",
-  "version": "1.0.7",
+  "description": "Product Owner profesional (PSPO) para Claude Code. Descubrimiento de producto, generacion de historias de usuario con criterios de aceptacion, y publicacion en Trello o Notion.",
+  "version": "1.0.8",
   "author": {
     "name": "686f6c61"
   },
   "repository": "https://github.com/686f6c61/PSPO-Agent",
   "homepage": "https://pspo-agent.com",
   "license": "MIT",
-  "keywords": ["product-owner", "scrum", "trello", "user-stories", "backlog"],
+  "keywords": ["product-owner", "scrum", "trello", "notion", "user-stories", "backlog"],
   "commands": [
     "./commands/start.md",
     "./commands/pspo.md",

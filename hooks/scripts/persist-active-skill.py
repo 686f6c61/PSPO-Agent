@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 import stat
+import textwrap
 import sys
 
 
@@ -39,22 +40,52 @@ def main() -> int:
     active_skill_file = os.path.join(runtime_dir, "active-skill.status")
     start_bootstrap_file = os.path.join(runtime_dir, "start-bootstrap.status")
     onboarding_bootstrap_file = os.path.join(runtime_dir, "onboarding-bootstrap.status")
-    fallback_wrapper = os.path.join(runtime_dir, "trello-fallback.sh")
+    trello_fallback_wrapper = os.path.join(runtime_dir, "trello-fallback.sh")
+    notion_fallback_wrapper = os.path.join(runtime_dir, "notion-fallback.sh")
+    publish_provider_wrapper = os.path.join(runtime_dir, "publish-provider.py")
     plugin_root = (os.environ.get("CLAUDE_PLUGIN_ROOT") or "").strip()
 
     with open(active_skill_file, "w", encoding="utf-8") as handle:
         handle.write(f"{skill_name}\n")
 
     if plugin_root:
-        wrapper_body = (
+        trello_wrapper_body = (
             "#!/usr/bin/env bash\n"
             "set -euo pipefail\n"
             f"python3 {json.dumps(os.path.join(plugin_root, 'servers', 'trello-fallback.py'))} \"$@\"\n"
         )
-        with open(fallback_wrapper, "w", encoding="utf-8") as handle:
-            handle.write(wrapper_body)
-        current_mode = os.stat(fallback_wrapper).st_mode
-        os.chmod(fallback_wrapper, current_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        with open(trello_fallback_wrapper, "w", encoding="utf-8") as handle:
+            handle.write(trello_wrapper_body)
+        current_mode = os.stat(trello_fallback_wrapper).st_mode
+        os.chmod(trello_fallback_wrapper, current_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+        notion_wrapper_body = (
+            "#!/usr/bin/env bash\n"
+            "set -euo pipefail\n"
+            f"python3 {json.dumps(os.path.join(plugin_root, 'servers', 'notion-fallback.py'))} \"$@\"\n"
+        )
+        with open(notion_fallback_wrapper, "w", encoding="utf-8") as handle:
+            handle.write(notion_wrapper_body)
+        current_mode = os.stat(notion_fallback_wrapper).st_mode
+        os.chmod(notion_fallback_wrapper, current_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+        publish_provider_body = textwrap.dedent(
+            f"""\
+            #!/usr/bin/env python3
+            import subprocess
+            import sys
+
+            raise SystemExit(
+                subprocess.call(
+                    ["python3", {json.dumps(os.path.join(plugin_root, 'hooks', 'scripts', 'publish-provider.py'))}, *sys.argv[1:]]
+                )
+            )
+            """
+        )
+        with open(publish_provider_wrapper, "w", encoding="utf-8") as handle:
+            handle.write(publish_provider_body)
+        current_mode = os.stat(publish_provider_wrapper).st_mode
+        os.chmod(publish_provider_wrapper, current_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
     if skill_name == "pspo-agent:start":
         _clear_file(start_bootstrap_file)

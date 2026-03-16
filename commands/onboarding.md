@@ -1,5 +1,5 @@
 ---
-description: "Asistente guiado de primera ejecucion: credenciales de Trello y configuracion del tablero"
+description: "Asistente guiado de primera ejecucion: proveedor remoto, credenciales y destino de publicacion"
 ---
 
-Invoca el skill `pspo-agent:onboarding` para configurar el plugin paso a paso.
+Invoca el skill `pspo-agent:onboarding` para configurar el proveedor remoto del plugin paso a paso.

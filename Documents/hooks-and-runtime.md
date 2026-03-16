@@ -72,14 +72,30 @@ Estados principales:
 También resuelve:
 
 - si Trello está listo
+- si Notion ya tiene token y destino base
+- si hace falta preguntar por el proveedor de publicación
 - si existe CSV compatible
 - si hay asignaciones, dependencias y sprint
 - cuál es la siguiente skill válida
+
+### `publish-provider.py`
+
+Archivo:
+
+- [`../hooks/scripts/publish-provider.py`](../hooks/scripts/publish-provider.py)
+
+Responsabilidades:
+
+- detectar proveedores configurados en `.env`
+- distinguir entre proveedor "con credenciales" y proveedor "listo para publicar"
+- persistir `.pspo-agent/runtime/publish-provider.json`
+- exponer al runtime si la elección puede ser automática o necesita una sola pregunta
 
 ### `persist-active-skill.py`
 
 - guarda `active-skill.status`
 - crea `.pspo-agent/runtime/trello-fallback.sh`
+- crea `.pspo-agent/runtime/notion-fallback.sh`
 - limpia marcas de bootstrap cuando cambia la skill
 
 ### `persist-autopilot-gate.py`
@@ -100,6 +116,7 @@ También resuelve:
 | `final-gate.status` | `autopilot-guard.py`, `persist-autopilot-gate.py`, `block-autopilot-skill.sh` |
 | `autopilot-branch-skill.status` | `autopilot-guard.py`, `block-autopilot-skill.sh` |
 | `active-skill.status` | `autopilot-guard.py`, `block-trello-bash.sh` |
+| `publish-provider.json` | `publish-provider.py`, `autopilot-guard.py` |
 
 ## Qué protege el sistema
 
@@ -109,4 +126,3 @@ También resuelve:
 - que `.env` no se lea en crudo
 - que no se peguen claves en prompts
 - que onboarding no vuelva a pedir API key/token si ya son válidos
-

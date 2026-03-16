@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bloquea prompts de Agent/Task que filtren secretos literales de Trello."""
+"""Bloquea prompts de Agent/Task que filtren secretos literales de Trello o Notion."""
 
 from __future__ import annotations
 
@@ -10,7 +10,8 @@ import sys
 
 HEX32_RE = re.compile(r"\b[a-f0-9]{32}\b", re.IGNORECASE)
 TOKEN_RE = re.compile(r"\bATTA[a-zA-Z0-9]{20,}\b")
-ASSIGNMENT_RE = re.compile(r"TRELLO_(API_KEY|TOKEN)\s*=\s*([^\s\"']+)")
+NOTION_TOKEN_RE = re.compile(r"\bntn_[A-Za-z0-9_-]{20,}\b")
+ASSIGNMENT_RE = re.compile(r"(TRELLO_(?:API_KEY|TOKEN)|NOTION_TOKEN)\s*=\s*([^\s\"']+)")
 QUERY_RE = re.compile(r"(?:^|[?&])(key|token)=([A-Za-z0-9]+)")
 
 
@@ -21,12 +22,16 @@ def _has_secret_literal(tool_input: object) -> bool:
         value = match.group(2)
         if value.startswith("${") and value.endswith("}"):
             continue
-        if match.group(1) == "API_KEY" and HEX32_RE.fullmatch(value):
+        if match.group(1) == "TRELLO_API_KEY" and HEX32_RE.fullmatch(value):
             return True
-        if match.group(1) == "TOKEN" and TOKEN_RE.fullmatch(value):
+        if match.group(1) == "TRELLO_TOKEN" and TOKEN_RE.fullmatch(value):
+            return True
+        if match.group(1) == "NOTION_TOKEN" and NOTION_TOKEN_RE.fullmatch(value):
             return True
 
     if TOKEN_RE.search(text):
+        return True
+    if NOTION_TOKEN_RE.search(text):
         return True
 
     for _, value in QUERY_RE.findall(text):
@@ -47,9 +52,9 @@ def main() -> int:
         return 0
 
     message = (
-        "Nunca copies API keys ni tokens de Trello en prompts de Agent/Task. "
+        "Nunca copies API keys ni tokens de Trello o Notion en prompts de Agent/Task. "
         "Pasa solo la ruta del fichero .env o describe la operacion a realizar; "
-        "el agente publisher debe usar trello-client/MCP y no necesita secretos literales."
+        "los agentes y fallbacks oficiales no necesitan secretos literales."
     )
     print(message, file=sys.stderr)
     print(message)

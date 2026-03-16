@@ -1,6 +1,6 @@
 # PSPO Agent
 
-Plugin no oficial de Product Owner profesional para Claude Code. Analisis de requisitos, descubrimiento de producto, historias de usuario con criterios Given/When/Then, asignacion operativa, mapa de dependencias, planificacion de sprint con factor de productividad por agentes IA, y publicacion en Trello.
+Plugin no oficial de Product Owner profesional para Claude Code. Analisis de requisitos, descubrimiento de producto, historias de usuario con criterios Given/When/Then, asignacion operativa, mapa de dependencias, planificacion de sprint con factor de productividad por agentes IA, y publicacion remota en Trello o Notion.
 
 ## Documentacion del plugin
 
@@ -42,7 +42,19 @@ Reinicia Claude Code y ejecuta:
 /pspo-agent:start
 ```
 
-El asistente de onboarding te guiara para configurar las credenciales de Trello y tu primer tablero.
+El asistente de onboarding te guiara para configurar el proveedor remoto, validar credenciales y dejar listo el destino de publicacion.
+
+## Proveedores de publicación
+
+Estado actual:
+
+- `trello`: integrado y validado
+- `notion`: integrado y validado para flujo zero-template
+- `local`: artefactos solo en `docs/`
+
+La documentación de esta capa vive en:
+
+- [`Documents/notion-integration.md`](./Documents/notion-integration.md)
 
 ## Skills disponibles
 
@@ -54,7 +66,7 @@ El asistente de onboarding te guiara para configurar las credenciales de Trello 
 | discovery | `/pspo-agent:discovery` | Preguntas de descubrimiento desde cero (sin documento de partida). |
 | generate-stories | `/pspo-agent:generate-stories` | Genera historias con criterios de aceptacion Given/When/Then. |
 | validate | `/pspo-agent:validate` | Revision historia por historia: aprobar, rechazar o pedir cambios. |
-| publish | `/pspo-agent:publish` | Publica en Trello con resumen + adjunto .md + checklist DoD. |
+| publish | `/pspo-agent:publish` | Publica en el proveedor remoto activo con resumen + adjunto .md + dependencias y asignacion real cuando aplica. |
 | save-docs | `/pspo-agent:save-docs` | Guarda artefactos de producto en Markdown local. |
 | update | `/pspo-agent:update` | Comprueba y aplica actualizaciones del plugin. |
 | team | `/pspo-agent:team` | Gestion de equipo: CSV con dedicacion y uso de agentes IA. |
@@ -72,14 +84,14 @@ El asistente de onboarding te guiara para configurar las credenciales de Trello 
 |--------|----------------|
 | requirement-analyst | Interroga documentos hasta alcanzar claridad suficiente para generar historias. |
 | product-owner | Descubrimiento de producto, generacion de historias y validacion. |
-| publisher | Publicacion en Trello: tarjetas, checklists, adjuntos, invitaciones al board. |
+| publisher | Publicacion operativa en Trello; Notion usa fallback oficial zero-template desde la skill `publish`. |
 | sprint-planner | DoD, equipo, capacidad con factor IA y planificacion de sprint. |
 | culture-guardian | Revisor de estilo: normas RAE, tono profesional, aprende del proyecto. |
 | senior-auditor | Auditoria de fondo: completitud, coherencia, HU que faltan/sobran. |
 
-## Servidor MCP
+## Integracion remota
 
-12 herramientas operativas + 2 de sincronizacion en Python puro (stdlib, 0 dependencias):
+Trello se opera con 12 herramientas operativas + 2 de sincronizacion via MCP en Python puro (stdlib, 0 dependencias):
 
 | Herramienta | Proposito |
 |-------------|-----------|
@@ -95,6 +107,11 @@ El asistente de onboarding te guiara para configurar las credenciales de Trello 
 | attach-file | Adjuntar fichero .md completo a tarjetas |
 | get-board-members | Obtener miembros del tablero con sus IDs |
 | invite-member | Invitar miembros al tablero por email |
+
+Notion se opera por fallback oficial zero-template desde:
+
+- `servers/notion-fallback.py`
+- `.pspo-agent/runtime/notion-fallback.sh`
 
 ## Hooks de seguridad
 
@@ -129,13 +146,17 @@ pspo-agent/
 │   ├── plugin.json
 │   └── marketplace.json
 ├── agents/                  # 6 agentes especializados
-├── skills/                  # 17 skills
+├── skills/                  # 18 skills
 ├── servers/
-│   └── trello-mcp.py       # Servidor MCP (Python puro, 14 herramientas, 0 dependencias)
+│   ├── trello-mcp.py        # Servidor MCP Trello
+│   ├── trello-mcp-launcher.py
+│   ├── trello-fallback.py   # Fallback oficial Trello
+│   └── notion-fallback.py   # Fallback oficial Notion
 ├── hooks/
-│   └── scripts/             # 4 hooks de seguridad
-├── tests/                   # 250+ tests (unitarios, contenido, e2e)
-├── docs/                    # ADRs, arquitectura
+│   └── scripts/             # hooks de runtime y seguridad
+├── tests/                   # tests unitarios, de contenido y runtime
+├── Documents/               # documentación viva del plugin
+├── docs/                    # artefactos generados por el flujo de producto
 ├── .mcp.json
 ├── .env.example
 ├── settings.json

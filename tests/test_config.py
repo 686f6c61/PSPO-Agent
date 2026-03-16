@@ -109,7 +109,7 @@ class TestSettingsJson(unittest.TestCase):
         self.assertEqual(self.defaults["sprint"]["ai_agent_factor_recommended"], 0.70)
 
     def test_all_sections_exist(self):
-        for section in ("trello", "discovery", "stories", "validation", "docs", "publish", "sprint", "autopilot", "dod"):
+        for section in ("providers", "trello", "notion", "discovery", "stories", "validation", "docs", "publish", "sprint", "autopilot", "dod"):
             self.assertIn(section, self.defaults, f"Falta seccion: {section}")
 
     def test_sprint_duration_is_one_week_or_less(self):
@@ -119,6 +119,15 @@ class TestSettingsJson(unittest.TestCase):
         lists = self.defaults["trello"]["default_lists"]
         self.assertIn("Sprint activo", lists)
         self.assertIn("Bloqueada", lists)
+
+    def test_supported_publish_providers_include_trello_notion_and_local(self):
+        providers = self.defaults["providers"]["supported"]
+        self.assertEqual(providers, ["trello", "notion", "local"])
+
+    def test_notion_required_envs_exist(self):
+        required_env = self.defaults["notion"]["required_env"]
+        self.assertIn("NOTION_TOKEN", required_env)
+        self.assertIn("NOTION_PARENT_PAGE_ID", required_env)
 
 
 class TestMarketplaceJson(unittest.TestCase):
@@ -179,9 +188,23 @@ class TestMcpServerExists(unittest.TestCase):
         path = os.path.join(PLUGIN_ROOT, "servers", "trello-fallback.py")
         self.assertTrue(os.path.exists(path))
 
+    def test_notion_fallback_exists(self):
+        path = os.path.join(PLUGIN_ROOT, "servers", "notion-fallback.py")
+        self.assertTrue(os.path.exists(path))
+
     def test_persist_active_skill_hook_exists(self):
         path = os.path.join(PLUGIN_ROOT, "hooks", "scripts", "persist-active-skill.py")
         self.assertTrue(os.path.exists(path))
+
+    def test_publish_provider_helper_exists(self):
+        path = os.path.join(PLUGIN_ROOT, "hooks", "scripts", "publish-provider.py")
+        self.assertTrue(os.path.exists(path))
+
+    def test_notion_fallback_command_is_documented_in_env_example(self):
+        with open(os.path.join(PLUGIN_ROOT, ".env.example"), encoding="utf-8") as handle:
+            content = handle.read()
+        self.assertIn("NOTION_PROJECT_PAGE_ID", content)
+        self.assertIn("NOTION_VISION_PAGE_ID", content)
 
     def test_no_typescript_legacy(self):
         legacy = os.path.join(PLUGIN_ROOT, "servers", "trello-mcp")

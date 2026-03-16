@@ -8,8 +8,8 @@
   "plugins": [
     {
       "name": "pspo-agent",
-      "description": "Plugin de Product Owner profesional: descubrimiento de producto, historias de usuario con criterios Given/When/Then, validacion, documentacion local y publicacion en Trello.",
-      "version": "1.0.7",
+      "description": "Plugin de Product Owner profesional: descubrimiento de producto, historias de usuario con criterios Given/When/Then, validacion, documentacion local y publicacion en Trello o Notion.",
+      "version": "1.0.8",
       "source": "./",
       "author": {
         "name": "686f6c61"

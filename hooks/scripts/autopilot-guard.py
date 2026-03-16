@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import glob
+import importlib.util
 import json
 import os
 import sys
@@ -18,6 +19,18 @@ REQUIRED_TEAM_COLUMNS = {
     "dedicacion",
     "usa_agente_ia",
 }
+
+
+def _load_provider_module():
+    path = os.path.join(os.path.dirname(__file__), "publish-provider.py")
+    spec = importlib.util.spec_from_file_location("publish_provider", path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
+PUBLISH_PROVIDER = _load_provider_module()
 
 
 def _ensure_scaffold(cwd: str) -> None:
@@ -40,55 +53,16 @@ def _has_team_csv(cwd: str) -> bool:
     return False
 
 
-def _load_dotenv_values(cwd: str) -> dict[str, str]:
-    result: dict[str, str] = {}
-    env_path = os.path.join(cwd, ".env")
-    if not os.path.isfile(env_path):
-        return result
-    try:
-        with open(env_path, encoding="utf-8") as handle:
-            for raw_line in handle:
-                line = raw_line.strip()
-                if not line or line.startswith("#") or "=" not in line:
-                    continue
-                key, value = line.split("=", 1)
-                result[key.strip()] = value.strip()
-    except OSError:
-        return {}
-    return result
-
-
-def _valid_secret(value: str) -> bool:
-    value = value.strip()
-    if not value:
-        return False
-    if value.startswith("${") and value.endswith("}"):
-        return False
-    return True
-
-
 def _trello_ready(cwd: str) -> bool:
-    dotenv = _load_dotenv_values(cwd)
-
-    def get(name: str) -> str:
-        return (os.environ.get(name) or dotenv.get(name) or "").strip()
-
-    return all(
-        _valid_secret(get(name))
-        for name in ("TRELLO_API_KEY", "TRELLO_TOKEN", "TRELLO_BOARD_ID")
-    )
+    return bool(PUBLISH_PROVIDER.trello_ready(cwd))
 
 
 def _trello_credentials_ready(cwd: str) -> bool:
-    dotenv = _load_dotenv_values(cwd)
-
-    def get(name: str) -> str:
-        return (os.environ.get(name) or dotenv.get(name) or "").strip()
-
-    return all(_valid_secret(get(name)) for name in ("TRELLO_API_KEY", "TRELLO_TOKEN"))
+    return bool(PUBLISH_PROVIDER.trello_credentials_ready(cwd))
 
 
 def compute_state(cwd: str, ensure_scaffold: bool = False) -> dict[str, object]:
+    provider_state = PUBLISH_PROVIDER.compute_state(cwd)
     runtime_dir = os.path.join(cwd, ".pspo-agent", "runtime")
     inbox_dir = os.path.join(cwd, ".pspo-agent", "inbox")
     context_file = os.path.join(runtime_dir, "autopilot-context.md")
@@ -191,9 +165,16 @@ def compute_state(cwd: str, ensure_scaffold: bool = False) -> dict[str, object]:
         "product-ready": 'AskUserQuestion("Revisar historias" | "Planificar y publicar")',
     }[phase]
 
+    publish_provider = str(provider_state.get("publish_provider") or "").strip()
+    provider_needs_choice = bool(provider_state.get("publish_provider_needs_choice"))
+
     if not product_ready:
         next_plan_publish_skill = ""
-    elif not _trello_ready(cwd):
+    elif provider_needs_choice:
+        next_plan_publish_skill = "pspo-agent:onboarding"
+    elif publish_provider == "trello" and not _trello_ready(cwd):
+        next_plan_publish_skill = "pspo-agent:onboarding"
+    elif publish_provider == "notion" and not bool(provider_state.get("notion_ready")):
         next_plan_publish_skill = "pspo-agent:onboarding"
     elif not _has_team_csv(cwd):
         next_plan_publish_skill = "pspo-agent:team"
@@ -232,8 +213,19 @@ def compute_state(cwd: str, ensure_scaffold: bool = False) -> dict[str, object]:
         "story_count": len(stories),
         "product_ready": product_ready,
         "has_team_csv": _has_team_csv(cwd),
+        "publish_provider_file": provider_state["selection_file"],
+        "selected_publish_provider": provider_state["selected_provider"],
+        "selected_publish_provider_source": provider_state["selected_provider_source"],
+        "publish_provider": publish_provider,
+        "publish_provider_source": provider_state["publish_provider_source"],
+        "configured_publish_providers": provider_state["configured_providers"],
+        "ready_publish_providers": provider_state["ready_providers"],
+        "publish_provider_needs_choice": provider_needs_choice,
         "trello_credentials_ready": _trello_credentials_ready(cwd),
         "trello_ready": _trello_ready(cwd),
+        "notion_credentials_ready": bool(provider_state["notion_credentials_ready"]),
+        "notion_ready": bool(provider_state["notion_ready"]),
+        "notion_targets_ready": bool(provider_state.get("notion_targets_ready")),
         "assignments_ready": os.path.isfile(assignments_file),
         "dependencies_ready": os.path.isfile(dependencies_file),
         "sprint_plan_ready": os.path.isfile(sprint_plan_file),

@@ -122,6 +122,12 @@ def main() -> int:
         return 0
 
     branch_skill = str(state.get("branch_skill") or "").strip()
+    active_skill = str(state.get("active_skill") or "").strip()
+    publish_provider = str(state.get("publish_provider") or "").strip()
+    provider_needs_choice = bool(state.get("publish_provider_needs_choice"))
+    notion_credentials_ready = bool(state.get("notion_credentials_ready"))
+    notion_ready = bool(state.get("notion_ready"))
+    notion_targets_ready = bool(state.get("notion_targets_ready"))
     if (
         _is_board_choice_question(payload)
         and bool(state.get("autopilot_active"))
@@ -134,6 +140,41 @@ def main() -> int:
             f"Crea automaticamente un tablero nuevo llamado '{project_name} - Backlog', "
             "configura las listas estandar (Backlog, Sprint activo, Bloqueada, En progreso, "
             "En revision, Hecho), crea las etiquetas de prioridad y guarda TRELLO_BOARD_ID."
+        )
+        print(json.dumps({"decision": "block", "reason": message}, ensure_ascii=False))
+        return 0
+
+    tool_name = str(payload.get("tool_name") or "")
+    if (
+        tool_name == "AskUserQuestion"
+        and active_skill == "pspo-agent:onboarding"
+        and publish_provider == "notion"
+        and not provider_needs_choice
+        and notion_credentials_ready
+        and notion_ready
+        and not notion_targets_ready
+    ):
+        message = (
+            "En /pspo-agent:onboarding con Notion ya autenticado y pagina padre valida no preguntes "
+            "si quieres crear la estructura o dejarla para mas tarde. Continua automaticamente con "
+            "notion-fallback.sh verify-credentials, retrieve-page, create-project y save-project-targets."
+        )
+        print(json.dumps({"decision": "block", "reason": message}, ensure_ascii=False))
+        return 0
+
+    if (
+        tool_name == "AskUserQuestion"
+        and active_skill == "pspo-agent:onboarding"
+        and publish_provider == "notion"
+        and not provider_needs_choice
+        and notion_credentials_ready
+        and notion_ready
+        and notion_targets_ready
+    ):
+        message = (
+            "En /pspo-agent:onboarding con Notion ya configurado y destino creado no preguntes de nuevo. "
+            "Continua automaticamente con notion-fallback.sh verify-credentials, "
+            "retrieve-page, create-project y save-project-targets."
         )
         print(json.dumps({"decision": "block", "reason": message}, ensure_ascii=False))
         return 0

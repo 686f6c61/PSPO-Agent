@@ -21,7 +21,7 @@ PSPO Agent es un plugin no oficial de Claude Code que cubre el ciclo completo de
 2. Generación de backlog e historias de usuario.
 3. Validación, asignación y mapa de dependencias.
 4. Planificación de sprint adaptada a equipos que usan agentes.
-5. Publicación en Trello con resumen, adjunto `.md` y asignación real.
+5. Publicación en Trello o Notion con resumen, adjunto `.md`, dependencias y asignación real cuando puede resolverse.
 
 ## Foto actual del plugin
 
@@ -29,6 +29,7 @@ PSPO Agent es un plugin no oficial de Claude Code que cubre el ciclo completo de
 - `18` skills registradas en [`../.claude-plugin/plugin.json`](../.claude-plugin/plugin.json)
 - `6` agentes especializados en [`../agents/`](../agents/)
 - `14` herramientas MCP de Trello en [`../servers/trello-mcp.py`](../servers/trello-mcp.py)
+- fallback oficial de Notion en [`../servers/notion-fallback.py`](../servers/notion-fallback.py)
 - orquestación con hooks en [`../hooks/hooks.json`](../hooks/hooks.json)
 - configuración global en [`../settings.json`](../settings.json)
 - distribución e instalación en [`../install.sh`](../install.sh) y [`../install.ps1`](../install.ps1)
@@ -50,10 +51,13 @@ PSPO Agent es un plugin no oficial de Claude Code que cubre el ciclo completo de
 5. [`trello-integration.md`](./trello-integration.md)
    MCP de Trello, launcher, fallback oficial, listas, etiquetas y contrato de publicación.
 
-6. [`security.md`](./security.md)
+6. [`notion-integration.md`](./notion-integration.md)
+   Integración zero-template de Notion, contrato de `.env`, modelo de páginas y límites de la API.
+
+7. [`security.md`](./security.md)
    Modelo de seguridad, manejo de secretos, bloqueos y normas de extensión segura.
 
-7. [`testing-and-release.md`](./testing-and-release.md)
+8. [`testing-and-release.md`](./testing-and-release.md)
    Suite de tests, cobertura por archivo, estrategia E2E y checklist de release.
 
 ## Reglas de diseño importantes
@@ -64,7 +68,8 @@ PSPO Agent es un plugin no oficial de Claude Code que cubre el ciclo completo de
   - resumen corto en la tarjeta
   - `.md` adjunto
   - miembro asignado real si la HU tiene owner
-- los secretos de Trello nunca deben aparecer en prompts, logs ni lecturas directas de `.env`.
+- la selección de proveedor de publicación vive en `.pspo-agent/runtime/publish-provider.json`
+- los secretos de Trello y Notion nunca deben aparecer en prompts, logs ni lecturas directas de `.env`.
 
 ## Fuentes de verdad
 
@@ -73,7 +78,8 @@ PSPO Agent es un plugin no oficial de Claude Code que cubre el ciclo completo de
 - Ajustes por defecto: [`../settings.json`](../settings.json)
 - Servidor MCP: [`../servers/trello-mcp.py`](../servers/trello-mcp.py)
 - Fallback oficial: [`../servers/trello-fallback.py`](../servers/trello-fallback.py)
+- Fallback oficial Notion: [`../servers/notion-fallback.py`](../servers/notion-fallback.py)
 - Launcher MCP: [`../servers/trello-mcp-launcher.py`](../servers/trello-mcp-launcher.py)
+- Selector de proveedor: [`../hooks/scripts/publish-provider.py`](../hooks/scripts/publish-provider.py)
 - Hooks: [`../hooks/hooks.json`](../hooks/hooks.json)
 - Ejemplo de credenciales: [`../.env.example`](../.env.example)
-

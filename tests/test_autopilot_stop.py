@@ -167,4 +167,4 @@ class TestAutopilotStopHook(unittest.TestCase):
             self.assertEqual(result.returncode, 0)
             payload = json.loads(result.stdout)
             self.assertEqual(payload["decision"], "block")
-            self.assertIn('Skill("pspo-agent:onboarding")', payload["reason"])
+            self.assertIn('Skill("pspo-agent:team")', payload["reason"])

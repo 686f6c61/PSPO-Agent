@@ -33,6 +33,12 @@ Archivo principal:
 
 Secciones activas:
 
+### `defaults.providers`
+
+- `supported`: `trello`, `notion`, `local`
+- `selection_file`: `.pspo-agent/runtime/publish-provider.json`
+- `default`: `local`
+
 ### `defaults.trello`
 
 - `token_expiration`: `30days`
@@ -52,6 +58,28 @@ Secciones activas:
   - `Baja`
 - `publish_target_list`: `Backlog`
 - `card_position`: `bottom`
+
+### `defaults.notion`
+
+- `api_version`: `2026-03-11`
+- `project_title_prefix`: `PSPO`
+- `project_page_title`: `{nombre_proyecto}`
+- `vision_page_title`: `HU-00 · Vision`
+- `database_title`: `Backlog`
+- `required_env`:
+  - `NOTION_TOKEN`
+  - `NOTION_PARENT_PAGE_ID`
+- `optional_env`:
+  - `NOTION_DATABASE_ID`
+  - `NOTION_PROJECT_PAGE_ID`
+  - `NOTION_VISION_PAGE_ID`
+- `status_options`:
+  - `Backlog`
+  - `Sprint activo`
+  - `Bloqueada`
+  - `En progreso`
+  - `En revision`
+  - `Hecho`
 
 ### `defaults.discovery`
 
@@ -114,6 +142,7 @@ Secciones activas:
   - `brief.txt`
 - `require_final_gate`: `true`
 - `stop_after_audit_if_trello_missing`: `true`
+- `stop_after_audit_if_publish_provider_missing`: `true`
 
 ### `defaults.dod`
 
@@ -134,12 +163,18 @@ Variables activas:
 | `TRELLO_TOKEN` | token de acceso del usuario |
 | `TRELLO_TOKEN_CREATED` | fecha de creación del token |
 | `TRELLO_BOARD_ID` | tablero de trabajo actual |
+| `NOTION_TOKEN` | token de integración interna de Notion |
+| `NOTION_PARENT_PAGE_ID` | página padre donde PSPO crea el proyecto desde cero |
+| `NOTION_DATABASE_ID` | backlog de Notion ya existente, opcional |
+| `NOTION_PROJECT_PAGE_ID` | página raíz del proyecto ya creada, opcional |
+| `NOTION_VISION_PAGE_ID` | página HU-00 ya creada, opcional |
 
 Notas:
 
 - el onboarding debe poblar estas variables
 - el launcher MCP carga `.env` automáticamente
 - el hook de seguridad bloquea lectura cruda de `.env`
+- la selección del proveedor no se guarda en `.env`; vive en `.pspo-agent/runtime/publish-provider.json`
 
 ## MCP
 
@@ -166,6 +201,19 @@ Contrato actual:
 
 `Documents/` es la documentación técnica mantenida en el repositorio.
 
+## Selección de proveedor de publicación
+
+Helper runtime:
+
+- [`../hooks/scripts/publish-provider.py`](../hooks/scripts/publish-provider.py)
+
+Responsabilidades:
+
+- detectar `trello`, `notion` o `local` según `.env`
+- persistir una selección explícita en `.pspo-agent/runtime/publish-provider.json`
+- exponer al runtime si hace falta preguntar una sola vez al usuario
+- mantener una selección estable del proveedor activo para runtime y autopilot
+
 ## Equipo
 
 Un CSV de equipo compatible es cualquier `.csv` con esta cabecera exacta:
@@ -179,4 +227,3 @@ La selección del CSV la implementan:
 - [`../skills/team/SKILL.md`](../skills/team/SKILL.md)
 - [`../hooks/scripts/autopilot-bootstrap.py`](../hooks/scripts/autopilot-bootstrap.py)
 - [`../hooks/scripts/autopilot-guard.py`](../hooks/scripts/autopilot-guard.py)
-

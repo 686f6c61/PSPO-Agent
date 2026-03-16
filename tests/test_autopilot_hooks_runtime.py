@@ -193,6 +193,16 @@ class TestAutopilotHooksRuntime(unittest.TestCase):
             with open(wrapper, encoding="utf-8") as handle:
                 content = handle.read()
             self.assertIn("trello-fallback.py", content)
+            notion_wrapper = os.path.join(tmpdir, ".pspo-agent", "runtime", "notion-fallback.sh")
+            self.assertTrue(os.path.isfile(notion_wrapper))
+            with open(notion_wrapper, encoding="utf-8") as handle:
+                notion_content = handle.read()
+            self.assertIn("notion-fallback.py", notion_content)
+            provider_wrapper = os.path.join(tmpdir, ".pspo-agent", "runtime", "publish-provider.py")
+            self.assertTrue(os.path.isfile(provider_wrapper))
+            with open(provider_wrapper, encoding="utf-8") as handle:
+                provider_content = handle.read()
+            self.assertIn("publish-provider.py", provider_content)
 
     def test_start_env_status_marks_bootstrap_done(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -208,6 +218,63 @@ class TestAutopilotHooksRuntime(unittest.TestCase):
             marker = os.path.join(runtime_dir, "start-bootstrap.status")
             with open(marker, encoding="utf-8") as handle:
                 self.assertEqual(handle.read().strip(), "done")
+
+    def test_onboarding_allows_quoted_runtime_wrapper(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            runtime_dir = os.path.join(tmpdir, ".pspo-agent", "runtime")
+            os.makedirs(runtime_dir)
+            self._run_persist_skill_hook(tmpdir, "pspo-agent:onboarding")
+            wrapper = os.path.join(runtime_dir, "notion-fallback.sh")
+            result = self._run_bash_hook(
+                tmpdir,
+                "Bash",
+                {"command": f"bash -lc '{wrapper} env-status --pretty'"},
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            marker = os.path.join(runtime_dir, "onboarding-bootstrap.status")
+            with open(marker, encoding="utf-8") as handle:
+                self.assertEqual(handle.read().strip(), "done")
+
+    def test_onboarding_allows_publish_provider_with_absolute_path(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._run_persist_skill_hook(tmpdir, "pspo-agent:onboarding")
+            result = self._run_bash_hook(
+                tmpdir,
+                "Bash",
+                {
+                    "command": (
+                        "python3 "
+                        f"'{os.path.join(os.path.abspath(PLUGIN_ROOT), 'hooks', 'scripts', 'publish-provider.py')}' "
+                        f"'{tmpdir}'"
+                    )
+                },
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_onboarding_allows_runtime_publish_provider_wrapper(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._run_persist_skill_hook(tmpdir, "pspo-agent:onboarding")
+            result = self._run_bash_hook(
+                tmpdir,
+                "Bash",
+                {"command": ".pspo-agent/runtime/publish-provider.py ."},
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_onboarding_blocks_generic_bash_after_bootstrap(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            runtime_dir = os.path.join(tmpdir, ".pspo-agent", "runtime")
+            os.makedirs(runtime_dir)
+            self._run_persist_skill_hook(tmpdir, "pspo-agent:onboarding")
+            with open(os.path.join(runtime_dir, "onboarding-bootstrap.status"), "w", encoding="utf-8") as handle:
+                handle.write("done\n")
+            result = self._run_bash_hook(
+                tmpdir,
+                "Bash",
+                {"command": f"find '{PLUGIN_ROOT}' -name 'onboarding*' -type f"},
+            )
+            self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+            self.assertIn("no uses Bash ni Fetch genericos", result.stdout)
 
     def test_start_blocks_generic_bash_before_env_status(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -251,6 +318,17 @@ class TestAutopilotHooksRuntime(unittest.TestCase):
             self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
             self.assertIn("no uses ToolSearch", result.stdout)
 
+    def test_publish_blocks_claude_local_files(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            self._run_persist_skill_hook(tmpdir, "pspo-agent:publish")
+            result = self._run_drift_hook(
+                tmpdir,
+                "Glob",
+                {"pattern": "**/*.local.md"},
+            )
+            self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+            self.assertIn("no uses .claude", result.stdout.lower())
+
     def test_onboarding_blocks_reads_before_env_status(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             runtime_dir = os.path.join(tmpdir, ".pspo-agent", "runtime")
@@ -264,6 +342,41 @@ class TestAutopilotHooksRuntime(unittest.TestCase):
             self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
             self.assertIn("/pspo-agent:onboarding", result.stdout)
             self.assertIn("env-status", result.stdout)
+
+    def test_direct_onboarding_blocks_generic_agent_for_notion(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with open(os.path.join(tmpdir, ".env"), "w", encoding="utf-8") as handle:
+                handle.write(
+                    "NOTION_TOKEN=ntn_example_token\n"
+                    "NOTION_PARENT_PAGE_ID=325b0a8fa25480599971f0c19b43e43c\n"
+                )
+            self._run_persist_skill_hook(tmpdir, "pspo-agent:onboarding")
+            result = self._run_agent_hook(
+                tmpdir,
+                "Agent",
+                {"subagent_type": "Explore", "description": "Explorar workspace"},
+            )
+            self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+            self.assertIn("/pspo-agent:onboarding", result.stdout)
+            self.assertIn("notion-fallback", result.stdout)
+
+    def test_direct_onboarding_blocks_notion_structure_choice_question(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with open(os.path.join(tmpdir, ".env"), "w", encoding="utf-8") as handle:
+                handle.write(
+                    "NOTION_TOKEN=ntn_example_token\n"
+                    "NOTION_PARENT_PAGE_ID=325b0a8fa25480599971f0c19b43e43c\n"
+                )
+            self._run_persist_skill_hook(tmpdir, "pspo-agent:onboarding")
+            result = self._run_ask_hook(
+                tmpdir,
+                "Prefieres que cree automaticamente la estructura en Notion o usar solo la pagina padre?",
+                header="Notion",
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn("no preguntes", result.stdout.lower())
+            self.assertIn("create-project", result.stdout)
+            self.assertIn("save-project-targets", result.stdout)
 
     def test_prepare_context_blocks_docs_glob(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -635,7 +748,7 @@ class TestAutopilotHooksRuntime(unittest.TestCase):
                 {"pattern": ".pspo-agent/inbox/*"},
             )
             self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
-            self.assertIn('Skill("pspo-agent:onboarding")', result.stdout)
+            self.assertIn('Skill("pspo-agent:team")', result.stdout)
 
     def test_onboarding_branch_blocks_env_read_and_points_to_env_status(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -649,6 +762,26 @@ class TestAutopilotHooksRuntime(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
             self.assertIn("trello-fallback.sh", result.stdout)
+
+    def test_direct_onboarding_blocks_ask_user_question_when_notion_targets_exist(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with open(os.path.join(tmpdir, ".env"), "w", encoding="utf-8") as handle:
+                handle.write(
+                    "NOTION_TOKEN=ntn_example_token\n"
+                    "NOTION_PARENT_PAGE_ID=325b0a8fa25480599971f0c19b43e43c\n"
+                    "NOTION_PROJECT_PAGE_ID=325b0a8fa254811d9d61cd6286cd22f0\n"
+                )
+            self._run_persist_skill_hook(tmpdir, "pspo-agent:onboarding")
+            result = self._run_ask_hook(
+                tmpdir,
+                "¿Quieres que cree la estructura de Notion o use la pagina padre?",
+                header="Notion",
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["decision"], "block")
+            self.assertIn("no preguntes de nuevo", payload["reason"].lower())
+            self.assertIn("notion-fallback.sh verify-credentials", payload["reason"])
 
     def test_onboarding_branch_blocks_global_claude_glob(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -688,6 +821,11 @@ class TestAutopilotHooksRuntime(unittest.TestCase):
             historias_dir = os.path.join(docs_dir, "historias")
             os.makedirs(runtime_dir)
             os.makedirs(historias_dir)
+            with open(os.path.join(tmpdir, ".env"), "w", encoding="utf-8") as handle:
+                handle.write(
+                    "TRELLO_API_KEY=0123456789abcdef0123456789abcdef\n"
+                    "TRELLO_TOKEN=ATTA1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ123456\n"
+                )
             with open(os.path.join(runtime_dir, "autopilot-context.md"), "w", encoding="utf-8") as handle:
                 handle.write("# Contexto\n")
             with open(os.path.join(runtime_dir, "product-phase.status"), "w", encoding="utf-8") as handle:
@@ -716,6 +854,11 @@ class TestAutopilotHooksRuntime(unittest.TestCase):
             historias_dir = os.path.join(docs_dir, "historias")
             os.makedirs(runtime_dir)
             os.makedirs(historias_dir)
+            with open(os.path.join(tmpdir, ".env"), "w", encoding="utf-8") as handle:
+                handle.write(
+                    "TRELLO_API_KEY=0123456789abcdef0123456789abcdef\n"
+                    "TRELLO_TOKEN=ATTA1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ123456\n"
+                )
             with open(os.path.join(runtime_dir, "autopilot-context.md"), "w", encoding="utf-8") as handle:
                 handle.write("# Contexto\n")
             with open(os.path.join(runtime_dir, "product-phase.status"), "w", encoding="utf-8") as handle:
@@ -735,6 +878,40 @@ class TestAutopilotHooksRuntime(unittest.TestCase):
                 {"subagent_type": "pspo-agent:publisher", "description": "Publicar en Trello"},
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_onboarding_branch_blocks_agent_for_notion_provider(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            runtime_dir = os.path.join(tmpdir, ".pspo-agent", "runtime")
+            docs_dir = os.path.join(tmpdir, "docs")
+            historias_dir = os.path.join(docs_dir, "historias")
+            os.makedirs(runtime_dir)
+            os.makedirs(historias_dir)
+            with open(os.path.join(tmpdir, ".env"), "w", encoding="utf-8") as handle:
+                handle.write(
+                    "NOTION_TOKEN=ntn_example_token\n"
+                    "NOTION_PARENT_PAGE_ID=325b0a8fa25480599971f0c19b43e43c\n"
+                )
+            with open(os.path.join(runtime_dir, "autopilot-context.md"), "w", encoding="utf-8") as handle:
+                handle.write("# Contexto\n")
+            with open(os.path.join(runtime_dir, "product-phase.status"), "w", encoding="utf-8") as handle:
+                handle.write("done")
+            with open(os.path.join(runtime_dir, "final-gate.status"), "w", encoding="utf-8") as handle:
+                handle.write("plan-publish")
+            with open(os.path.join(runtime_dir, "autopilot-branch-skill.status"), "w", encoding="utf-8") as handle:
+                handle.write("pspo-agent:onboarding")
+            for name in ("analisis-requisitos.md", "backlog.md", "auditoria-hu.md"):
+                with open(os.path.join(docs_dir, name), "w", encoding="utf-8") as handle:
+                    handle.write("# ok\n")
+            with open(os.path.join(historias_dir, "HU-01-login.md"), "w", encoding="utf-8") as handle:
+                handle.write("# HU-01\n")
+            result = self._run_agent_hook(
+                tmpdir,
+                "Agent",
+                {"subagent_type": "pspo-agent:publisher", "description": "Publicar en Notion"},
+            )
+            self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+            self.assertIn("onboarding Notion", result.stdout)
+            self.assertIn("notion-fallback.sh", result.stdout)
 
     def test_product_phase_active_blocks_agent_delegation(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -760,6 +937,11 @@ class TestAutopilotHooksRuntime(unittest.TestCase):
             historias_dir = os.path.join(docs_dir, "historias")
             os.makedirs(runtime_dir)
             os.makedirs(historias_dir)
+            with open(os.path.join(tmpdir, ".env"), "w", encoding="utf-8") as handle:
+                handle.write(
+                    "TRELLO_API_KEY=0123456789abcdef0123456789abcdef\n"
+                    "TRELLO_TOKEN=ATTA1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ123456\n"
+                )
             with open(os.path.join(runtime_dir, "product-phase.status"), "w", encoding="utf-8") as handle:
                 handle.write("done")
             with open(os.path.join(runtime_dir, "final-gate.status"), "w", encoding="utf-8") as handle:

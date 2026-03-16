@@ -2,9 +2,10 @@
 name: start
 description: >
   Punto de entrada del plugin PSPO Agent. Detecta el estado de configuracion
-  (credenciales, tablero) y redirige al flujo correcto: onboarding si falta
-  configuracion, o flujo normal de descubrimiento si todo esta listo.
-  Ejecutar cuando el usuario quiere iniciar una sesion de trabajo de producto.
+  del proveedor remoto (Trello, Notion o local) y redirige al flujo correcto:
+  onboarding si falta configuracion, o flujo normal de descubrimiento si todo
+  esta listo. Ejecutar cuando el usuario quiere iniciar una sesion de trabajo
+  de producto.
 disable-model-invocation: false
 allowed-tools: Read, Grep, Glob, Write, Edit, Bash, Task, AskUserQuestion
 ---
@@ -22,12 +23,21 @@ allowed-tools: Read, Grep, Glob, Write, Edit, Bash, Task, AskUserQuestion
 
 Eres el punto de entrada del plugin PSPO Agent. Tu unica responsabilidad es **detectar el estado actual de configuracion** y redirigir al flujo correcto. No haces descubrimiento, no generas historias, no publicas. Solo evaluas y rediriges.
 
+Debes pensar siempre en capas:
+
+- producto local (`docs/`)
+- proveedor remoto (`trello`, `notion` o `local`)
+- siguiente skill valida
+
 ## Regla de arranque estricto
 
 - Antes del paso 4 no inspecciones el workspace con globs amplios.
 - NUNCA uses `Glob("**/.claude/**")`, `Glob("**/.claude/*.local.md")`, `Glob("**/docs/product/**")` ni `Glob("**/.pspo-agent*")`.
-- Tu primera comprobacion SIEMPRE es `.pspo-agent/runtime/trello-fallback.sh env-status --pretty`.
-- Ese wrapper runtime lo prepara el propio plugin al entrar en la skill; no necesitas descubrir la ruta real del plugin.
+- Tus primeras comprobaciones validas son:
+  - `.pspo-agent/runtime/trello-fallback.sh env-status --pretty`
+  - `.pspo-agent/runtime/notion-fallback.sh env-status --pretty`
+  - `python3 "$CLAUDE_PLUGIN_ROOT/hooks/scripts/publish-provider.py" . --field ...`
+- Los wrappers runtime los prepara el propio plugin al entrar en la skill; no necesitas descubrir la ruta real del plugin.
 - Solo cuando llegues al paso 4 puedes usar globs concretos y acotados como:
   - `docs/historias/HU-*.md`
   - `*.csv`
@@ -39,18 +49,45 @@ Eres el punto de entrada del plugin PSPO Agent. Tu unica responsabilidad es **de
 
 Sigue este arbol de decision de forma estricta:
 
-### Paso 1: Verificar credenciales
+### Paso 0: Resolver proveedor remoto
 
-1. Consulta el estado seguro del `.env` con `.pspo-agent/runtime/trello-fallback.sh env-status --pretty`.
-2. Comprueba si existen las variables `TRELLO_API_KEY` y `TRELLO_TOKEN` con valores no vacios.
+1. Consulta el estado seguro de Trello con `.pspo-agent/runtime/trello-fallback.sh env-status --pretty`.
+2. Consulta el estado seguro de Notion con `.pspo-agent/runtime/notion-fallback.sh env-status --pretty`.
+3. Consulta el selector con `python3 "$CLAUDE_PLUGIN_ROOT/hooks/scripts/publish-provider.py" .`.
 
-**Si no existe `.env` o las variables estan vacias:**
+Reglas:
+
+- Si solo hay un proveedor configurado/listo, adopta ese proveedor sin preguntar.
+- Si hay varios proveedores remotos configurados, usa **AskUserQuestion** una sola vez:
+  - **"Trello"**: publicar en tablero
+  - **"Notion"**: publicar en workspace/paginas
+  - **"Solo local"**: trabajar en `docs/` sin publicar remoto
+- Tras la eleccion, persiste el proveedor con `publish-provider.py --select ...`.
+
+### Paso 1: Verificar credenciales del proveedor seleccionado
+
+Si el proveedor es `trello`:
+
+1. Usa `.pspo-agent/runtime/trello-fallback.sh env-status --pretty`.
+2. Comprueba si existen `TRELLO_API_KEY` y `TRELLO_TOKEN`.
+
+Si el proveedor es `notion`:
+
+1. Usa `.pspo-agent/runtime/notion-fallback.sh env-status --pretty`.
+2. Comprueba si existen `NOTION_TOKEN` y `NOTION_PARENT_PAGE_ID`.
+
+Si el proveedor es `local`:
+
+- no hay credenciales que validar
+- salta directamente al paso 4
+
+**Si no existe `.env` o faltan variables del proveedor seleccionado:**
 - Muestra un mensaje de bienvenida:
   ```
   Bienvenido a PSPO Agent -- Tu Product Owner profesional para Claude Code.
 
-  Detecto que es la primera vez que ejecutas el plugin (no hay credenciales configuradas).
-  Voy a guiarte paso a paso para conectar con Trello. Son 5 minutos.
+  Detecto que es la primera vez que ejecutas el plugin o que falta configurar
+  el proveedor remoto. Voy a guiarte paso a paso. Son 5 minutos.
   ```
 - Redirige a `/pspo-agent:onboarding`.
 - FIN del flujo de start.
@@ -58,21 +95,28 @@ Sigue este arbol de decision de forma estricta:
 **Si las variables existen y tienen valor:**
 - Avanza al paso 2.
 
-### Paso 2: Verificar credenciales con Trello (silencioso)
+### Paso 2: Verificar credenciales remotas (silencioso)
 
-1. Usa el agente `publisher` para ejecutar `verify-credentials` con las credenciales del `.env`.
-2. Esta verificacion es **silenciosa**: no muestres nada al usuario a menos que falle.
+Si el proveedor es `trello`:
 
-**Si la verificacion falla (credenciales invalidas o expiradas):**
+1. Usa el agente `publisher` para ejecutar `verify-credentials`.
+2. Esta verificacion es **silenciosa**.
+
+Si el proveedor es `notion`:
+
+1. Usa `.pspo-agent/runtime/notion-fallback.sh verify-credentials --pretty`.
+2. Esta verificacion tambien es **silenciosa**.
+
+**Si la verificacion falla (credenciales invalidas, expiradas o sin acceso):**
 - Informa al usuario:
   ```
-  Las credenciales de Trello almacenadas ya no son validas (posiblemente el token ha expirado).
-  Necesitamos renovarlas.
+  Las credenciales del proveedor remoto almacenadas ya no son validas o no tienen acceso.
+  Necesitamos revisarlas.
   ```
 - Redirige a `/pspo-agent:onboarding`.
 - FIN del flujo de start.
 
-**Si la verificacion es correcta:**
+**Si la verificacion es correcta y el proveedor es `trello`:**
 - Comprueba si existe la variable `TRELLO_TOKEN_CREATED` en `.env`.
   Si existe, calcula los dias transcurridos desde esa fecha hasta hoy.
   Si quedan **5 dias o menos** para la expiracion (30 dias desde la creacion):
@@ -84,9 +128,13 @@ Sigue este arbol de decision de forma estricta:
   del paso 2 lo habra detectado.
 - Avanza al paso 3.
 
-### Paso 3: Verificar tablero
+### Paso 3: Verificar destino remoto
 
-1. Comprueba si existe la variable `TRELLO_BOARD_ID` en `.env` con valor no vacio.
+Si el proveedor es `local`, salta este paso.
+
+Si el proveedor es `trello`:
+
+1. Comprueba si existe `TRELLO_BOARD_ID`.
 
 **Si no existe o esta vacia:**
 - Informa al usuario:
@@ -112,15 +160,45 @@ Sigue este arbol de decision de forma estricta:
 **Si el tablero existe:**
 - Avanza al paso 4.
 
+Si el proveedor es `notion`:
+
+1. Comprueba si existe `NOTION_PROJECT_PAGE_ID` o `NOTION_DATABASE_ID`.
+2. Si no existe ninguno, redirige a `/pspo-agent:onboarding` para crear o registrar el destino zero-template.
+3. Si existe `NOTION_PROJECT_PAGE_ID`, usa `.pspo-agent/runtime/notion-fallback.sh retrieve-page {id}` para verificar acceso.
+4. Si existe `NOTION_DATABASE_ID`, usa `.pspo-agent/runtime/notion-fallback.sh retrieve-database {id}` para verificar acceso.
+5. Si falla cualquiera, redirige a `/pspo-agent:onboarding`.
+
 ### Paso 4: Decidir el siguiente paso automaticamente
 
 Muestra un mensaje de estado:
 
+Si el proveedor es `trello`, muestra:
+
 ```
 PSPO Agent listo.
 
+  Proveedor: Trello
   Cuenta Trello: {nombre_usuario}
   Tablero: {nombre_tablero} ({url_tablero})
+```
+
+Si el proveedor es `notion`, muestra:
+
+```
+PSPO Agent listo.
+
+  Proveedor: Notion
+  Workspace / bot: {nombre_integracion}
+  Destino: {nombre_pagina_o_database}
+```
+
+Si el proveedor es `local`, muestra:
+
+```
+PSPO Agent listo.
+
+  Proveedor: Solo local
+  Destino: docs/
 ```
 
 No muestres un menu general por defecto. Primero inspecciona el estado del proyecto y continua el flujo natural:
@@ -133,10 +211,10 @@ No muestres un menu general por defecto. Primero inspecciona el estado del proye
    - Si el usuario no ha pegado contenido, usa **AskUserQuestion** con estas 3 opciones:
      - **"Tengo documentacion"** (description: "Voy a pegar un PRD, brief, email o documento para analizarlo")
      - **"Quiero contarte la idea"** (description: "No tengo documento; te explico la idea y haces discovery")
-     - **"Solo configurar Trello"** (description: "Quiero dejar la integracion lista y salir")
+     - **"Solo configurar el proveedor"** (description: "Quiero dejar la integracion remota lista y salir")
    - Si elige documentacion: ejecuta el **paso intermedio de vision**, pide el texto y continua con `/pspo-agent:analyze`.
    - Si elige idea: ejecuta el **paso intermedio de vision** y continua con `/pspo-agent:discovery`.
-   - Si elige solo configurar Trello: termina con un mensaje breve. No sigas.
+   - Si elige solo configurar el proveedor: termina con un mensaje breve. No sigas.
 
 2. **Si ya existen HUs pero no existe ningun CSV de equipo compatible:**
    - No preguntes. Informa brevemente: "Las historias ya estan generadas. Falta configurar el equipo para poder planificar y publicar."
@@ -151,7 +229,7 @@ No muestres un menu general por defecto. Primero inspecciona el estado del proye
 5. **Si existe `docs/dependencias.md` pero no existe `docs/sprint-plan.md`:**
    - No preguntes. Redirige automaticamente a `/pspo-agent:sprint-plan`.
 
-6. **Si existe `docs/sprint-plan.md` y hay HUs aprobadas que aun no figuran como "Publicada en Trello":**
+6. **Si existe `docs/sprint-plan.md` y hay HUs aprobadas que aun no figuran como publicadas en el proveedor activo:**
    - No preguntes por menus intermedios. Redirige automaticamente a `/pspo-agent:publish`.
 
 7. **Solo si el proyecto ya tiene historias, equipo, asignaciones, dependencias, sprint plan y publicacion hecha o en estado estable:**
@@ -160,7 +238,7 @@ No muestres un menu general por defecto. Primero inspecciona el estado del proye
      - **"Descubrir desde cero"** (description: "Describe tu idea y te guiare con preguntas de descubrimiento")
      - **"Asignar historias"** (description: "Repartir ownership del backlog entre el equipo")
      - **"Revisar dependencias"** (description: "Actualizar el mapa de bloqueos y relaciones entre historias")
-     - **"Publicar historias en Trello"** (description: "Publicar historias aprobadas de docs/historias/")
+     - **"Publicar historias"** (description: "Publicar historias aprobadas de docs/historias/ en el proveedor activo")
      - **"Planificar sprint"** (description: "Equipo, estimaciones y capacidad")
    - IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones numeradas como texto plano.
    - Segun la eleccion del usuario:
@@ -212,6 +290,6 @@ Describe la vision de tu producto en 2-3 frases:
 ## Reglas
 
 - NUNCA hagas descubrimiento ni generes historias desde esta skill. Solo detectas y rediriges.
-- NUNCA muestres informacion de credenciales (API Key, Token) al usuario. Solo el nombre de la cuenta de Trello.
+- NUNCA muestres informacion de credenciales (API Key, Token) al usuario.
 - Si ocurre cualquier error inesperado al leer `.env` o verificar credenciales, redirige a onboarding con un mensaje explicativo.
 - Manten el mensaje breve y orientado a la accion. El usuario quiere trabajar, no leer parrafos.

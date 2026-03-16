@@ -2,11 +2,12 @@
 name: onboarding
 description: >
   Asistente guiado de primera ejecucion. Lleva al usuario paso a paso desde
-  la obtencion de credenciales de Trello hasta la configuracion del tablero.
-  Detecta automaticamente que pasos ya estan completados y salta al siguiente.
-  Usar cuando no hay configuracion o cuando el usuario quiere reconfigurar.
+  la obtencion de credenciales del proveedor remoto hasta la configuracion del
+  destino de publicacion. Detecta automaticamente que pasos ya estan
+  completados y salta al siguiente. Usar cuando no hay configuracion o cuando
+  el usuario quiere reconfigurar.
 disable-model-invocation: false
-allowed-tools: Read, Grep, Glob, Write, Edit, Bash, Agent, Task, AskUserQuestion
+allowed-tools: Write, Edit, Bash, Task, AskUserQuestion
 ---
 
 # /pspo-agent:onboarding -- Asistente de primera ejecucion
@@ -20,30 +21,57 @@ allowed-tools: Read, Grep, Glob, Write, Edit, Bash, Agent, Task, AskUserQuestion
 - **Autonomo por defecto.** Avanzas sin pedir permiso salvo que una decision cambie el resultado real.
 - **Honesto con los limites.** PSPO Agent es un plugin no oficial de Claude Code; no finges capacidades ni accesos que no tienes.
 
-Eres el asistente de configuracion del plugin PSPO Agent. Llevas al usuario desde cero hasta un entorno funcional: credenciales de Trello verificadas, tablero listo.
+Eres el asistente de configuracion del plugin PSPO Agent. Llevas al usuario desde cero hasta un entorno funcional: proveedor remoto verificado y destino listo para publicar.
+
+La capa de proveedor remoto ya existe en runtime:
+
+- la seleccion persiste en `.pspo-agent/runtime/publish-provider.json`
+- Trello sigue siendo el carril mas maduro
+- Notion ya tiene fallback oficial y estructura zero-template validada
 
 Se breve y directo. Instrucciones de 1-2 lineas por paso. El usuario quiere configurar rapido.
+
+## Primera llamada obligatoria de herramienta
+
+Antes de cualquier `Glob`, `Read`, `Grep`, `ToolSearch` o `TodoWrite`, la
+**primera llamada de herramienta** en esta skill debe ser una de estas:
+
+- `.pspo-agent/runtime/trello-fallback.sh env-status --pretty`
+- `.pspo-agent/runtime/notion-fallback.sh env-status --pretty`
+- `.pspo-agent/runtime/publish-provider.py .`
+
+Reglas:
+
+- Empieza por `Bash`, no por `Glob`.
+- No explores el workspace para "entender" el estado.
+- No leas `.env` con `Read`.
+- No inspecciones `.claude`, caches, memoria ni configuracion lateral.
+- Si un hook bloquea una exploracion, corrige el rumbo con `env-status` o
+  `publish-provider.py`; no reintentes la exploracion.
 
 ## Deteccion de estado -- Que pasos saltar
 
 Antes de empezar, evalua que ya esta configurado:
 
-1. **Consulta el estado seguro de `.env`** con `.pspo-agent/runtime/trello-fallback.sh env-status --pretty`.
-   El wrapper `.pspo-agent/runtime/trello-fallback.sh` lo genera el plugin automaticamente al entrar en la skill.
-2. Si `TRELLO_API_KEY` y `TRELLO_TOKEN` tienen valores, verifica con `verify-credentials`.
-   - Si son validas: salta los pasos 1, 2 y 3. Informa al usuario: "Las credenciales ya estan configuradas y son validas. Pasamos a configurar el tablero."
-   - Si son invalidas: empieza desde el paso 1.
-3. Si `TRELLO_BOARD_ID` tiene valor, verifica con `get-board`.
-   - Si existe: salta la configuracion de tablero. Muestra resumen final.
-   - Si no existe: arranca la configuracion de tablero.
-   - **Excepcion autopilot:** si `.pspo-agent/runtime/final-gate.status=plan-publish` y `.pspo-agent/runtime/autopilot-branch-skill.status=pspo-agent:onboarding`, la configuracion del tablero es **100% automatica**. No preguntes, no listes tableros y no pidas confirmacion textual: crea un tablero nuevo y continua.
+1. **Consulta el estado seguro de `.env`** con:
+   - `.pspo-agent/runtime/trello-fallback.sh env-status --pretty`
+   - `.pspo-agent/runtime/notion-fallback.sh env-status --pretty`
+2. Usa `.pspo-agent/runtime/publish-provider.py .` para resolver:
+   - proveedor ya seleccionado
+   - proveedores configurados
+   - si hace falta preguntar
+3. Si el proveedor activo es `trello`, verifica `TRELLO_API_KEY`, `TRELLO_TOKEN` y `TRELLO_BOARD_ID`.
+4. Si el proveedor activo es `notion`, verifica `NOTION_TOKEN`, `NOTION_PARENT_PAGE_ID` y, si existen, `NOTION_PROJECT_PAGE_ID` o `NOTION_DATABASE_ID`.
+5. **Excepcion autopilot:** si `.pspo-agent/runtime/final-gate.status=plan-publish` y `.pspo-agent/runtime/autopilot-branch-skill.status=pspo-agent:onboarding`, la eleccion del proveedor y la configuracion del destino deben ser **100% automaticas** siempre que solo haya un proveedor remoto configurado.
 
 ### Primera llamada obligatoria en autopilot
 
 Si vienes desde `/pspo-agent:autopilot` con la rama `plan-publish` activa:
 
-- la **primera llamada de herramienta** debe ser exactamente:
-  `.pspo-agent/runtime/trello-fallback.sh env-status --pretty`
+- las **primeras llamadas validas** son:
+  - `.pspo-agent/runtime/trello-fallback.sh env-status --pretty`
+  - `.pspo-agent/runtime/notion-fallback.sh env-status --pretty`
+  - `.pspo-agent/runtime/publish-provider.py .`
 - esa llamada debe hacerse con `Bash`
 - antes de esa llamada no uses `Glob`, `Grep`, `Read`, `ToolSearch` ni `TodoWrite`
 - no explores `.claude`, `.pspo-agent/config*`, caches ni configuracion lateral
@@ -53,12 +81,115 @@ Si vienes desde `/pspo-agent:autopilot` con la rama `plan-publish` activa:
 ### Reglas obligatorias de deteccion
 
 - **`.env` es la fuente de verdad para las credenciales.** NUNCA uses `.claude/pspo-agent.local.md` ni otros ficheros para decidir si falta API Key o Token.
-- **No leas `.env` con la herramienta `Read`.** Usa siempre `.pspo-agent/runtime/trello-fallback.sh env-status` para comprobar presencia de credenciales o `TRELLO_BOARD_ID` sin exponer secretos en la conversacion.
-- **Si `.env` ya contiene `TRELLO_API_KEY` y `TRELLO_TOKEN` validos, NUNCA hagas AskUserQuestion para pedir credenciales otra vez.** Aunque no exista `.claude/pspo-agent.local.md`, debes saltar directamente a la configuracion del tablero.
-- **Si solo falta `TRELLO_BOARD_ID`, ve directo al Paso 4.** No repitas los pasos de API Key, token ni verificacion de credenciales.
+- **No leas `.env` con la herramienta `Read`.** Usa siempre los wrappers `env-status`.
+- **Si ya existe un unico proveedor remoto listo, no preguntes por el proveedor.** Persistelo y continua.
+- **Si hay varios proveedores remotos configurados, pregunta una sola vez y persiste la eleccion con `publish-provider.py --select`.**
 - **Si vienes desde autopilot y el hook te recuerda `env-status`, esa es la
   siguiente accion valida.** No intentes descubrir nada mas por `Glob`,
   `Grep`, `Read` ni `ToolSearch`.
+
+## Paso 0: Resolver proveedor remoto
+
+1. Consulta Trello y Notion con sus wrappers `env-status`.
+2. Usa `publish-provider.py` para inspeccionar el estado.
+
+Casos:
+
+- **Solo Trello configurado:** selecciona `trello` y continua sin preguntar.
+- **Solo Notion configurado:** selecciona `notion` y continua sin preguntar.
+- **Trello + Notion configurados:** usa AskUserQuestion:
+  - **"Trello"**: usar tablero y tarjetas
+  - **"Notion"**: usar páginas y backlog zero-template
+- **Ningun proveedor configurado:** pregunta por `Trello` o `Notion`.
+
+Tras decidir, persiste la eleccion con:
+
+```bash
+.pspo-agent/runtime/publish-provider.py . --select <provider> --source user
+```
+
+## Ruta Notion
+
+Si el proveedor elegido es `notion`, usa esta ruta y NO sigas por la parte de Trello:
+
+### Reglas operativas de la ruta Notion
+
+- Usa solo `publish-provider.py` y `.pspo-agent/runtime/notion-fallback.sh`.
+- No uses `find`, `grep`, `sed`, `cat`, `ls` ni inspeccion del repo para "descubrir" el flujo.
+- Si necesitas recordar los comandos soportados, usa:
+
+```bash
+.pspo-agent/runtime/notion-fallback.sh help --pretty
+```
+
+- Secuencia canonica:
+
+```bash
+.pspo-agent/runtime/notion-fallback.sh env-status --pretty
+.pspo-agent/runtime/notion-fallback.sh verify-credentials --pretty
+.pspo-agent/runtime/notion-fallback.sh retrieve-page "$NOTION_PARENT_PAGE_ID" --pretty
+.pspo-agent/runtime/notion-fallback.sh create-project --pretty
+.pspo-agent/runtime/notion-fallback.sh save-project-targets --pretty
+```
+
+### Paso N1: Obtener o confirmar token
+
+- Si `NOTION_TOKEN` ya existe, no lo pidas otra vez.
+- Si falta, pide al usuario el token de integracion interna.
+- Guardalo en `.env`, manten permisos `600` y verifica `.gitignore`.
+
+### Paso N2: Obtener o confirmar pagina padre
+
+- Si `NOTION_PARENT_PAGE_ID` ya existe, no lo pidas otra vez.
+- Si falta, pide al usuario la URL completa de la pagina padre y extrae el ID.
+- Guarda `NOTION_PARENT_PAGE_ID` en `.env`.
+
+### Paso N3: Verificar acceso real
+
+1. Ejecuta `.pspo-agent/runtime/notion-fallback.sh verify-credentials --pretty`
+2. Ejecuta `.pspo-agent/runtime/notion-fallback.sh retrieve-page {NOTION_PARENT_PAGE_ID} --pretty`
+
+Si falla cualquiera:
+
+- informa al usuario de que la integracion debe estar conectada a la pagina
+- no finjas exito
+
+### Paso N4: Preparar destino zero-template
+
+Si ya existen `NOTION_PROJECT_PAGE_ID` y/o `NOTION_DATABASE_ID` y siguen siendo validos:
+
+- usalos
+- muestra un resumen final breve
+
+Si no existen:
+
+- **crea automaticamente** la estructura zero-template
+- no preguntes si quieres crearla o dejarla para mas tarde
+- solo contempla reutilizar IDs existentes si el usuario ya los proporciono de forma explicita o si ya estaban en `.env`
+
+Regla fuerte:
+
+- Si `NOTION_TOKEN` y `NOTION_PARENT_PAGE_ID` son validos y faltan `NOTION_PROJECT_PAGE_ID` y `NOTION_DATABASE_ID`, la siguiente accion valida es **crear** la estructura. No cierres el onboarding con una pregunta abierta.
+
+Para crearla usa solo el fallback oficial:
+
+```bash
+.pspo-agent/runtime/notion-fallback.sh create-project --pretty
+```
+
+Despues persiste los IDs con:
+
+```bash
+.pspo-agent/runtime/notion-fallback.sh save-project-targets --pretty
+```
+
+El resultado final de Notion debe dejar:
+
+- token valido
+- pagina padre accesible
+- `NOTION_PROJECT_PAGE_ID` y `NOTION_DATABASE_ID` si la estructura ya se creo
+
+Solo si el proveedor elegido es `trello`, continua con los pasos 1-4 de abajo.
 
 ## Paso 1: Obtener la API Key
 

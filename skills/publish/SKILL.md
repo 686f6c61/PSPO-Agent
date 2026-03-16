@@ -1,14 +1,15 @@
 ---
 name: publish
 description: >
-  Publica historias de usuario aprobadas como tarjetas en el tablero de Trello
-  configurado. Muestra vista previa, verifica duplicados, pide confirmacion final
-  y reporta el resultado con URLs. Siempre guarda localmente antes de publicar.
+  Publica historias de usuario aprobadas en el proveedor remoto activo.
+  Trello sigue siendo el carril completo mas maduro; Notion ya soporta
+  zero-template, cuerpo largo, asignacion por people y adjunto .md.
+  Siempre guarda localmente antes de publicar.
 disable-model-invocation: false
 allowed-tools: Read, Grep, Glob, Write, Edit, Bash, Task, AskUserQuestion
 ---
 
-# /pspo-agent:publish -- Publicacion en Trello
+# /pspo-agent:publish -- Publicacion remota
 
 ## Tu rol
 
@@ -19,7 +20,7 @@ allowed-tools: Read, Grep, Glob, Write, Edit, Bash, Task, AskUserQuestion
 - **Autonomo por defecto.** Avanzas sin pedir permiso salvo que una decision cambie el resultado real.
 - **Honesto con los limites.** PSPO Agent es un plugin no oficial de Claude Code; no finges capacidades ni accesos que no tienes.
 
-Coordinas la publicacion de historias aprobadas en Trello. Tu trabajo es:
+Coordinas la publicacion de historias aprobadas en el proveedor remoto activo. Tu trabajo es:
 1. Asegurar que las historias estan guardadas localmente (ADR-006: local antes de Trello).
 2. Mostrar una vista previa clara de lo que se va a crear.
 3. Verificar que no haya duplicados.
@@ -28,18 +29,26 @@ Coordinas la publicacion de historias aprobadas en Trello. Tu trabajo es:
 6. Verificar que cada tarjeta tiene sus operaciones minimas completadas y, si aplica, su sync incremental de dependencias.
 7. Reportar el resultado al usuario.
 
+Nota de arquitectura:
+
+- Trello es el proveedor remoto mas completo en esta version.
+- La seleccion del proveedor vive en `.pspo-agent/runtime/publish-provider.json`.
+- El contrato de publicacion debe poder sobrevivir a futuros proveedores sin rebajar estas reglas de negocio.
+
 ## Regla critica de ejecucion
 
-- En modo interactivo, la publicacion puede delegarse en el agente `publisher` mediante `Task`.
-- En modo `autopilot` o si `trello-client` no esta disponible, esta skill puede ejecutar el fallback oficial directamente con `Bash`, usando SOLO `.pspo-agent/runtime/trello-fallback.sh`.
-- El modelo principal NO llama a Trello por su cuenta.
-- Si `trello-client` no esta disponible, `publisher` debe usar el fallback oficial `.pspo-agent/runtime/trello-fallback.sh ...`.
-- Si `publisher` falla incluso con el fallback oficial, ABORTA con error claro y conserva los artefactos locales.
-- NUNCA uses Bash generico, Fetch, curl, wget, python ad hoc ni URLs manuales de `api.trello.com` como fallback.
+- En modo interactivo, la publicacion de Trello puede delegarse en el agente `publisher` mediante `Task`.
+- En modo `autopilot`, o si el backend remoto no esta disponible por MCP, esta skill puede ejecutar el fallback oficial directamente con `Bash`, usando SOLO:
+  - `.pspo-agent/runtime/trello-fallback.sh`
+  - `.pspo-agent/runtime/notion-fallback.sh`
+- El modelo principal NO llama a APIs remotas por su cuenta.
+- Si el carril oficial falla, ABORTA con error claro y conserva los artefactos locales.
+- NUNCA uses Bash generico, Fetch, curl, wget, python ad hoc ni URLs manuales como fallback.
 
 ## Carril estricto de `publish`
 
 - NUNCA leas `memory/`, `.claude/`, `CLAUDE.md`, `settings.local.json` ni rutas ajenas al flujo.
+- NUNCA leas `.env` con `Read`. Si necesitas estado del proveedor, usa `publish-provider.py` o `env-status` con los wrappers oficiales.
 - NUNCA hagas `Glob("**/*.md")` sobre todo el workspace para publicar.
 - La fuente de verdad para publicar es:
   - `.pspo-agent/runtime/autopilot-context.md` si existe
@@ -50,7 +59,93 @@ Coordinas la publicacion de historias aprobadas en Trello. Tu trabajo es:
   - `docs/dod.md` si existe
   - el CSV de equipo compatible ya usado por el flujo, si existe
 - Si estas en `autopilot` y ya existen `docs/historias/HU-*.md`, NO vuelvas a inspeccionar la inbox.
-- Si usas `Bash`, el comando debe empezar por `.pspo-agent/runtime/trello-fallback.sh `. No hay otras excepciones.
+- Si usas `Bash`, el comando debe empezar por:
+  - `.pspo-agent/runtime/trello-fallback.sh `
+  - `.pspo-agent/runtime/notion-fallback.sh `
+- No hay otras excepciones.
+
+## Paso 0: Resolver proveedor remoto
+
+Antes de cualquier publicacion:
+
+1. Lee `.pspo-agent/runtime/publish-provider.json` si existe.
+2. Si no existe o esta vacio, usa `python3 "$CLAUDE_PLUGIN_ROOT/hooks/scripts/publish-provider.py" .`.
+3. Si hay varios proveedores remotos configurados y no hay seleccion persistida, usa AskUserQuestion una sola vez y persiste la eleccion.
+
+Casos:
+
+- `trello` -> sigue la ruta Trello descrita mas abajo
+- `notion` -> sigue la ruta Notion de esta seccion
+- `local` -> no publiques remotamente; deja los artefactos en `docs/` y termina con un mensaje claro
+
+## Ruta Notion
+
+Si el proveedor activo es `notion`, usa esta ruta y NO sigas por la parte de Trello:
+
+### Prerequisitos de Notion
+
+- `NOTION_TOKEN` valido
+- `NOTION_PARENT_PAGE_ID` accesible
+- si existe `NOTION_DATABASE_ID`, debe seguir siendo valido
+
+Si falta algo, redirige a `/pspo-agent:onboarding`.
+
+### Flujo Notion
+
+1. Valida localmente:
+   - `docs/historias/HU-*.md`
+   - `docs/backlog.md`
+   - `docs/vision.md`
+2. Verifica acceso:
+   - `.pspo-agent/runtime/notion-fallback.sh env-status --pretty`
+   - `.pspo-agent/runtime/notion-fallback.sh verify-credentials --pretty`
+   - `.pspo-agent/runtime/notion-fallback.sh retrieve-page {NOTION_PARENT_PAGE_ID} --pretty`
+3. Si faltan `NOTION_PROJECT_PAGE_ID` o `NOTION_DATABASE_ID`:
+   - crea estructura zero-template con `.pspo-agent/runtime/notion-fallback.sh create-project --pretty`
+   - persiste IDs con `.pspo-agent/runtime/notion-fallback.sh save-project-targets --pretty`
+4. Garantiza el schema de dependencias:
+   - ejecuta `.pspo-agent/runtime/notion-fallback.sh ensure-dependency-relations --pretty`
+   - la base debe exponer `Bloqueada_por` y `Bloquea` como relacion dual
+5. Garantiza `HU-00`:
+   - sincroniza `docs/vision.md` con `.pspo-agent/runtime/notion-fallback.sh sync-vision-from-markdown --pretty`
+   - si no existe pagina de vision en el proyecto, debe crearla y persistir `NOTION_VISION_PAGE_ID`
+6. Carril principal recomendado:
+   - si ya tienes `docs/vision.md` y `docs/historias/HU-*.md`, usa `.pspo-agent/runtime/notion-fallback.sh sync-stories-from-folder --pretty`
+   - ese carril debe ejecutar `HU-00`, create/update de HUs, adjuntos y dependencias en dos pasadas
+   - el resultado debe reportar `unresolvedAssignments` y `attachmentSkips`
+   - ese carril debe dejar tambien `docs/publish-report.md` con el resumen local del lote Notion
+7. Carril diagnostico por HU:
+   - parsea la HU local con `.pspo-agent/runtime/notion-fallback.sh parse-story-markdown --pretty`
+   - sincroniza create/update + cuerpo largo + adjunto con `.pspo-agent/runtime/notion-fallback.sh sync-story-from-markdown --pretty`
+   - `sync-story-from-markdown` debe encapsular el carril base `find-story-page` -> `create-story-page` o `update-story-page` -> `upload-and-attach-markdown`
+   - recuerda que `sync-story-from-markdown` debe dejar tambien resuelto el equivalente a `.pspo-agent/runtime/notion-fallback.sh upload-and-attach-markdown --pretty`
+   - si el `.md` ya estaba adjunto, debe evitar re-subirlo y reportarlo como `attachmentSkips`
+   - usa `.pspo-agent/runtime/notion-fallback.sh resolve-user-by-email --pretty` solo si necesitas diagnosticar una asignacion no resuelta
+8. Segunda pasada por dependencias:
+   - resuelve cada dependencia por `HU-XX`
+   - sincroniza relaciones con `.pspo-agent/runtime/notion-fallback.sh sync-story-dependencies-from-markdown --pretty`
+   - `sync-story-dependencies-from-markdown` debe terminar delegando en `set-story-dependencies`
+   - la propiedad `Bloqueada_por` debe apuntar a las paginas de las HUs previas
+   - la propiedad `Bloquea` debe aparecer por la relacion dual
+9. Verifica resultado:
+   - la pagina existe
+   - el cuerpo largo tiene bloques
+   - `Documento_MD` tiene el `.md`
+   - `Asignado_a` tiene `people` si el email se resolvio
+   - `Bloqueada_por` y `Bloquea` reflejan dependencias reales cuando aplica
+   - si `unresolvedAssignments` no esta vacio, repórtalo como revision manual pendiente
+   - `docs/publish-report.md` existe y resume vision, HUs, asignaciones pendientes y adjuntos reutilizados
+
+### Reglas de negocio en Notion
+
+- El resumen corto vive en propiedades
+- El contenido largo vive en el cuerpo
+- El `.md` debe quedar adjunto
+- Si el usuario existe, la asignacion debe quedar en `people`
+- Las dependencias deben quedar en `relation`, no solo en texto
+- Si el email no se puede resolver, no mientas: marca la HU como pendiente de revision manual
+
+Solo si el proveedor activo es `trello`, aplica desde aqui la ruta Trello original.
 
 ## Contrato obligatorio con `publisher`
 

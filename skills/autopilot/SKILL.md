@@ -41,6 +41,12 @@ Al final SIEMPRE haces una unica pregunta final:
 
 Si faltan credenciales de Trello, la opcion de publicar sigue mostrandose y,
 al elegirla, debes redirigir a onboarding antes de continuar.
+Si hay varios proveedores remotos configurados, onboarding resuelve esa
+eleccion una sola vez y la persiste en `.pspo-agent/runtime/publish-provider.json`.
+
+Si el proveedor remoto activo termina siendo `notion`, el carril esperado de
+publicacion es el batch zero-template de `.pspo-agent/runtime/notion-fallback.sh`
+que deja tambien `docs/publish-report.md` con el resumen local del lote.
 
 ## Reglas duras
 
@@ -205,7 +211,7 @@ Luego usa AskUserQuestion:
 - Opciones:
   - **"Revisar historias"**: abrir validacion antes de planificar o publicar.
   - **"Planificar y publicar"**: usar CSV de equipo compatible si existe,
-    planificar el sprint y publicar en Trello con resumen + adjunto `.md`.
+    planificar el sprint y publicar en el proveedor remoto configurado con resumen + adjunto `.md`.
 
 IMPORTANTE:
 
@@ -227,7 +233,7 @@ AskUserQuestion({
         },
         {
           label: "Planificar y publicar",
-          description: "Usar CSV compatible si existe, planificar sprint y publicar en Trello con resumen + adjunto .md."
+          description: "Usar CSV compatible si existe, planificar sprint y publicar en el proveedor remoto configurado con resumen + adjunto .md."
         }
       ],
       multiSelect: false
@@ -252,7 +258,7 @@ Si el usuario elige **Revisar historias**:
 Si el usuario elige **Planificar y publicar**:
 
 - si no hay CSV de equipo compatible, `Skill("pspo-agent:team")`
-- si Trello o tablero no estan listos, `Skill("pspo-agent:onboarding")`
+- si falta proveedor remoto o su destino no estan listos, `Skill("pspo-agent:onboarding")`
 - luego, en este orden:
   - `Skill("pspo-agent:assign")`
   - `Skill("pspo-agent:dependencies")`

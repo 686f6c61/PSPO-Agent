@@ -33,10 +33,28 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 phase="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --ensure-scaffold --field phase "${CWD}")"
 gate_status="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field gate_status "${CWD}")"
 branch_skill="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field branch_skill "${CWD}")"
+publish_provider="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field publish_provider "${CWD}")"
+provider_needs_choice="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field publish_provider_needs_choice "${CWD}")"
+active_skill="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field active_skill "${CWD}")"
 payload_lower="$(printf '%s' "${PAYLOAD}" | tr '[:upper:]' '[:lower:]')"
 
 case "${phase}" in
     inactive)
+        if [[ "${active_skill}" == "pspo-agent:onboarding" ]]; then
+            if [[ "${provider_needs_choice}" == "1" || -z "${publish_provider}" ]]; then
+                emit_block "En /pspo-agent:onboarding no uses ${TOOL_NAME} para descubrir estado. La ruta valida empieza por trello-fallback/notion-fallback env-status y .pspo-agent/runtime/publish-provider.py."
+                exit 2
+            fi
+            if [[ "${publish_provider}" == "notion" || "${publish_provider}" == "local" ]]; then
+                emit_block "En /pspo-agent:onboarding con proveedor ${publish_provider} no uses ${TOOL_NAME}. La ruta valida es Bash con notion-fallback.sh o .pspo-agent/runtime/publish-provider.py; no delegues a agentes genericos."
+                exit 2
+            fi
+            if [[ "${payload_lower}" == *"publisher"* ]]; then
+                exit 0
+            fi
+            emit_block "En /pspo-agent:onboarding con proveedor Trello no uses ${TOOL_NAME} genericos ni exploradores. La unica delegacion valida es `Task` con `publisher` para verify-credentials, create-board y configuracion del tablero."
+            exit 2
+        fi
         exit 0
         ;;
 esac
@@ -51,6 +69,18 @@ fi
 
 if [[ "${phase}" == "product-ready" ]]; then
     if [[ "${gate_status}" == "plan-publish" && "${branch_skill}" == "pspo-agent:onboarding" ]]; then
+        if [[ "${provider_needs_choice}" == "1" || -z "${publish_provider}" ]]; then
+            emit_block "Durante onboarding desde autopilot primero resuelve el proveedor remoto. No uses ${TOOL_NAME} todavia: la ruta valida es trello-fallback/notion-fallback env-status y .pspo-agent/runtime/publish-provider.py."
+            exit 2
+        fi
+        if [[ "${publish_provider}" == "notion" ]]; then
+            emit_block "Durante onboarding Notion desde autopilot no uses ${TOOL_NAME}. La ruta valida es notion-fallback.sh verify-credentials -> retrieve-page -> create-project -> save-project-targets."
+            exit 2
+        fi
+        if [[ "${publish_provider}" == "local" ]]; then
+            emit_block "Con proveedor local no uses ${TOOL_NAME} durante onboarding. No hay onboarding remoto: continua con team/assign/dependencies/sprint-plan/publish local."
+            exit 2
+        fi
         if [[ "${payload_lower}" == *"publisher"* && "${payload_lower}" == *"list-boards"* ]]; then
             emit_block "En onboarding desde autopilot no listes tableros ni pidas eleccion al usuario. Usa el agente publisher para create-board con '{nombre_proyecto} - Backlog', luego manage-lists, manage-labels y guardado de TRELLO_BOARD_ID."
             exit 2
@@ -58,7 +88,7 @@ if [[ "${phase}" == "product-ready" ]]; then
         if [[ "${payload_lower}" == *"publisher"* ]]; then
             exit 0
         fi
-        emit_block "Durante onboarding desde autopilot no uses ${TOOL_NAME} genericos ni exploradores. La unica delegacion valida es el agente publisher para verify-credentials, list-boards, create-board y configuracion del tablero."
+        emit_block "Durante onboarding Trello desde autopilot no uses ${TOOL_NAME} genericos ni exploradores. La unica delegacion valida es el agente publisher para verify-credentials, create-board y configuracion del tablero."
         exit 2
     fi
     exit 0

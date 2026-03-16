@@ -28,8 +28,8 @@ except Exception:
 if echo "$TARGETS" | grep -Eqi '(^|/)\.env($|[.])|credentials|secret|token'; then
     if echo "$TARGETS" | grep -Eqi '(^|/)\.env($|[.])'; then
         echo "BLOCKED" >&2
-        echo "No leas .env en crudo: expone secretos en el historial. Usa Bash con el helper oficial: .pspo-agent/runtime/trello-fallback.sh env-status --pretty" >&2
-        echo "No leas .env en crudo: expone secretos en el historial. Usa Bash con el helper oficial: .pspo-agent/runtime/trello-fallback.sh env-status --pretty"
+        echo "No leas .env en crudo: expone secretos en el historial. Usa Bash con los helpers oficiales: .pspo-agent/runtime/trello-fallback.sh env-status --pretty, .pspo-agent/runtime/notion-fallback.sh env-status --pretty o .pspo-agent/runtime/publish-provider.py ." >&2
+        echo "No leas .env en crudo: expone secretos en el historial. Usa Bash con los helpers oficiales: .pspo-agent/runtime/trello-fallback.sh env-status --pretty, .pspo-agent/runtime/notion-fallback.sh env-status --pretty o .pspo-agent/runtime/publish-provider.py ."
         exit 2
     fi
     echo "[pspo-agent] Aviso: lectura de fichero sensible detectada." >&2

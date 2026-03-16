@@ -2,6 +2,29 @@
 
 > Nota de estado (2026-03-16): este changelog se conserva como historial de releases y se mantiene en orden descendente por versión. Las entradas antiguas describen el comportamiento de cada versión en su momento y pueden mencionar términos ya sustituidos, como `Sprint actual` o `team.csv`. La fuente de verdad del estado actual es `README.md` y `Documents/`.
 
+## v1.0.8 (16/03/2026)
+
+### Nuevas funcionalidades
+
+- **Capa de proveedores remotos:** el plugin deja de asumir Trello como unico destino y resuelve el proveedor activo (`trello`, `notion` o `local`) desde runtime con `publish-provider.py`.
+- **Onboarding zero-template para Notion:** se incorpora `notion-fallback.py`, su wrapper de runtime y la ruta guiada para validar credenciales, leer la pagina padre y crear proyecto, HU-00 y backlog sin plantilla previa.
+- **Seleccion de proveedor en tiempo de ejecucion:** si solo hay un proveedor listo se elige automaticamente; si hay varios, el flujo pregunta una sola vez antes de planificar o publicar.
+
+### Mejoras
+
+- **Start, onboarding y publish hablan ya de proveedor remoto activo:** comandos, skills y mensajes de estado dejan de estar acoplados a Trello y enrutan por el carril oficial correspondiente.
+- **Guardrails mas finos para autopilot y onboarding:** los hooks aceptan `trello-fallback`, `notion-fallback` y `publish-provider`, bloquean Bash/Fetch genericos y evitan preguntas redundantes cuando Notion ya esta autenticado o configurado.
+- **Documentacion viva alineada con Notion:** `Documents/`, `.env.example` y la configuracion del plugin documentan variables, arquitectura y flujo zero-template del nuevo proveedor.
+
+### Correccion de errores
+
+- **Publish deja de apoyarse en contexto lateral inseguro:** los hooks bloquean `.claude`, `*.local.md` y rutas ajenas a `docs/`, wrappers oficiales y runtime como fuente de verdad durante la publicacion.
+- **La decision del siguiente paso tras auditoria ya no fuerza Trello:** el runtime comprueba el proveedor listo antes de mandar de vuelta a onboarding y puede continuar hacia `team` cuando la publicacion ya esta resuelta.
+
+### Infraestructura
+
+- **Cobertura ampliada para routing y runtime de proveedores:** se añaden tests para `publish-provider`, fallback de Notion, bootstrap de wrappers y nuevas reglas de hooks.
+
 ## v1.0.7 (15/03/2026)
 
 ### Mejoras

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Hook PreToolUse (matcher: Bash, Fetch): Bloquea comandos que intenten
-# acceder a la API de Trello directamente y cualquier Bash/Fetch durante las
+# acceder a APIs remotas por su cuenta y cualquier Bash/Fetch durante las
 # fases tempranas de /pspo-agent:autopilot.
-# Las operaciones con Trello DEBEN ir por el servidor MCP trello-client y
-# la preparacion local del autopilot debe usar Glob/Read/Write/Edit.
+# Las operaciones remotas DEBEN ir por los wrappers oficiales del plugin y la
+# preparacion local del autopilot debe usar Glob/Read/Write/Edit.
 #
 # Codigos de salida:
 #   0 = comando permitido
@@ -23,6 +23,8 @@ INPUT=$(cat)
 TOOL_NAME=""
 CWD="$(pwd)"
 PAYLOAD=""
+COMMAND_TEXT=""
+ALL_STRINGS=""
 
 eval "$(printf '%s' "$INPUT" | python3 -c "
 import json, os, shlex, sys
@@ -33,9 +35,31 @@ except Exception:
 tool_input = data.get('tool_input', {}) or {}
 tool_name = data.get('tool_name', '')
 cwd = data.get('cwd') or os.getcwd()
+command_text = ''
+if isinstance(tool_input, dict):
+    for key in ('command', 'cmd', 'script'):
+        value = tool_input.get(key)
+        if isinstance(value, str) and value.strip():
+            command_text = value
+            break
+
+all_strings = []
+def walk(value):
+    if isinstance(value, str):
+        all_strings.append(value)
+    elif isinstance(value, dict):
+        for nested in value.values():
+            walk(nested)
+    elif isinstance(value, list):
+        for nested in value:
+            walk(nested)
+
+walk(tool_input)
 print(f'TOOL_NAME={shlex.quote(tool_name)}')
 print(f'CWD={shlex.quote(cwd)}')
 print(f'PAYLOAD={shlex.quote(json.dumps(tool_input, ensure_ascii=False))}')
+print(f'COMMAND_TEXT={shlex.quote(command_text)}')
+print(f'ALL_STRINGS={shlex.quote(chr(10).join(all_strings))}')
 " 2>/dev/null || true)"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -48,15 +72,25 @@ onboarding_bootstrap="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field onboa
 start_bootstrap_file="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field start_bootstrap_file "${CWD}")"
 onboarding_bootstrap_file="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field onboarding_bootstrap_file "${CWD}")"
 PAYLOAD_LOWER=$(printf '%s' "$PAYLOAD" | tr '[:upper:]' '[:lower:]')
+COMMAND_TEXT_LOWER=$(printf '%s' "$COMMAND_TEXT" | tr '[:upper:]' '[:lower:]')
+ALL_STRINGS_LOWER=$(printf '%s' "$ALL_STRINGS" | tr '[:upper:]' '[:lower:]')
 uses_official_fallback="false"
 uses_env_status="false"
+uses_provider_helper="false"
 
-if [[ "${TOOL_NAME}" == "Bash" ]] && echo "$PAYLOAD_LOWER" | grep -qiE 'trello-fallback(\.py|\.sh)'; then
+if [[ "${TOOL_NAME}" == "Bash" ]] && echo "${COMMAND_TEXT_LOWER}
+${ALL_STRINGS_LOWER}" | grep -qiE '(^|[[:space:]"'\''`;/])([[:alnum:]_./-]*)(trello|notion)-fallback(\.py|\.sh)\b'; then
     uses_official_fallback="true"
 fi
 
-if [[ "${uses_official_fallback}" == "true" ]] && echo "$PAYLOAD_LOWER" | grep -qiE 'env-status'; then
+if [[ "${uses_official_fallback}" == "true" ]] && echo "${COMMAND_TEXT_LOWER}
+${ALL_STRINGS_LOWER}" | grep -qiE '\benv-status\b'; then
     uses_env_status="true"
+fi
+
+if [[ "${TOOL_NAME}" == "Bash" ]] && echo "${COMMAND_TEXT_LOWER}
+${ALL_STRINGS_LOWER}" | grep -qiE '(^|[[:space:]"'\''`;/])([[:alnum:]_./-]*)publish-provider\.py\b'; then
+    uses_provider_helper="true"
 fi
 
 case "${phase}" in
@@ -74,18 +108,23 @@ case "${phase}" in
         ;;
 esac
 
-if [[ "${active_skill}" == "pspo-agent:start" ]] && [[ "${start_bootstrap}" != "done" ]] && [[ "${uses_official_fallback}" != "true" ]]; then
-    emit_block "En /pspo-agent:start no uses Bash ni Fetch todavia. La primera accion valida es .pspo-agent/runtime/trello-fallback.sh env-status --pretty."
+if [[ "${active_skill}" == "pspo-agent:start" ]] && [[ "${start_bootstrap}" != "done" ]] && [[ "${uses_official_fallback}" != "true" && "${uses_provider_helper}" != "true" ]]; then
+    emit_block "En /pspo-agent:start no uses Bash ni Fetch todavia. La primera accion valida es consultar el estado con .pspo-agent/runtime/trello-fallback.sh env-status --pretty, .pspo-agent/runtime/notion-fallback.sh env-status --pretty o .pspo-agent/runtime/publish-provider.py ."
     exit 2
 fi
 
-if [[ "${active_skill}" == "pspo-agent:onboarding" ]] && [[ "${onboarding_bootstrap}" != "done" ]] && [[ "${uses_official_fallback}" != "true" ]]; then
-    emit_block "En /pspo-agent:onboarding no uses Bash ni Fetch todavia. La primera accion valida es .pspo-agent/runtime/trello-fallback.sh env-status --pretty."
+if [[ "${active_skill}" == "pspo-agent:onboarding" ]] && [[ "${onboarding_bootstrap}" != "done" ]] && [[ "${uses_official_fallback}" != "true" && "${uses_provider_helper}" != "true" ]]; then
+    emit_block "En /pspo-agent:onboarding no uses Bash ni Fetch todavia. La primera accion valida es consultar el estado con .pspo-agent/runtime/trello-fallback.sh env-status --pretty, .pspo-agent/runtime/notion-fallback.sh env-status --pretty o .pspo-agent/runtime/publish-provider.py ."
     exit 2
 fi
 
-if [[ "${uses_official_fallback}" == "true" ]] && echo "$PAYLOAD_LOWER" | grep -qiE '(\|\||&&|curl|wget|grep .*trello_|grep .*token|\.claude/|cat .*\.env|sed )'; then
-    emit_block "Usa el wrapper oficial en un comando limpio y aislado. No mezcles .pspo-agent/runtime/trello-fallback.sh con curl, grep, .claude ni lecturas manuales de .env."
+if [[ "${active_skill}" == "pspo-agent:onboarding" ]] && [[ "${uses_official_fallback}" != "true" && "${uses_provider_helper}" != "true" ]]; then
+    emit_block "En /pspo-agent:onboarding no uses Bash ni Fetch genericos. Usa solo .pspo-agent/runtime/publish-provider.py o los wrappers oficiales: notion-fallback.sh para Notion, publisher/trello-fallback.sh para Trello."
+    exit 2
+fi
+
+if [[ "${uses_official_fallback}" == "true" ]] && echo "$PAYLOAD_LOWER" | grep -qiE '(\|\||&&|curl|wget|grep .*(trello_|notion_)|grep .*token|\.claude/|cat .*\.env|sed )'; then
+    emit_block "Usa el wrapper oficial en un comando limpio y aislado. No mezcles los wrappers runtime con curl, grep, .claude ni lecturas manuales de .env."
     exit 2
 fi
 
@@ -110,6 +149,14 @@ if [[ "${uses_official_fallback}" == "true" ]]; then
     exit 0
 fi
 
+if [[ "${uses_provider_helper}" == "true" ]]; then
+    if echo "$PAYLOAD_LOWER" | grep -qiE '(\|\||&&|curl|wget|cat .*\.env|sed )'; then
+        emit_block "Usa publish-provider.py en un comando aislado. No lo mezcles con curl, lecturas manuales de .env ni shell compuesto."
+        exit 2
+    fi
+    exit 0
+fi
+
 if [[ "${phase}" == "product-ready" && "${gate_status}" == "plan-publish" && "${branch_skill}" == "pspo-agent:onboarding" ]]; then
     emit_block "Durante onboarding desde autopilot no uses ${TOOL_NAME}. Usa Read/Glob para .env, .gitignore, .env.example, runtime/inbox y delega en el agente publisher para verify-credentials, list-boards o create-board."
     exit 2
@@ -119,12 +166,18 @@ fi
 BLOCKED_PATTERNS=(
     "api.trello.com"
     "trello.com/1/"
+    "api.notion.com"
     "TRELLO_API_KEY"
     "TRELLO_TOKEN"
+    "NOTION_TOKEN"
     "curl.*trello"
+    "curl.*notion"
     "wget.*trello"
+    "wget.*notion"
     "urllib.*trello"
+    "urllib.*notion"
     "requests.*trello"
+    "requests.*notion"
 )
 
 # Patrones prohibidos en autopilot local: la inbox y sus copias se manejan
@@ -138,10 +191,8 @@ AUTOPILOT_LOCAL_PATTERNS=(
 for pattern in "${BLOCKED_PATTERNS[@]}"; do
     pattern_lower=$(echo "$pattern" | tr '[:upper:]' '[:lower:]')
     if echo "$PAYLOAD_LOWER" | grep -qiE "$pattern_lower"; then
-        emit_block "Acceso directo a la API de Trello bloqueado. Usa las herramientas MCP del servidor trello-client o el wrapper oficial .pspo-agent/runtime/trello-fallback.sh; nunca Bash, Fetch o curl manual."
-        echo "Herramientas disponibles: verify-credentials, list-boards, get-board, get-card," >&2
-        echo "create-board, manage-lists, manage-labels, create-cards, search-cards," >&2
-        echo "update-card, add-checklist, attach-file, get-board-members, invite-member." >&2
+        emit_block "Acceso directo a APIs remotas bloqueado. Usa el MCP trello-client o los wrappers oficiales .pspo-agent/runtime/trello-fallback.sh y .pspo-agent/runtime/notion-fallback.sh; nunca Bash, Fetch o curl manual."
+        echo "Wrappers oficiales disponibles: .pspo-agent/runtime/trello-fallback.sh y .pspo-agent/runtime/notion-fallback.sh." >&2
         exit 2
     fi
 done

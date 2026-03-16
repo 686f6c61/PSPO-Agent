@@ -1,7 +1,12 @@
 {
   "plugin": "pspo-agent",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "defaults": {
+    "providers": {
+      "supported": ["trello", "notion", "local"],
+      "selection_file": ".pspo-agent/runtime/publish-provider.json",
+      "default": "local"
+    },
     "trello": {
       "token_expiration": "30days",
       "app_name": "PSPO Agent",
@@ -22,6 +27,23 @@
       ],
       "publish_target_list": "Backlog",
       "card_position": "bottom"
+    },
+    "notion": {
+      "api_version": "2026-03-11",
+      "project_title_prefix": "PSPO",
+      "project_page_title": "{nombre_proyecto}",
+      "vision_page_title": "HU-00 · Vision",
+      "database_title": "Backlog",
+      "required_env": ["NOTION_TOKEN", "NOTION_PARENT_PAGE_ID"],
+      "optional_env": ["NOTION_DATABASE_ID", "NOTION_PROJECT_PAGE_ID", "NOTION_VISION_PAGE_ID"],
+      "status_options": [
+        "Backlog",
+        "Sprint activo",
+        "Bloqueada",
+        "En progreso",
+        "En revision",
+        "Hecho"
+      ]
     },
     "discovery": {
       "min_questions": 3,
@@ -80,7 +102,8 @@
         "brief.txt"
       ],
       "require_final_gate": true,
-      "stop_after_audit_if_trello_missing": true
+      "stop_after_audit_if_trello_missing": true,
+      "stop_after_audit_if_publish_provider_missing": true
     },
     "dod": {
       "file": "docs/dod.md",
