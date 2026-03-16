@@ -7,6 +7,7 @@
  * contenido es estatico.
  */
 import { site } from '../../data/site';
+import IntegrationShowcase from '../ui/IntegrationShowcase.astro';
 ---
 
 <section id="hero" class="relative overflow-hidden bg-transparent pt-24 pb-16 sm:pt-32 sm:pb-24">
@@ -92,7 +93,7 @@ import { site } from '../../data/site';
         Plugin de Claude Code que actúa como
         <strong class="text-primary-600">Product Owner profesional</strong>.
         Descubrimiento de producto, historias de usuario, asignación operativa,
-        dependencias, sprint con agentes y publicación en Trello.
+        dependencias, sprint con agentes y publicación en Trello o Notion.
         Para desarrolladores, tech leads y equipos medianos que quieren construir producto, no coordinarlo a mano.
       </p>
       <div class="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
@@ -111,6 +112,10 @@ import { site } from '../../data/site';
         >
           Ver funcionalidades
         </a>
+      </div>
+
+      <div class="mx-auto mt-8 max-w-4xl">
+        <IntegrationShowcase compact={true} />
       </div>
     </div>
 
@@ -155,7 +160,7 @@ import { site } from '../../data/site';
         </div>
         <p class="text-sm text-text-secondary leading-relaxed">
           Ya no te falla definir historias, te falla coordinarlas bien entre backend, frontend, QA y negocio.
-          PSPO Agent convierte un brief en backlog operativo, reparte ownership, visibiliza bloqueos y deja Trello listo para ejecutar.
+          PSPO Agent convierte un brief en backlog operativo, reparte ownership, visibiliza bloqueos y deja Trello o Notion listos para ejecutar.
         </p>
       </div>
     </div>

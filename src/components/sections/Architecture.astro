@@ -14,6 +14,7 @@
 import SectionHeading from '../ui/SectionHeading.astro';
 import CodeBlock from '../ui/CodeBlock.astro';
 import { pluginMeta } from '../../data/plugin';
+import IntegrationShowcase from '../ui/IntegrationShowcase.astro';
 
 const mcpTools = [
   { tool: 'verify-credentials', method: 'GET', endpoint: '/1/members/me', input: 'key, token', output: 'Nombre usuario, id, URL perfil' },
@@ -34,13 +35,13 @@ const mcpTools = [
 
 const configSections = [
   {
-    key: 'trello',
-    title: 'Configuración de Trello',
+    key: 'providers',
+    title: 'Configuración de proveedores remotos',
     items: [
-      { param: 'default_lists', description: 'Columnas por defecto: Backlog, Sprint activo, Bloqueada, En progreso, En revision, Hecho' },
-      { param: 'default_labels', description: 'Etiquetas de prioridad: Critica (rojo), Alta (naranja), Media (amarillo), Baja (azul)' },
-      { param: 'publish_target_list', description: 'Lista destino para publicar historias (por defecto: Backlog)' },
-      { param: 'card_position', description: 'Posición de las tarjetas nuevas (bottom)' },
+      { param: 'publish_provider', description: 'Proveedor remoto elegido en runtime: trello, notion o local' },
+      { param: 'trello.default_lists', description: 'Columnas por defecto para Trello: Backlog, Sprint activo, Bloqueada, En progreso, En revision, Hecho' },
+      { param: 'notion.project_layout', description: 'Estructura zero-template para Notion: proyecto, HU-00, backlog y paginas HU' },
+      { param: 'provider_selection_mode', description: 'Si hay un proveedor listo se elige solo; si hay varios, se pregunta una sola vez' },
     ],
   },
   {
@@ -80,26 +81,33 @@ const configSections = [
       { param: 'default_input_dir', description: 'Carpeta de entrada por defecto: .pspo-agent/inbox' },
       { param: 'accepted_brief_files', description: 'Acepta brief.md, instrucciones.md, prd.md, requirements.md y brief.txt' },
       { param: 'require_final_gate', description: 'Siempre deja una compuerta final antes de publicar' },
-      { param: 'stop_after_audit_if_trello_missing', description: 'Se detiene tras la auditoría si Trello no está configurado' },
+      { param: 'stop_after_audit_if_trello_missing', description: 'Se detiene tras la auditoría si no hay proveedor remoto listo para publicar' },
     ],
   },
   {
     key: 'publish',
     title: 'Configuración de publicación',
     items: [
-      { param: 'save_local_before_trello', description: 'Siempre guarda localmente antes de publicar en Trello' },
+      { param: 'save_local_before_trello', description: 'Siempre guarda localmente antes de publicar en un proveedor remoto' },
       { param: 'check_duplicates_by_title', description: 'Verifica duplicados por título antes de crear tarjetas' },
       { param: 'require_confirmation', description: 'Requiere confirmación del usuario antes de publicar' },
-      { param: 'require_member_assignment_for_assigned_stories', description: 'No da por cerrada una tarjeta asignada si no se resuelve el memberId real' },
+      { param: 'require_member_assignment_for_assigned_stories', description: 'No da por cerrada una HU asignada si no se resuelve un responsable real en el proveedor' },
     ],
   },
 ];
 
-const envTemplate = `# Credenciales de la API de Trello
+const envTemplate = `# Trello (opcional)
 TRELLO_API_KEY=          # API Key del Power-Up (32 caracteres hex)
 TRELLO_TOKEN=            # Token de autorización (cadena ATTA...)
 TRELLO_TOKEN_CREATED=    # Fecha de creación del token (YYYY-MM-DD, gestionada por el plugin)
-TRELLO_BOARD_ID=         # ID del tablero seleccionado`;
+TRELLO_BOARD_ID=         # ID del tablero seleccionado
+
+# Notion (opcional)
+NOTION_TOKEN=            # Internal integration token
+NOTION_PARENT_PAGE_ID=   # Página padre compartida con la integración
+NOTION_DATABASE_ID=      # Backlog remoto creado por el plugin
+NOTION_PROJECT_PAGE_ID=  # Página raíz del proyecto
+NOTION_VISION_PAGE_ID=   # Página HU-00 / Vision`;
 ---
 
 <section id="arquitectura" class="py-8 sm:py-12 bg-transparent">
@@ -107,7 +115,7 @@ TRELLO_BOARD_ID=         # ID del tablero seleccionado`;
     <SectionHeading
       id="arquitectura-heading"
       title="Arquitectura"
-      subtitle={`${pluginMeta.counts.commands} comandos, ${pluginMeta.counts.skills} skills, ${pluginMeta.counts.agents} agentes, ${pluginMeta.counts.mcpTools} herramientas MCP y ${pluginMeta.counts.hookGuards} guardrails de runtime para Trello y autopilot.`}
+      subtitle={`${pluginMeta.counts.commands} comandos, ${pluginMeta.counts.skills} skills, ${pluginMeta.counts.agents} agentes, ${pluginMeta.counts.mcpTools} herramientas MCP y ${pluginMeta.counts.hookGuards} guardrails de runtime para Trello, Notion y autopilot.`}
     />
 
     <!-- Vision general -->
@@ -116,9 +124,9 @@ TRELLO_BOARD_ID=         # ID del tablero seleccionado`;
         PSPO Agent es un plugin no oficial de Claude Code que opera como un conjunto coordinado de
         <strong>skills</strong> (instrucciones estructuradas en Markdown) que guian el comportamiento del LLM,
         combinado con <strong>hooks</strong>, un <strong>launcher MCP</strong> y un
-        <strong> fallback oficial</strong> para Trello. La lógica de producto se reparte entre
+        <strong> fallback oficial</strong> por proveedor. La lógica de producto se reparte entre
         Markdown, runtime y utilidades Python ligeras: onboarding, generación, auditoría,
-        asignación, dependencias, sprint y sincronización con Trello sin depender de un backend externo.
+        asignación, dependencias, sprint y sincronización con Trello o Notion sin depender de un backend externo.
       </p>
       <div class="mt-4 flex flex-wrap items-center gap-3">
         <span class="rounded-full bg-primary-50 px-3 py-1 text-xs font-medium text-primary-700">
@@ -135,6 +143,9 @@ TRELLO_BOARD_ID=         # ID del tablero seleccionado`;
             <path fill-rule="evenodd" d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 17h-8.5A2.25 2.25 0 012 14.75v-8.5A2.25 2.25 0 014.25 4h5a.75.75 0 010 1.5h-5zm7.5-3a.75.75 0 01.75-.75h4.5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0V4.06l-5.22 5.22a.75.75 0 11-1.06-1.06l5.22-5.22h-2.69a.75.75 0 01-.75-.75z" clip-rule="evenodd" />
           </svg>
         </a>
+      </div>
+      <div class="mt-6">
+        <IntegrationShowcase compact={true} />
       </div>
     </div>
 
@@ -241,7 +252,7 @@ TRELLO_BOARD_ID=         # ID del tablero seleccionado`;
                   </li>
                   <li class="flex items-start gap-1.5">
                     <svg class="h-3.5 w-3.5 mt-0.5 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
-                    Bloquear acceso directo a Trello via Bash y Fetch
+                    Bloquear acceso directo a proveedores remotos via Bash y Fetch
                   </li>
                   <li class="flex items-start gap-1.5">
                     <svg class="h-3.5 w-3.5 mt-0.5 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
@@ -288,17 +299,17 @@ TRELLO_BOARD_ID=         # ID del tablero seleccionado`;
             <svg class="h-8 w-6 text-primary-300" viewBox="0 0 24 32" fill="none"><path d="M12 0v24M7 19l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
           </div>
 
-          <!-- Capa: Trello API -->
+          <!-- Capa: Proveedor remoto -->
           <div class="flex justify-center">
             <div class="flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-300 px-6 py-3 text-sm font-semibold text-blue-800">
               <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" /></svg>
-              API REST de Trello (api.trello.com)
+              Proveedor remoto (Trello o Notion)
             </div>
           </div>
         </div>
         <figcaption class="mt-4 text-center text-xs text-text-muted">
           Las flechas representan el flujo de datos: el usuario invoca skills vía Claude Code,
-          que activa el servidor MCP cuando necesita interactuar con Trello.
+          que activa el carril oficial adecuado: MCP para Trello y fallback zero-template para Notion.
         </figcaption>
       </figure>
     </div>
@@ -339,7 +350,7 @@ TRELLO_BOARD_ID=         # ID del tablero seleccionado`;
             </div>
             <div class="shrink-0 rounded-md bg-blue-50 border border-blue-300 px-3 py-2 font-medium text-blue-800 text-center w-24">
               <svg class="h-5 w-5 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" /></svg>
-              Trello<br/>API
+              Proveedor<br/>remoto
             </div>
           </div>
           <div class="mt-3 flex items-start justify-between gap-2 text-xs text-text-muted">
@@ -355,7 +366,7 @@ TRELLO_BOARD_ID=         # ID del tablero seleccionado`;
           </div>
         </div>
         <figcaption class="mt-4 text-center text-xs text-text-muted">
-          Los datos fluyen de izquierda a derecha. Solo el servidor MCP realiza llamadas HTTP externas.
+          Los datos fluyen de izquierda a derecha. Solo los wrappers oficiales del plugin realizan llamadas HTTP externas.
         </figcaption>
       </figure>
     </div>
@@ -366,7 +377,8 @@ TRELLO_BOARD_ID=         # ID del tablero seleccionado`;
       <p class="text-text-secondary mb-6">
         El servidor MCP es la única pieza que ejecuta código. Es un fichero Python puro (stdlib,
         sin dependencias externas) que implementa el protocolo JSON-RPC 2.0 sobre stdio y
-        expone herramientas para interactuar con la API REST de Trello.
+        expone herramientas para interactuar con la API REST de Trello. Notion hoy usa un fallback
+        oficial distinto, más orientado a creación zero-template y sincronización por carpetas.
       </p>
       <div class="overflow-x-auto rounded-lg border border-surface-200">
         <table class="w-full text-sm">

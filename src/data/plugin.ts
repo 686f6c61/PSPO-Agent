@@ -5,7 +5,7 @@
  * repartidos entre varios componentes con valores distintos.
  */
 export const pluginMeta = {
-  version: '1.0.7',
+  version: '1.0.8',
   counts: {
     commands: 19,
     skills: 18,
@@ -36,6 +36,30 @@ export const pluginMeta = {
     'audit',
   ],
   changelog: [
+    {
+      version: 'v1.0.8',
+      date: '16/03/2026',
+      sections: [
+        {
+          title: 'Capa de proveedores',
+          icon: 'M3.75 5.25h16.5M3.75 12h16.5m-16.5 6.75h16.5',
+          items: [
+            'Runtime con publish-provider para elegir Trello, Notion o modo local sin acoplar el flujo a un único destino',
+            'Onboarding zero-template de Notion con proyecto, HU-00 y backlog creados desde la página padre',
+            'Selección automática cuando solo hay un proveedor listo y una sola pregunta si hay varios',
+          ],
+        },
+        {
+          title: 'Guardrails y documentación',
+          icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+          items: [
+            'Hooks de start, onboarding y publish guiados por trello-fallback, notion-fallback y publish-provider',
+            'Bloqueos extra para evitar Bash o lecturas laterales inseguras durante publish y onboarding',
+            'Web y documentación alineadas con Notion, variables nuevas y routing por proveedor remoto',
+          ],
+        },
+      ],
+    },
     {
       version: 'v1.0.7',
       date: '15/03/2026',

@@ -2,8 +2,8 @@
 /**
  * Seccion de preguntas frecuentes (FAQ).
  *
- * Agrupa preguntas sobre el plugin, la instalacion, Trello, la planificacion
- * de sprint y el factor de productividad IA. Cada pregunta es un <details>
+ * Agrupa preguntas sobre el plugin, la instalacion, las integraciones
+ * remotas, la planificacion de sprint y el factor de productividad IA. Cada pregunta es un <details>
  * con acordeon nativo (sin JS). Incluye datos estructurados FAQPage para SEO.
  */
 import SectionHeading from '../ui/SectionHeading.astro';
@@ -32,13 +32,13 @@ const faqCategories = [
       },
       {
         question: 'El servidor MCP no arranca',
-        answer: 'No necesitas arrancar el servidor de Trello a mano. El plugin usa .mcp.json, trello-mcp-launcher.py y un fallback oficial. Verifica que Python 3 esta en el PATH, reinicia Claude Code y relanza /pspo-agent:start o /pspo-agent:onboarding.',
+        answer: 'No necesitas arrancar nada a mano. Trello usa .mcp.json, trello-mcp-launcher.py y fallback oficial; Notion hoy entra por fallback oficial y zero-template. Verifica que Python 3 esta en el PATH, reinicia Claude Code y relanza /pspo-agent:start o /pspo-agent:onboarding.',
         code: 'claude plugin list\npython3 --version\n/pspo-agent:onboarding',
       },
     ],
   },
   {
-    title: 'Credenciales de Trello',
+    title: 'Credenciales e integraciones remotas',
     icon: 'M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z',
     items: [
       {
@@ -46,13 +46,13 @@ const faqCategories = [
         answer: 'La API Key tiene 32 caracteres hexadecimales y el token empieza por ATTA. El plugin valida ambos y evita mostrar la clave completa en pantalla o en logs durante el onboarding.',
       },
       {
-        question: 'El token ha caducado',
-        answer: 'Los tokens de Trello expiran a los 30 dias. El plugin te avisa cuando quedan 5 dias. Para renovar, ejecuta el onboarding de nuevo.',
-        code: '/pspo-agent:onboarding  # Te guia para generar un token nuevo',
+        question: 'Como configuro Notion por primera vez',
+        answer: 'Necesitas una internal integration y una pagina padre compartida con esa integracion. El plugin guarda el token, el parent page y crea desde cero el proyecto, la HU-00 y el backlog sin depender de una plantilla.',
+        code: 'NOTION_TOKEN=...\nNOTION_PARENT_PAGE_ID=...\n/pspo-agent:onboarding',
       },
       {
         question: 'Donde se guardan las credenciales?',
-        answer: 'En el fichero .env de la raiz del proyecto. El launcher MCP las carga automáticamente y los hooks del plugin bloquean lecturas o llamadas directas que puedan exponerlas fuera del carril seguro.',
+        answer: 'En el fichero .env de la raiz del proyecto. El launcher MCP y los fallbacks oficiales las cargan automáticamente y los hooks del plugin bloquean lecturas o llamadas directas que puedan exponerlas fuera del carril seguro.',
       },
     ],
   },
@@ -61,8 +61,8 @@ const faqCategories = [
     icon: 'M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z',
     items: [
       {
-        question: 'Puedo usar el plugin sin Trello?',
-        answer: 'Si. El plugin guarda todas las historias de usuario como ficheros Markdown en docs/historias/. Trello es opcional: puedes generar, validar y exportar historias sin publicar en Trello. La publicacion es el ultimo paso y solo se ejecuta si tu quieres.',
+        question: 'Puedo usar el plugin sin proveedor remoto?',
+        answer: 'Si. El plugin guarda todas las historias de usuario como ficheros Markdown en docs/historias/. Trello y Notion son opcionales: puedes generar, validar y exportar historias sin publicar en un sistema remoto. La publicacion es el ultimo paso y solo se ejecuta si tu quieres.',
       },
       {
         question: 'Como funciona el flujo autonomo entre fases?',
@@ -73,8 +73,8 @@ const faqCategories = [
         answer: 'No hay un numero fijo de historias. El plugin decide si necesita 4 o 40 HU segun el alcance real, persiste la vision/HU-00, backlog y HU individuales en disco, y mantiene el mismo contrato de publicacion: resumen corto en la tarjeta, fichero .md adjunto, asignacion real, DoD y dependencias cuando apliquen.',
       },
       {
-        question: 'Que termina en Trello y que se queda en docs/?',
-        answer: 'Trello recibe la capa operativa: resumen corto de cada HU, adjunto .md, miembro asignado y checklists. docs/ conserva los artefactos completos del proyecto: vision/HU-00, backlog, historias individuales, asignaciones, dependencias, sprint y reportes.',
+        question: 'Que termina en el proveedor remoto y que se queda en docs/?',
+        answer: 'El proveedor remoto recibe la capa operativa: resumen corto de cada HU, adjunto .md, responsable y dependencias visibles. docs/ conserva los artefactos completos del proyecto: vision/HU-00, backlog, historias individuales, asignaciones, dependencias, sprint y reportes.',
       },
       {
         question: 'Puedo exportar las historias a Jira u otras herramientas?',
@@ -110,7 +110,7 @@ const faqCategories = [
       },
       {
         question: 'Como funciona la asignacion de miembros a tarjetas?',
-        answer: 'El plugin toma los emails desde cualquier CSV de equipo compatible, invita a quien falte al tablero y reutiliza el memberId real de Trello para asignar la tarjeta. Si la asignación no se puede resolver, la sincronización no se da por cerrada.',
+        answer: 'El plugin toma los emails desde cualquier CSV de equipo compatible. En Trello invita y reutiliza el memberId real; en Notion intenta resolver people dentro del workspace. Si la asignacion no se puede resolver, la sincronizacion no se da por cerrada.',
       },
       {
         question: 'Que metodologia de estimacion usa el plugin?',

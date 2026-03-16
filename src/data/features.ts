@@ -39,7 +39,7 @@ export const features: Feature[] = [
     categoryLabel: 'Configuración',
     title: 'Onboarding guiado',
     description:
-      'Empieza con /pspo-agent:start. El plugin detecta si faltan credenciales o tablero y te guía paso a paso para dejar Trello listo sin tocar ficheros a mano.',
+      'Empieza con /pspo-agent:start. El plugin detecta si faltan credenciales o destino remoto y te guía paso a paso para dejar Trello o Notion listos sin tocar ficheros a mano.',
     command: '/pspo-agent:start',
     icon: 'M15.59 14.37a6 6 0 0 0-5.84 7.38c.06.3.15.59.27.86M12 2a10 10 0 0 0-6.88 17.23l1.17-1.17A8 8 0 1 1 20 12a7.95 7.95 0 0 1-2.32 5.64l1.17 1.17A10 10 0 0 0 12 2zm0 4a6 6 0 0 0-4.24 10.24l1.17-1.17A4 4 0 1 1 16 12a3.98 3.98 0 0 1-1.17 2.83l1.17 1.17A6 6 0 0 0 12 6zm0 4a2 2 0 1 0 0 4 2 2 0 0 0 0-4z',
     huReference: 'HU-01',
@@ -92,9 +92,9 @@ export const features: Feature[] = [
     id: 'publish',
     category: 'publicacion',
     categoryLabel: 'Publicación',
-    title: 'Publicación en Trello',
+    title: 'Publicación en Trello y Notion',
     description:
-      'Publica o sincroniza historias en Trello con resumen corto, adjunto .md, DoD, dependencias y miembros reales. Detecta duplicados, muestra vista previa y guarda siempre en local antes de tocar Trello.',
+      'Publica o sincroniza historias en Trello o Notion con resumen corto, adjunto .md, dependencias y responsables reales. Detecta duplicados, muestra vista previa y guarda siempre en local antes de tocar el proveedor remoto.',
     command: '/pspo-agent:publish',
     icon: 'M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5',
     huReference: 'HU-05',
@@ -171,7 +171,7 @@ export const features: Feature[] = [
     categoryLabel: 'Planificación',
     title: 'Definition of Done',
     description:
-      'Configura los criterios mínimos que toda historia debe cumplir: tests, code review, linter, seguridad, documentación. Se añade automáticamente como checklist en las tarjetas de Trello.',
+      'Configura los criterios mínimos que toda historia debe cumplir: tests, code review, linter, seguridad y documentación. Se incorpora al flujo de publicación y a los reportes operativos.',
     command: '/pspo-agent:sprint-plan',
     icon: 'M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3l1.5 1.5 3-3.75',
     huReference: '',
@@ -193,7 +193,7 @@ export const features: Feature[] = [
     categoryLabel: 'Planificación',
     title: 'Revisión de sprint',
     description:
-      'Consulta el estado de las tarjetas en Trello, evalúa el cumplimiento de la Definition of Done y genera un informe de cierre de sprint con métricas de completitud.',
+      'Consulta el estado del sprint en el proveedor remoto, evalúa el cumplimiento de la Definition of Done y genera un informe de cierre con métricas de completitud.',
     command: '/pspo-agent:sprint-review',
     icon: 'M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25Z',
     huReference: '',
@@ -224,9 +224,9 @@ export const features: Feature[] = [
     id: 'invite-members',
     category: 'publicacion',
     categoryLabel: 'Publicación',
-    title: 'Invitación al tablero por email',
+    title: 'Asignación por proveedor',
     description:
-      'Invita automáticamente a los miembros del equipo al tablero de Trello usando los emails del CSV compatible y reutiliza el memberId devuelto para asignar tarjetas reales.',
+      'Invita por email cuando el proveedor lo permite y, si no, resuelve usuarios existentes del workspace. El objetivo es que cada HU salga con responsable real, no con un placeholder.',
     command: '',
     icon: 'M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75',
     huReference: '',

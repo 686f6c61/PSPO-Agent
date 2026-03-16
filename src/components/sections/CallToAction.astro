@@ -8,6 +8,7 @@
  */
 import CodeBlock from '../ui/CodeBlock.astro';
 import { pluginMeta } from '../../data/plugin';
+import IntegrationShowcase from '../ui/IntegrationShowcase.astro';
 ---
 
 <section id="cta" class="bg-transparent py-8 sm:py-12">
@@ -18,7 +19,7 @@ import { pluginMeta } from '../../data/plugin';
           Instálalo y monta un sprint activo en una tarde.
         </h2>
         <p class="mt-4 max-w-3xl text-base leading-relaxed text-slate-300">
-          Si vienes con documentación, un CSV de equipo compatible y Trello listo, PSPO Agent te
+          Si vienes con documentación, un CSV de equipo compatible y Trello o Notion listos, PSPO Agent te
           deja visión, backlog, HU individuales, asignaciones y publicación en mucho menos tiempo
           que un flujo manual.
         </p>
@@ -65,8 +66,8 @@ import { pluginMeta } from '../../data/plugin';
               <div class="mt-4 flex flex-wrap gap-2 text-xs">
                 <span class="rounded-full bg-white/[0.08] px-3 py-1 text-slate-200">HU-00 / visión operativa</span>
                 <span class="rounded-full bg-white/[0.08] px-3 py-1 text-slate-200">HU amplias en Markdown</span>
-                <span class="rounded-full bg-white/[0.08] px-3 py-1 text-slate-200">Resumen corto en Trello</span>
-                <span class="rounded-full bg-white/[0.08] px-3 py-1 text-slate-200">Asignación real por email</span>
+                <span class="rounded-full bg-white/[0.08] px-3 py-1 text-slate-200">Resumen corto en proveedor remoto</span>
+                <span class="rounded-full bg-white/[0.08] px-3 py-1 text-slate-200">Asignación real por email o people</span>
               </div>
               <a
                 href={pluginMeta.docsUrl}
@@ -99,11 +100,15 @@ import { pluginMeta } from '../../data/plugin';
             />
           </div>
           <div class="mt-4 flex flex-wrap gap-2 text-xs">
-            <span class="rounded-full bg-white/[0.08] px-3 py-1 text-slate-200">Resumen corto en Trello + HU .md adjunta</span>
-            <span class="rounded-full bg-white/[0.08] px-3 py-1 text-slate-200">Asignaciones por email</span>
+            <span class="rounded-full bg-white/[0.08] px-3 py-1 text-slate-200">Resumen corto + HU .md adjunta</span>
+            <span class="rounded-full bg-white/[0.08] px-3 py-1 text-slate-200">Asignaciones por email o people</span>
             <span class="rounded-full bg-white/[0.08] px-3 py-1 text-slate-200">Dependencias visibles</span>
           </div>
         </div>
+      </div>
+
+      <div class="mt-6">
+        <IntegrationShowcase theme="dark" />
       </div>
 
       <div class="mt-6">

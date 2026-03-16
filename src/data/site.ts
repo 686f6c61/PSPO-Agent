@@ -11,9 +11,9 @@ import { pluginMeta } from './plugin';
 export const site = {
   name: 'PSPO Agent',
   version: pluginMeta.version,
-  title: 'PSPO Agent | Plugin no oficial de Claude Code para backlog, HU y Trello',
+  title: 'PSPO Agent | Plugin no oficial de Claude Code para backlog, HU, Trello y Notion',
   description:
-    'Plugin no oficial de Claude Code para descubrimiento de producto, HU amplias, asignacion operativa, dependencias, sprint con agentes y publicacion en Trello con resumen corto, adjunto .md y miembro real.',
+    'Plugin no oficial de Claude Code para descubrimiento de producto, HU amplias, asignacion operativa, dependencias, sprint con agentes y publicacion en Trello o Notion con resumen corto, adjunto .md y responsables reales.',
   url: 'https://pspo-agent.com',
   ogImage: '/og-image.png',
   repository: 'https://github.com/686f6c61/PSPO-Agent',
