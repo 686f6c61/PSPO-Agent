@@ -10,7 +10,7 @@
 #
 # Parametros:
 #   -KeepConfig  No borrar .env ni credenciales
-#   -KeepDocs    No borrar los documentos generados (docs/, team.csv)
+#   -KeepDocs    No borrar los documentos generados (docs/, CSVs de equipo compatibles)
 #   -Force       No pedir confirmacion
 #
 # El script:
@@ -29,6 +29,14 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$TeamCsvHeader = "nombre,email,rol,categoria,dedicacion,usa_agente_ia"
+
+function Get-CompatibleTeamCsvFiles {
+    Get-ChildItem -Path $PluginRoot -Filter *.csv -File -ErrorAction SilentlyContinue | Where-Object {
+        $header = Get-Content $_.FullName -First 1 -ErrorAction SilentlyContinue
+        $null -ne $header -and $header.Trim() -eq $TeamCsvHeader
+    }
+}
 
 # --- Directorio del plugin ---
 $PluginRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -72,7 +80,7 @@ if (-not $Force) {
     }
 
     if (-not $KeepDocs) {
-        Write-Host "  [-] Documentos generados (docs/, team.csv)"
+        Write-Host "  [-] Documentos generados (docs/, CSVs de equipo compatibles en la raiz)"
     } else {
         Write-Host "  [+] Documentos generados -- SE CONSERVAN (-KeepDocs)" -ForegroundColor Green
     }
@@ -159,24 +167,22 @@ if (-not $KeepConfig) {
 if (-not $KeepDocs) {
     Write-Info "Eliminando documentos generados..."
 
-    $docsToRemove = @(
-        "docs\historias",
-        "docs\vision.md",
-        "docs\backlog.md",
-        "docs\asignaciones.md",
-        "docs\dependencias.md",
-        "docs\sprint-plan.md",
-        "docs\dod.md",
-        "team.csv"
-    )
+    $docsPath = Join-Path $PluginRoot "docs"
+    if (Test-Path $docsPath) {
+        Remove-Item -Path $docsPath -Recurse -Force
+        Write-Ok "Eliminado: docs\\"
+        $removedCount++
+    }
 
-    foreach ($item in $docsToRemove) {
-        $fullPath = Join-Path $PluginRoot $item
-        if (Test-Path $fullPath) {
-            Remove-Item -Path $fullPath -Recurse -Force
-            Write-Ok "Eliminado: $item"
+    $teamCsvFiles = Get-CompatibleTeamCsvFiles
+    if ($teamCsvFiles) {
+        foreach ($file in $teamCsvFiles) {
+            Remove-Item -Path $file.FullName -Force
+            Write-Ok "Eliminado: $($file.Name)"
             $removedCount++
         }
+    } else {
+        Write-Info "No hay CSVs de equipo compatibles en la raiz"
     }
 } else {
     Write-Info "Documentos generados conservados (-KeepDocs)"
@@ -200,13 +206,13 @@ if ($KeepConfig -or $KeepDocs) {
     }
     if ($KeepDocs) {
         Write-Host "    [+] docs/ (documentos generados)"
-        Write-Host "    [+] team.csv (equipo)"
+        Write-Host "    [+] CSV(s) de equipo compatibles en la raiz"
     }
     Write-Host ""
 }
 
 Write-Host "  Siempre conservado:" -ForegroundColor White
-Write-Host "    [+] Codigo fuente (skills/, agents/, servers/trello-mcp.py)"
+Write-Host "    [+] Codigo fuente (skills/, agents/, servers/)"
 Write-Host "    [+] Configuracion (.claude-plugin/, hooks/, .mcp.json)"
 Write-Host "    [+] .env.example (plantilla sin credenciales)"
 Write-Host ""

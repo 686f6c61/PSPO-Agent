@@ -31,8 +31,8 @@ class TestSkillStructure(unittest.TestCase):
 
     def test_skill_count(self):
         skills = self._get_skill_files()
-        self.assertEqual(len(skills), 14,
-                         f"Se esperan 14 skills, hay {len(skills)}")
+        self.assertEqual(len(skills), 18,
+                         f"Se esperan 18 skills, hay {len(skills)}")
 
     def test_skill_names_unique(self):
         names = []
@@ -48,7 +48,9 @@ class TestSkillStructure(unittest.TestCase):
     def test_expected_skill_names(self):
         expected = {"start", "onboarding", "discovery", "generate-stories",
                     "validate", "publish", "save-docs", "update", "team",
-                    "sprint-plan", "export", "sprint-review", "analyze", "audit"}
+                    "assign", "dependencies",
+                    "sprint-plan", "export", "sprint-review", "analyze", "audit",
+                    "autopilot", "product-phase"}
         actual = set()
         for path in self._get_skill_files():
             with open(path) as f:
@@ -57,6 +59,62 @@ class TestSkillStructure(unittest.TestCase):
             if match:
                 actual.add(match.group(1).strip())
         self.assertEqual(actual, expected)
+
+    def test_skills_using_ask_user_question_declare_tool(self):
+        for path in self._get_skill_files():
+            with open(path) as f:
+                content = f.read()
+            if "AskUserQuestion" not in content:
+                continue
+            self.assertIn("allowed-tools:", content,
+                          f"Falta allowed-tools en {path}")
+            self.assertIn("AskUserQuestion", content.split("---", 2)[1],
+                          f"{path} usa AskUserQuestion pero no lo declara")
+
+    def test_agent_delegation_skills_declare_task_tool(self):
+        required = {
+            "start",
+            "onboarding",
+            "discovery",
+            "analyze",
+            "generate-stories",
+            "validate",
+            "publish",
+            "team",
+            "assign",
+            "dependencies",
+            "sprint-plan",
+            "sprint-review",
+            "audit",
+        }
+        for path in self._get_skill_files():
+            with open(path) as f:
+                content = f.read()
+            match = re.search(r"^name:\s*(.+)$", content, re.MULTILINE)
+            if not match:
+                continue
+            name = match.group(1).strip()
+            if name not in required:
+                continue
+            self.assertIn("allowed-tools:", content,
+                          f"Falta allowed-tools en {path}")
+            self.assertIn("Task", content.split("---", 2)[1],
+                          f"{path} delega en agentes pero no declara Task")
+
+    def test_autopilot_does_not_declare_task_tool(self):
+        path = os.path.join(SKILLS_DIR, "autopilot", "SKILL.md")
+        with open(path) as f:
+            content = f.read()
+        self.assertIn("allowed-tools:", content)
+        self.assertNotIn("Task", content.split("---", 2)[1],
+                         "autopilot no debe delegar con Task; debe encadenar skills")
+
+    def test_all_skills_share_common_voice(self):
+        for path in self._get_skill_files():
+            with open(path) as f:
+                content = f.read()
+            self.assertIn("Voz comun de PSPO Agent", content,
+                          f"Falta voz comun en {path}")
 
 
 class TestAgentStructure(unittest.TestCase):
@@ -100,6 +158,22 @@ class TestAgentStructure(unittest.TestCase):
             self.assertIn("tools:", content,
                           f"Falta 'tools' en frontmatter de {path}")
 
+    def test_agents_using_ask_user_question_declare_tool(self):
+        for path in self._get_agent_files():
+            with open(path) as f:
+                content = f.read()
+            if "AskUserQuestion" not in content:
+                continue
+            self.assertIn("AskUserQuestion", content.split("---", 2)[1],
+                          f"{path} usa AskUserQuestion pero no lo declara")
+
+    def test_all_agents_share_common_voice(self):
+        for path in self._get_agent_files():
+            with open(path) as f:
+                content = f.read()
+            self.assertIn("Voz comun de PSPO Agent", content,
+                          f"Falta voz comun en {path}")
+
 
 class TestHooksStructure(unittest.TestCase):
 
@@ -123,6 +197,13 @@ class TestHooksStructure(unittest.TestCase):
                 path = os.path.join(scripts_dir, f)
                 self.assertTrue(os.access(path, os.X_OK),
                                 f"Script no ejecutable: {path}")
+
+    def test_hook_commands_quote_plugin_root(self):
+        path = os.path.join(PLUGIN_ROOT, "hooks", "hooks.json")
+        with open(path, encoding="utf-8") as handle:
+            content = handle.read()
+        self.assertIn("\\\"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/autopilot-stop.py\\\"", content)
+        self.assertNotIn("python3 ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/autopilot-stop.py", content)
 
 
 class TestDocumentation(unittest.TestCase):

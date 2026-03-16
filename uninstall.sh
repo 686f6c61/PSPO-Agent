@@ -10,7 +10,7 @@
 #
 # Opciones:
 #   --keep-config  No borrar .env ni credenciales
-#   --keep-docs    No borrar los documentos generados (docs/, team.csv)
+#   --keep-docs    No borrar los documentos generados (docs/, CSVs de equipo compatibles)
 #   --force        No pedir confirmacion
 #
 # Para Windows, usa uninstall.ps1 (PowerShell).
@@ -60,6 +60,26 @@ PLUGIN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 KEEP_CONFIG=false
 KEEP_DOCS=false
 FORCE=false
+TEAM_CSV_HEADER="nombre,email,rol,categoria,dedicacion,usa_agente_ia"
+
+is_compatible_team_csv() {
+    local file="$1"
+    [ -f "$file" ] || return 1
+    local header
+    header="$(head -n 1 "$file" 2>/dev/null | tr -d '\r')"
+    [ "$header" = "$TEAM_CSV_HEADER" ]
+}
+
+collect_compatible_team_csvs() {
+    local file
+    shopt -s nullglob
+    for file in "${PLUGIN_ROOT}"/*.csv; do
+        if is_compatible_team_csv "$file"; then
+            printf '%s\n' "$file"
+        fi
+    done
+    shopt -u nullglob
+}
 
 for arg in "$@"; do
     case "$arg" in
@@ -71,7 +91,7 @@ for arg in "$@"; do
             echo ""
             echo "Opciones:"
             echo "  --keep-config  No borrar .env ni credenciales"
-            echo "  --keep-docs    No borrar documentos generados (docs/, team.csv)"
+            echo "  --keep-docs    No borrar documentos generados (docs/, CSVs de equipo compatibles)"
             echo "  --force        No pedir confirmacion"
             exit 0
             ;;
@@ -111,7 +131,7 @@ if [ "$FORCE" = false ]; then
         echo "  [+] Credenciales (.env) -- SE CONSERVAN (--keep-config)"
     fi
     if [ "$KEEP_DOCS" = false ]; then
-        echo "  [-] Documentos generados (docs/, team.csv)"
+        echo "  [-] Documentos generados (docs/, CSVs de equipo compatibles en la raiz)"
     else
         echo "  [+] Documentos generados -- SE CONSERVAN (--keep-docs)"
     fi
@@ -192,60 +212,25 @@ fi
 if [ "$KEEP_DOCS" = false ]; then
     info "Eliminando documentos generados..."
 
-    # docs/historias/
-    if [ -d "${PLUGIN_ROOT}/docs/historias" ]; then
-        rm -rf "${PLUGIN_ROOT}/docs/historias"
-        ok "Eliminado: docs/historias/"
+    # docs/ completo: salida generada por el flujo del plugin
+    if [ -d "${PLUGIN_ROOT}/docs" ]; then
+        rm -rf "${PLUGIN_ROOT}/docs"
+        ok "Eliminado: docs/"
         REMOVED_COUNT=$((REMOVED_COUNT + 1))
     fi
 
-    # docs/vision.md
-    if [ -f "${PLUGIN_ROOT}/docs/vision.md" ]; then
-        rm -f "${PLUGIN_ROOT}/docs/vision.md"
-        ok "Eliminado: docs/vision.md"
-        REMOVED_COUNT=$((REMOVED_COUNT + 1))
-    fi
-
-    # docs/backlog.md
-    if [ -f "${PLUGIN_ROOT}/docs/backlog.md" ]; then
-        rm -f "${PLUGIN_ROOT}/docs/backlog.md"
-        ok "Eliminado: docs/backlog.md"
-        REMOVED_COUNT=$((REMOVED_COUNT + 1))
-    fi
-
-    # docs/asignaciones.md
-    if [ -f "${PLUGIN_ROOT}/docs/asignaciones.md" ]; then
-        rm -f "${PLUGIN_ROOT}/docs/asignaciones.md"
-        ok "Eliminado: docs/asignaciones.md"
-        REMOVED_COUNT=$((REMOVED_COUNT + 1))
-    fi
-
-    # docs/dependencias.md
-    if [ -f "${PLUGIN_ROOT}/docs/dependencias.md" ]; then
-        rm -f "${PLUGIN_ROOT}/docs/dependencias.md"
-        ok "Eliminado: docs/dependencias.md"
-        REMOVED_COUNT=$((REMOVED_COUNT + 1))
-    fi
-
-    # docs/sprint-plan.md
-    if [ -f "${PLUGIN_ROOT}/docs/sprint-plan.md" ]; then
-        rm -f "${PLUGIN_ROOT}/docs/sprint-plan.md"
-        ok "Eliminado: docs/sprint-plan.md"
-        REMOVED_COUNT=$((REMOVED_COUNT + 1))
-    fi
-
-    # docs/dod.md
-    if [ -f "${PLUGIN_ROOT}/docs/dod.md" ]; then
-        rm -f "${PLUGIN_ROOT}/docs/dod.md"
-        ok "Eliminado: docs/dod.md"
-        REMOVED_COUNT=$((REMOVED_COUNT + 1))
-    fi
-
-    # team.csv
-    if [ -f "${PLUGIN_ROOT}/team.csv" ]; then
-        rm -f "${PLUGIN_ROOT}/team.csv"
-        ok "Eliminado: team.csv"
-        REMOVED_COUNT=$((REMOVED_COUNT + 1))
+    TEAM_CSV_FILES=()
+    while IFS= read -r file; do
+        TEAM_CSV_FILES+=("$file")
+    done < <(collect_compatible_team_csvs)
+    if [ "${#TEAM_CSV_FILES[@]}" -gt 0 ]; then
+        for file in "${TEAM_CSV_FILES[@]}"; do
+            rm -f "$file"
+            ok "Eliminado: $(basename "$file")"
+            REMOVED_COUNT=$((REMOVED_COUNT + 1))
+        done
+    else
+        info "No hay CSVs de equipo compatibles en la raiz"
     fi
 else
     info "Documentos generados conservados (--keep-docs)"
@@ -269,13 +254,13 @@ if [ "$KEEP_CONFIG" = true ] || [ "$KEEP_DOCS" = true ]; then
     fi
     if [ "$KEEP_DOCS" = true ]; then
         echo "    [+] docs/ (documentos generados)"
-        echo "    [+] team.csv (equipo)"
+        echo "    [+] CSV(s) de equipo compatibles en la raiz"
     fi
     echo ""
 fi
 
 echo "  ${BOLD}Siempre conservado:${RESET}"
-echo "    [+] Codigo fuente (skills/, agents/, servers/trello-mcp.py)"
+echo "    [+] Codigo fuente (skills/, agents/, servers/)"
 echo "    [+] Configuracion (.claude-plugin/, hooks/, .mcp.json)"
 echo "    [+] .env.example (plantilla sin credenciales)"
 echo ""

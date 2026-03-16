@@ -17,6 +17,12 @@ Ejemplos:
 
 La descripcion de cada tarjeta contiene un **resumen** de la historia, no el detalle completo. El detalle completo se adjunta como fichero.
 
+Minimos obligatorios por tarjeta:
+
+- Resumen claro de la HU
+- Fichero Markdown completo adjunto
+- Persona asignada visible en la descripcion y mapeada a miembro real cuando exista equipo
+
 ```markdown
 ## Historia de usuario
 
@@ -27,7 +33,8 @@ Como {rol}, quiero {accion}, para {beneficio}.
 - Escenario 1: {nombre} (positivo)
 - Escenario 2: {nombre} (negativo)
 
-Prioridad: {prioridad} | Estimacion: {talla} ({dias} dias)
+Prioridad: {prioridad} | Estimacion: {talla} ({horas} h efectivas)
+Sprint: {sprint} | Asignado a: {nombre (email)}
 
 ---
 *Historia completa en el fichero adjunto.*
@@ -44,9 +51,18 @@ Cada tarjeta lleva como adjunto el fichero Markdown completo de la historia:
 
 Esto permite que la tarjeta en Trello sea ligera (solo el resumen) mientras que el detalle completo esta siempre accesible en el adjunto.
 
+Si la HU llega con responsable y la tarjeta no queda asignada al miembro de Trello correspondiente, la publicacion no cuenta como completa.
+
 ## Checklist: Definition of Done
 
 Cada tarjeta incluye un checklist llamado "Definition of Done" con los items estandar del equipo. Se crea con la herramienta `add-checklist` despues de crear la tarjeta.
+
+## Checklist: Dependencias
+
+Si la HU tiene dependencias confirmadas, la tarjeta incluye un checklist adicional llamado "Dependencias" con items del tipo:
+
+- `Depende de HU-03 - Confirmada - Pendiente`
+- `Depende de HU-05 - Confirmada - Resuelta`
 
 ## Mapeo de prioridad a etiquetas
 
@@ -58,6 +74,14 @@ Cada tarjeta incluye un checklist llamado "Definition of Done" con los items est
 | Baja | Baja | blue |
 
 Si la etiqueta no existe en el tablero (por ejemplo, si el usuario no las creo durante el onboarding), la tarjeta se crea sin etiqueta y se informa al usuario.
+
+## Etiquetas operativas
+
+| Situacion | Etiqueta |
+|-----------|----------|
+| Historia con persona asignada | Asignada |
+| Historia con bloqueo confirmado | Bloqueada |
+| Historia de la que dependen otras | Bloqueante |
 
 ## Posicion en la lista
 

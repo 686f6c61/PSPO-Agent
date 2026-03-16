@@ -25,6 +25,9 @@ Thumbs.db
 # Claude Code local
 .claude/
 
+# Artefactos generados por PSPO Agent
+docs/
+
 # Capturas de pantalla (desarrollo)
 *.png
 !public/*.png

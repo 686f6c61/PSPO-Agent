@@ -1,5 +1,9 @@
 # Informe de seguridad: PSPO Agent
 
+> Nota de estado (2026-03-15): este informe mezcla hallazgos de la fase previa basada en TypeScript con la implementacion actual. Mantiene valor historico, pero no debe leerse como fotografia exacta del estado presente del repositorio.
+>
+> Fuente tecnica actual: `Documents/security.md`.
+
 | Campo | Valor |
 |-------|-------|
 | **Auditor** | El Paranoico (CSO, equipo Alfred Dev) |

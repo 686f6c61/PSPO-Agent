@@ -27,11 +27,13 @@ _pspo_id_tag = trello_mcp._pspo_id_tag
 handle_verify_credentials = trello_mcp.handle_verify_credentials
 handle_list_boards = trello_mcp.handle_list_boards
 handle_get_board = trello_mcp.handle_get_board
+handle_get_card = trello_mcp.handle_get_card
 handle_create_board = trello_mcp.handle_create_board
 handle_manage_lists = trello_mcp.handle_manage_lists
 handle_manage_labels = trello_mcp.handle_manage_labels
 handle_create_cards = trello_mcp.handle_create_cards
 handle_search_cards = trello_mcp.handle_search_cards
+handle_update_card = trello_mcp.handle_update_card
 handle_get_board_members = trello_mcp.handle_get_board_members
 
 # Credenciales de test validas
@@ -239,6 +241,37 @@ class TestHandleGetBoard(unittest.TestCase):
             handle_get_board(client, {"boardId": ""})
 
 
+class TestHandleGetCard(unittest.TestCase):
+
+    def test_success(self):
+        client = make_mock_client()
+        client.get.return_value = {
+            "id": VALID_TRELLO_ID,
+            "name": "HU-01: Login",
+            "desc": "Resumen",
+            "url": "https://trello.com/c/abc",
+            "idList": VALID_TRELLO_ID,
+            "idLabels": [VALID_TRELLO_ID],
+            "idMembers": [VALID_TRELLO_ID],
+            "attachments": [
+                {"id": VALID_TRELLO_ID, "name": "HU-01-login.md", "url": "https://..."}
+            ],
+            "checklists": [
+                {
+                    "id": VALID_TRELLO_ID,
+                    "name": "Dependencias",
+                    "checkItems": [
+                        {"id": VALID_TRELLO_ID, "name": "HU-02", "state": "incomplete"}
+                    ],
+                }
+            ],
+        }
+        result = handle_get_card(client, {"cardId": VALID_TRELLO_ID})
+        self.assertEqual(result["name"], "HU-01: Login")
+        self.assertEqual(result["attachments"][0]["name"], "HU-01-login.md")
+        self.assertEqual(result["checklists"][0]["name"], "Dependencias")
+
+
 class TestHandleCreateBoard(unittest.TestCase):
 
     def test_success(self):
@@ -421,6 +454,20 @@ class TestHandleCreateCards(unittest.TestCase):
         posted_body = client.post.call_args[0][1]
         self.assertNotIn("idMembers", posted_body)
 
+    def test_single_card_payload_is_normalized(self):
+        client = make_mock_client()
+        client.post.return_value = {"id": "c1", "name": "HU-01", "url": "http://..."}
+        handle_create_cards(client, {
+            "idList": VALID_TRELLO_ID,
+            "name": "HU-01",
+            "desc": "Desc",
+            "idMember": "member1",
+        })
+        posted_body = client.post.call_args[0][1]
+        self.assertEqual(posted_body["idList"], VALID_TRELLO_ID)
+        self.assertEqual(posted_body["name"], "HU-01")
+        self.assertEqual(posted_body["idMembers"], "member1")
+
 
 class TestHandleGetBoardMembers(unittest.TestCase):
 
@@ -478,6 +525,44 @@ class TestHandleSearchCards(unittest.TestCase):
             handle_search_cards(client, {"boardId": "not-valid"})
 
 
+class TestHandleUpdateCard(unittest.TestCase):
+
+    def test_requires_fields(self):
+        client = make_mock_client()
+        with self.assertRaises(ValueError):
+            handle_update_card(client, {"cardId": VALID_TRELLO_ID})
+
+    def test_update_desc_and_members(self):
+        client = make_mock_client()
+        second_id = "507f1f77bcf86cd799439012"
+        client.put.return_value = {
+            "id": VALID_TRELLO_ID,
+            "name": "HU-01: Login",
+            "desc": "Resumen actualizado",
+            "url": "https://trello.com/c/abc",
+            "idList": second_id,
+            "idLabels": [VALID_TRELLO_ID],
+            "idMembers": [second_id],
+        }
+        result = handle_update_card(client, {
+            "cardId": VALID_TRELLO_ID,
+            "desc": "Resumen actualizado",
+            "listId": second_id,
+            "idLabels": [VALID_TRELLO_ID],
+            "idMembers": [second_id],
+        })
+        self.assertEqual(result["desc"], "Resumen actualizado")
+        client.put.assert_called_once_with(
+            f"/1/cards/{VALID_TRELLO_ID}",
+            {
+                "desc": "Resumen actualizado",
+                "idList": second_id,
+                "idLabels": VALID_TRELLO_ID,
+                "idMembers": second_id,
+            },
+        )
+
+
 # ---------------------------------------------------------------------------
 # Tests del protocolo MCP
 # ---------------------------------------------------------------------------
@@ -511,11 +596,13 @@ class TestMCPProtocol(unittest.TestCase):
             "jsonrpc": "2.0", "id": 3, "method": "tools/list", "params": {},
         })
         tools = response["result"]["tools"]
-        self.assertEqual(len(tools), 12)
+        self.assertEqual(len(tools), 14)
         names = {t["name"] for t in tools}
         self.assertIn("verify-credentials", names)
         self.assertIn("create-cards", names)
         self.assertIn("search-cards", names)
+        self.assertIn("get-card", names)
+        self.assertIn("update-card", names)
         self.assertIn("get-board-members", names)
 
     def test_handle_unknown_method(self):
@@ -806,6 +893,7 @@ class TestHandleInviteMember(unittest.TestCase):
         })
         self.assertEqual(result["email"], "ana@empresa.com")
         self.assertEqual(result["type"], "normal")
+        self.assertEqual(result["memberId"], "m1")
         self.assertEqual(len(result["membersInvited"]), 1)
 
 

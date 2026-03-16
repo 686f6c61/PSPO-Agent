@@ -1,6 +1,17 @@
 # PSPO Agent
 
-Plugin de Product Owner profesional para Claude Code. Analisis de requisitos, descubrimiento de producto, historias de usuario con criterios Given/When/Then, planificacion de sprint con factor de productividad por agentes IA, y publicacion en Trello.
+Plugin no oficial de Product Owner profesional para Claude Code. Analisis de requisitos, descubrimiento de producto, historias de usuario con criterios Given/When/Then, asignacion operativa, mapa de dependencias, planificacion de sprint con factor de productividad por agentes IA, y publicacion en Trello.
+
+## Documentacion del plugin
+
+La documentacion tecnica y de desarrollador vive en:
+
+- [`Documents/README.md`](./Documents/README.md)
+
+Importante:
+
+- `Documents/` = documentacion del plugin
+- `docs/` = artefactos generados por el flujo de producto
 
 ## Requisitos
 
@@ -47,7 +58,10 @@ El asistente de onboarding te guiara para configurar las credenciales de Trello 
 | save-docs | `/pspo-agent:save-docs` | Guarda artefactos de producto en Markdown local. |
 | update | `/pspo-agent:update` | Comprueba y aplica actualizaciones del plugin. |
 | team | `/pspo-agent:team` | Gestion de equipo: CSV con dedicacion y uso de agentes IA. |
-| sprint-plan | `/pspo-agent:sprint-plan` | Planificacion de sprint: DoD, estimacion t-shirt, capacidad con factor IA. |
+| assign | `/pspo-agent:assign` | Propone y guarda la asignacion de historias al equipo. |
+| dependencies | `/pspo-agent:dependencies` | Detecta y persiste dependencias, bloqueantes e impacto por persona. |
+| sprint-plan | `/pspo-agent:sprint-plan` | Planificacion de sprint: DoD, estimacion en horas efectivas, capacidad con factor IA. |
+| autopilot | `/pspo-agent:autopilot` | Lee una carpeta con instrucciones + cualquier CSV de equipo compatible y ejecuta el flujo autonomamente hasta la gate final. |
 | sprint-review | `/pspo-agent:sprint-review` | Revision de sprint: estado de tarjetas y cumplimiento de DoD. |
 | export | `/pspo-agent:export` | Exportacion a CSV, JSON y Jira CSV. |
 | audit | `/pspo-agent:audit` | Auditoria senior: completitud, coherencia, HU que faltan/sobran. |
@@ -65,7 +79,7 @@ El asistente de onboarding te guiara para configurar las credenciales de Trello 
 
 ## Servidor MCP
 
-12 herramientas en Python puro (stdlib, 0 dependencias):
+12 herramientas operativas + 2 de sincronizacion en Python puro (stdlib, 0 dependencias):
 
 | Herramienta | Proposito |
 |-------------|-----------|
@@ -87,7 +101,8 @@ El asistente de onboarding te guiara para configurar las credenciales de Trello 
 | Hook | Evento | Funcion |
 |------|--------|---------|
 | check-env.sh | PreToolUse (MCP) | Bloquea llamadas MCP si faltan credenciales en .env |
-| block-trello-bash.sh | PreToolUse (Bash) | Bloquea acceso directo a Trello via curl/bash |
+| block-trello-bash.sh | PreToolUse (Bash, Fetch) | Bloquea acceso directo a Trello fuera del MCP |
+| warn-sensitive-read.sh | PreToolUse (Read) | Avisa cuando se intenta leer .env u otros ficheros sensibles |
 | check-gitignore.sh | PostToolUse (Write) | Verifica que .env esta en .gitignore |
 
 ## Configuracion
@@ -99,9 +114,10 @@ El fichero `settings.json` permite personalizar el comportamiento del plugin:
 | sprint.ai_agent_factor | 0.65 | Factor de productividad con agentes IA (65%) |
 | sprint.ai_agent_factor_recommended | 0.70 | Factor recomendado (70%) |
 | sprint.ai_agent_factor_range | [0.30, 0.80] | Rango configurable |
-| sprint.duration_days | 10 | Duracion del sprint en dias |
-| stories.estimation_sizes | S=1, M=2, L=3, XL=5 | Tallas t-shirt en dias |
-| trello.default_lists | Backlog, Sprint actual, En progreso, En revision, Hecho | Columnas por defecto |
+| sprint.duration_days | 5 | Duracion por defecto del sprint en dias laborables |
+| stories.estimation_sizes | XS=1, S=2, M=4, L=8, XL=16 | Tallas en horas efectivas con agentes |
+| sprint.focus_hours_per_day | 6 | Horas reales productivas por dia para el calculo de capacidad |
+| trello.default_lists | Backlog, Sprint activo, Bloqueada, En progreso, En revision, Hecho | Columnas por defecto |
 | trello.default_labels | Critica, Alta, Media, Baja | Etiquetas de prioridad |
 | docs.date_format | DD/MM/AAAA | Formato de fechas |
 
@@ -113,12 +129,12 @@ pspo-agent/
 │   ├── plugin.json
 │   └── marketplace.json
 ├── agents/                  # 6 agentes especializados
-├── skills/                  # 14 skills
+├── skills/                  # 17 skills
 ├── servers/
-│   └── trello-mcp.py       # Servidor MCP (Python puro, 12 herramientas, 0 dependencias)
+│   └── trello-mcp.py       # Servidor MCP (Python puro, 14 herramientas, 0 dependencias)
 ├── hooks/
-│   └── scripts/             # 3 hooks de seguridad
-├── tests/                   # 239 tests (unitarios, contenido, e2e)
+│   └── scripts/             # 4 hooks de seguridad
+├── tests/                   # 250+ tests (unitarios, contenido, e2e)
 ├── docs/                    # ADRs, arquitectura
 ├── .mcp.json
 ├── .env.example

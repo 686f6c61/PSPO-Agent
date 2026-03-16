@@ -7,7 +7,7 @@ Este fichero complementa SKILL.md con instrucciones detalladas para cada paso de
 | Recurso | URL |
 |---------|-----|
 | Crear Power-Up / obtener API Key | https://trello.com/power-ups/admin |
-| Generar token manual | `https://trello.com/1/authorize?expiration=30days&name=PSPO+Agent&scope=read,write&response_type=token&key={API_KEY}` |
+| Generar token manual | `https://trello.com/1/authorize?expiration=30days&name=PSPO+Agent&scope=read,write&response_type=token&key=<TU_API_KEY>` |
 | Verificar conexion | `GET https://api.trello.com/1/members/me?key={KEY}&token={TOKEN}` |
 | Listar tableros del usuario | `GET https://api.trello.com/1/members/me/boards?key={KEY}&token={TOKEN}` |
 
@@ -20,9 +20,9 @@ Este fichero complementa SKILL.md con instrucciones detalladas para cada paso de
 - Error comun: el usuario copia el Secret en vez de la API Key. El Secret tiene un formato diferente (mas largo).
 
 ### Token
-- Longitud: exactamente 64 caracteres.
-- Contenido: solo caracteres hexadecimales (0-9, a-f, A-F).
-- Regex: `^[0-9a-fA-F]{64}$`
+- Longitud: minima 41 caracteres.
+- Contenido: empieza por `ATTA` y luego solo caracteres alfanumericos.
+- Regex: `^ATTA[a-zA-Z0-9]{37,}$`
 - Error comun: el usuario copia una URL en vez del token, o copia el token cortado.
 
 ## Configuracion por defecto del tablero
@@ -34,17 +34,18 @@ Las columnas se crean en este orden (de izquierda a derecha en Trello):
 | Posicion | Nombre | Proposito |
 |----------|--------|-----------|
 | 1 | Backlog | Historias de usuario priorizadas pendientes de sprint |
-| 2 | Sprint actual | Historias comprometidas para el sprint en curso |
-| 3 | En progreso | Historias en desarrollo activo |
-| 4 | En revision | Historias completadas pendientes de revision |
-| 5 | Hecho | Historias completadas y verificadas |
+| 2 | Sprint activo | Historias comprometidas para la unica semana de sprint en curso |
+| 3 | Bloqueada | Historias con dependencias confirmadas aun no resueltas |
+| 4 | En progreso | Historias en desarrollo activo |
+| 5 | En revision | Historias completadas pendientes de revision |
+| 6 | Hecho | Historias completadas y verificadas |
 
 ### Etiquetas de prioridad
 
 | Nombre | Color en Trello | Significado |
 |--------|----------------|-------------|
 | Critica | red | Bloquea el avance del proyecto. Resolver inmediatamente. |
-| Alta | orange | Importante para el sprint actual. Prioridad de entrega. |
+| Alta | orange | Importante para el sprint activo. Prioridad de entrega. |
 | Media | yellow | Necesaria pero no urgente. Puede esperar al siguiente sprint. |
 | Baja | blue | Mejora menor o nice-to-have. Implementar cuando haya capacidad. |
 
@@ -57,6 +58,8 @@ Posibles causas:
 - No tiene permisos de administrador en ningun workspace -> Necesita crear un workspace propio (gratuito).
 
 ### El token no se genera (la pagina de autorizacion da error)
+
+Regla de seguridad general: la skill puede construir internamente la URL de autorizacion, pero NO debe mostrar en el chat la API key resuelta ni una URL que la contenga.
 
 Posibles causas:
 - La API Key es incorrecta -> Volver al paso 1.

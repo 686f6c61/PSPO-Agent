@@ -1,6 +1,6 @@
 {
   "plugin": "pspo-agent",
-  "version": "1.0.3",
+  "version": "1.0.7",
   "defaults": {
     "trello": {
       "token_expiration": "30days",
@@ -8,7 +8,8 @@
       "scopes": "read,write",
       "default_lists": [
         "Backlog",
-        "Sprint actual",
+        "Sprint activo",
+        "Bloqueada",
         "En progreso",
         "En revision",
         "Hecho"
@@ -32,12 +33,15 @@
       "require_given_when_then": true,
       "min_positive_scenarios": 1,
       "min_negative_scenarios": 1,
-      "max_story_size_days": 3,
+      "estimation_unit": "horas_efectivas_con_agentes",
+      "hours_per_day": 8,
+      "max_story_size_hours": 16,
       "estimation_sizes": {
-        "S": 1,
-        "M": 2,
-        "L": 3,
-        "XL": 5
+        "XS": 1,
+        "S": 2,
+        "M": 4,
+        "L": 8,
+        "XL": 16
       }
     },
     "validation": {
@@ -55,13 +59,28 @@
     "publish": {
       "save_local_before_trello": true,
       "check_duplicates_by_title": true,
-      "require_confirmation": true
+      "require_confirmation": true,
+      "require_member_assignment_for_assigned_stories": true
     },
     "sprint": {
-      "duration_days": 10,
+      "duration_days": 5,
+      "max_duration_days": 5,
+      "focus_hours_per_day": 6,
       "ai_agent_factor": 0.65,
       "ai_agent_factor_recommended": 0.70,
       "ai_agent_factor_range": [0.30, 0.80]
+    },
+    "autopilot": {
+      "default_input_dir": ".pspo-agent/inbox",
+      "accepted_brief_files": [
+        "instrucciones.md",
+        "brief.md",
+        "prd.md",
+        "requirements.md",
+        "brief.txt"
+      ],
+      "require_final_gate": true,
+      "stop_after_audit_if_trello_missing": true
     },
     "dod": {
       "file": "docs/dod.md",

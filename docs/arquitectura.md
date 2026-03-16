@@ -1,5 +1,9 @@
 # Arquitectura: PSPO Agent -- Plugin de Claude Code
 
+> Nota de estado (2026-03-15): este documento se conserva como historial de diseño. Varias secciones siguen describiendo la etapa previa a la migracion completa del MCP a Python y no reflejan fielmente el estado actual del plugin. Usalo como referencia historica hasta su reescritura.
+>
+> Fuente tecnica actual: `Documents/architecture.md`.
+
 | Campo | Valor |
 |-------|-------|
 | **Autor** | El Dibujante de Cajas (Arquitecto) |

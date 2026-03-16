@@ -1,5 +1,7 @@
 # Plan: corregir problemas detectados en uso real
 
+> Nota de estado (2026-03-15): este documento es un plan historico de correccion. Mantiene valor para trazabilidad, pero no describe necesariamente el comportamiento actual del plugin ni debe usarse como fuente de verdad operativa.
+
 ## Problemas detectados
 
 ### P1: El agente usa curl/bash en vez de MCP tools

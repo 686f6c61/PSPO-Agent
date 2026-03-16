@@ -9,7 +9,28 @@
 
 set -euo pipefail
 
-ENV_FILE=".env"
+# Intentar resolver la raiz real del proyecto para no depender del cwd.
+INPUT=$(cat)
+PROJECT_DIR=$(echo "$INPUT" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    print(
+        data.get('cwd')
+        or data.get('tool_input', {}).get('cwd')
+        or ''
+    )
+except Exception:
+    print('')
+" 2>/dev/null || true)
+
+if [ -n "${PROJECT_DIR}" ] && [ -d "${PROJECT_DIR}" ]; then
+    ROOT_DIR="${PROJECT_DIR}"
+else
+    ROOT_DIR=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+fi
+
+ENV_FILE="${ROOT_DIR}/.env"
 
 # Verificar que el fichero .env existe
 if [ ! -f "$ENV_FILE" ]; then

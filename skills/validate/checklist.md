@@ -34,7 +34,7 @@ El agente product-owner usa esta checklist internamente antes de presentar cada 
 
 | Criterio | Verificacion |
 |----------|-------------|
-| Estimable en 3 dias o menos | Si parece mayor, hay que descomponer |
+| Estimable en 16 h efectivas o menos | Si parece mayor, hay que descomponer |
 | Menos de 6 escenarios de aceptacion | Si necesita mas, probablemente es demasiado grande |
 | Se puede demostrar en una review | El resultado es observable y demostrable |
 

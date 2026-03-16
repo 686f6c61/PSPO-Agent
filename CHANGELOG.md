@@ -1,5 +1,95 @@
 # Changelog
 
+> Nota de estado (2026-03-16): este changelog se conserva como historial de releases y se mantiene en orden descendente por versión. Las entradas antiguas describen el comportamiento de cada versión en su momento y pueden mencionar términos ya sustituidos, como `Sprint actual` o `team.csv`. La fuente de verdad del estado actual es `README.md` y `Documents/`.
+
+## v1.0.7 (15/03/2026)
+
+### Mejoras
+
+- **Autopilot todavia mas directo:** el comando y la skill ya dejan negro sobre blanco que, una vez existe el runtime, no se vuelve a leer `brief.md`, `vision.md`, `contexto.md`, `config*` ni el CSV desde `autopilot`.
+- **Delegaciones de `product-phase` mas cerradas:** requirement-analyst, product-owner, culture-guardian y senior-auditor deben trabajar con prompts autosuficientes, sin explorar el workspace.
+- **Documentacion tecnica consolidada:** la documentacion viva del plugin pasa a `Documents/`, y `docs/` queda reservado para artefactos generados por el flujo de producto.
+- **Desinstalacion alineada con el runtime actual:** los desinstaladores limpian `docs/` completo como salida generada y conservan el codigo fuente y la configuracion del plugin.
+
+### Correccion de errores
+
+- **Recuperacion floja tras el bootstrap:** se refuerza la instruccion para que un bloqueo de lectura en inbox se interprete como señal de saltar inmediatamente a `Skill("pspo-agent:product-phase")`.
+- **Subagentes con deriva lateral en product-phase:** se corrige la especificacion para prohibir `Read`, `Glob`, `Grep`, `ToolSearch`, `TodoWrite` y `Bash` cuando ya reciben el contexto completo en el prompt.
+
+## v1.0.6 (15/03/2026)
+
+### Mejoras
+
+- **Autopilot mas fino y menos improvisable:** la skill `autopilot` reduce su presupuesto de herramientas a `Glob + Read + AskUserQuestion` y empuja el carril exacto `Glob(".pspo-agent/inbox/*") -> Skill("pspo-agent:product-phase")`.
+- **Importacion automatica del CSV desde la inbox:** `autopilot-bootstrap.py` ya no solo detecta el CSV compatible; si hace falta lo importa a la raiz del proyecto para que las fases de asignacion, sprint y publicacion puedan continuar sin pasos manuales.
+- **Mensajes de recuperacion mas accionables:** los hooks de drift y Bash ya indican la siguiente accion valida en vez de limitarse a bloquear.
+- **Gate de Stop para autopilot:** nuevo hook `autopilot-stop.py` que impide cerrar el flujo antes de materializar el runtime o antes de persistir los artefactos de producto.
+
+### Correccion de errores
+
+- **Autopilot dejaba demasiado margen para “pensar por libre”:** el carril temprano ahora depende menos de instrucciones blandas y mas de reglas de negocio en codigo, siguiendo el patron que tan bien funciona en Alfred.
+- **El contexto runtime quedaba util pero no suficiente para fases posteriores:** el bootstrap ya deja tambien el CSV del equipo disponible en la raiz cuando no existia uno compatible.
+
+## v1.0.5 (15/03/2026)
+
+### Mejoras
+
+- **Bootstrap determinista de autopilot:** nuevo helper `autopilot-bootstrap.py` que materializa `.pspo-agent/runtime/autopilot-context.md` en cuanto detecta un brief valido en la inbox, sin depender de exploracion lateral ni de Bash.
+- **Scaffold operativo automatico:** los hooks preparan `.pspo-agent/runtime`, `docs/` y `docs/historias/` para que el carril de producto no improvise `mkdir` ni bootstrap manual.
+- **Bloqueo estricto de Bash/Fetch en autopilot:** durante `prepare-context`, `delegate-product-phase` y `product-phase-active`, cualquier Bash/Fetch queda bloqueado con recuperacion guiada hacia `Skill("pspo-agent:product-phase")`.
+- **Carril mas parecido a Alfred:** el flujo de producto se apoya mas en reglas de negocio del sistema y menos en que el modelo “elija bien” el siguiente paso.
+
+### Correccion de errores
+
+- **La cache del plugin ya invalida correctamente el paquete de release:** la version interna sube a `1.0.5` para evitar pruebas mezcladas contra una cache parcial de `1.0.4`.
+- **Autopilot deja de quedarse en bootstrap blando:** se reduce el espacio para derivas como `.pspo-agent/**/*`, `docs/**/*` o `CLAUDE.md` antes de delegar en `product-phase`.
+
+## v1.0.4 (15/03/2026)
+
+### Nuevas funcionalidades
+
+- **Nuevo punto de entrada `/pspo-agent:start`:** detecta credenciales, tablero y estado del proyecto, y encadena automaticamente el siguiente artefacto que falta.
+- **Modo carpeta-autopilot:** nuevo comando `/pspo-agent:autopilot` para leer una carpeta de entrada con instrucciones, vision opcional y cualquier CSV de equipo compatible, ejecutar el flujo de producto y detenerse solo en la gate final.
+- **Asignacion operativa y dependencias como fases propias:** nuevos comandos `/pspo-agent:assign` y `/pspo-agent:dependencies` para generar ownership claro, carga por persona y mapa de bloqueos antes de planificar o publicar.
+- **Sincronizacion incremental de tarjetas en Trello:** el MCP incorpora `get-card` y `update-card`, y `publish` ya no solo crea tarjetas; tambien sincroniza descripcion, lista, miembros, etiquetas y checklists sin duplicar.
+- **Mermaid operativo en la vision del proyecto:** la vision/HU-0 puede incluir mapa de dependencias y ownership para anticipar bloqueos desde el inicio.
+- **Launcher MCP dedicado:** nuevo `trello-mcp-launcher.py` para cargar credenciales desde `.env` antes de arrancar el servidor MCP y evitar configuraciones frágiles del entorno.
+
+### Mejoras
+
+- **Flujo autonomo completo y coherente:** onboarding -> vision -> analyze/discovery -> generate-stories -> save-docs -> audit -> validate -> team -> assign -> dependencies -> sprint-plan -> publish.
+- **Sprint con agentes redefinido:** un solo sprint activo, maximo 5 dias laborables, backlog futuro en documentacion local y no en columnas separadas.
+- **Estimacion realista para equipos con agentes:** `sprint-plan` propone horas efectivas autonomamente, evita inflar historias sencillas y usa recorte por prioridad cuando el sprint no cabe.
+- **Tablero Trello normalizado:** columnas estables en castellano (`Backlog`, `Sprint activo`, `Bloqueada`, `En progreso`, `En revision`, `Hecho`) y etiquetas operativas `Asignada`, `Bloqueada`, `Bloqueante`.
+- **Publicacion completa de historias:** cada tarjeta se crea o sincroniza con resumen corto, adjunto `.md`, checklist DoD, checklist `Dependencias` cuando aplica y miembros reales en `idMembers`.
+- **CSV de equipo flexible:** el plugin ya no depende rigidamente de `team.csv`; acepta cualquier CSV compatible con cabecera `nombre,email,rol,categoria,dedicacion,usa_agente_ia`.
+- **Voz comun del plugin:** skills y agentes comparten una personalidad base consistente, sin cambiar de tono entre fases.
+- **Autopilot mas util:** acepta una carpeta de trabajo, detecta el documento principal automaticamente y sigue sin menus intermedios hasta la decision final de revisar o planificar/publicar.
+
+### Correccion de errores
+
+- **API keys ya no se exponen en onboarding:** se deja de mostrar la URL resuelta con la API Key real y se usan plantillas seguras con placeholders.
+- **Bloqueo reforzado de accesos directos a Trello:** los hooks ahora cubren Bash y Fetch, y ademas avisan en lecturas sensibles para evitar fugas accidentales de secretos.
+- **El publisher deja de depender de alias legacy:** `Sprint actual` ya no se usa como columna valida; si aparece en un tablero viejo, se renombra a `Sprint activo`.
+- **El onboarding y el MCP arrancan en orden correcto:** primero se materializan credenciales utilizables y despues se valida Trello, evitando fallos por entorno no inicializado.
+- **La publicacion ya no arranca sin HUs individuales:** `publish` valida `docs/historias/HU-*.md` y fuerza `save-docs` si solo existe un backlog monolitico.
+- **Las tarjetas asignadas ya no se dan por buenas sin miembro real:** si una HU tiene responsable pero no se obtiene `memberId`, la tarjeta queda reportada como incompleta y requiere revision manual.
+- **La desinstalacion ya no borra solo `team.csv`:** `uninstall.sh` y `uninstall.ps1` detectan y limpian cualquier CSV de equipo compatible en la raiz del proyecto.
+- **Compatibilidad macOS en desinstalacion:** el script bash evita `mapfile` para seguir funcionando en el bash antiguo de macOS.
+
+### Documentacion
+
+- **README actualizado:** refleja que PSPO Agent es un plugin no oficial, expone el flujo actual, los comandos nuevos y las 14 herramientas MCP.
+- **PRD alineado con la implementacion real:** equipo flexible, flujo autonomo, sprint con agentes, columnas actuales de Trello y sincronizacion incremental.
+- **Documentos historicos marcados como tales:** `CHANGELOG`, `docs/arquitectura.md`, `docs/seguridad.md`, `docs/qa-report.md` y `docs/plans/*` avisan cuando son referencia historica y no especificacion viva.
+- **Ayuda y comandos revisados:** `help`, `autopilot` y el resto de descripciones ya usan el lenguaje actual del producto.
+
+### Infraestructura
+
+- **17 skills y 14 herramientas MCP registradas y cubiertas por tests.**
+- **Suite ampliada a 278 tests** entre contenido, configuracion, skills, MCP unitario y end-to-end.
+- **Tests nuevos para regresiones clave:** voz comun, CSV de equipo flexible, renombrado de `Sprint actual`, hooks de seguridad y desinstalacion de CSVs compatibles.
+
 ## v1.0.3 (15/03/2026)
 
 ### Nuevas funcionalidades

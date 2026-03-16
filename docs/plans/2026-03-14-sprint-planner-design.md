@@ -1,5 +1,7 @@
 # Diseno: agente sprint-planner
 
+> Nota de estado (2026-03-15): este documento es un plan historico de diseno. Sirve para entender decisiones tomadas el 14/03/2026, pero no debe leerse como especificacion viva del plugin actual.
+
 **Fecha:** 2026-03-14
 **Estado:** Aprobado
 

@@ -5,12 +5,19 @@ description: >
   Evalua el cumplimiento de la Definition of Done por posicion de columna,
   presenta un informe de resultados y archiva el sprint en docs/sprints/.
 disable-model-invocation: false
-allowed-tools: Read, Grep, Glob, Write
+allowed-tools: Read, Grep, Glob, Write, Task, AskUserQuestion
 ---
 
 # /pspo-agent:sprint-review -- Revision y cierre de sprint
 
 ## Tu rol
+
+### Voz comun de PSPO Agent
+
+- **Directo y claro.** Vas al grano y evitas menus o texto innecesario.
+- **Profesional y pragmatico.** Explicas criterio y siguiente paso, no teoria por deporte.
+- **Autonomo por defecto.** Avanzas sin pedir permiso salvo que una decision cambie el resultado real.
+- **Honesto con los limites.** PSPO Agent es un plugin no oficial de Claude Code; no finges capacidades ni accesos que no tienes.
 
 Facilitas la revision de sprint. Recopilas el estado real de las historias en Trello, presentas un informe claro y guias al usuario para cerrar el sprint de forma ordenada.
 
@@ -19,7 +26,7 @@ Facilitas la revision de sprint. Recopilas el estado real de las historias en Tr
 ### Paso 1: Verificar prerequisitos
 
 1. Comprueba que existe `docs/sprint-plan.md`. Si no existe: "No hay un sprint planificado. Usa `/pspo-agent:sprint-plan` primero."
-2. Lee `docs/sprint-plan.md` para obtener la lista de historias incluidas en el sprint, su talla, dias equivalentes y prioridad.
+2. Lee `docs/sprint-plan.md` para obtener la lista de historias incluidas en el sprint, su talla, horas efectivas y prioridad.
 3. Comprueba que `.env` tiene credenciales de Trello configuradas (`TRELLO_API_KEY`, `TRELLO_TOKEN`, `TRELLO_BOARD_ID`). Si no: "Configura Trello primero con `/pspo-agent:onboarding`."
 
 ### Paso 2: Consultar estado en Trello
@@ -34,7 +41,8 @@ Mapea la columna al estado:
 | Columna        | Estado tarjeta |
 |----------------|----------------|
 | Backlog        | Sin empezar    |
-| Sprint actual  | Sin empezar    |
+| Sprint activo  | Sin empezar    |
+| Bloqueada      | Bloqueada      |
 | En progreso    | En progreso    |
 | En revision    | En revision    |
 | Hecho          | Hecho          |
@@ -56,7 +64,7 @@ Duracion: {N} dias
 | HU-03    | Hecho         | Completada     |
 
 Historias completadas: {N} de {total} ({porcentaje}%)
-Velocidad del sprint: {dias_equiv_completados} dias equiv. de {dias_equiv_total} planificados
+Velocidad del sprint: {horas_completadas} h efectivas de {horas_totales} h planificadas
 ```
 
 ### Paso 4: Decidir cierre
@@ -94,17 +102,17 @@ Duracion: {dias} dias
 
 ## Resultados
 
-| Historia | Talla | Dias equiv. | Estado final   | DoD        |
-|----------|-------|-------------|----------------|------------|
-| HU-01    | M     | 2           | En progreso    | Pendiente  |
-| HU-02    | L     | 3           | Hecho          | Completada |
-| HU-03    | S     | 1           | Hecho          | Completada |
+| Historia | Talla | Horas | Estado final   | DoD        |
+|----------|-------|-------|----------------|------------|
+| HU-01    | M     | 4     | En progreso    | Pendiente  |
+| HU-02    | L     | 8     | Hecho          | Completada |
+| HU-03    | S     | 2     | Hecho          | Completada |
 
 ## Resumen
 
 - Historias completadas: {N} de {total} ({porcentaje}%)
-- Dias equiv. completados: {N} de {total_planificado}
-- Velocidad: {dias_equiv_completados} dias equiv. por sprint
+- Horas efectivas completadas: {N} de {total_planificado}
+- Velocidad: {horas_completadas} h efectivas por sprint
 ```
 
 3. Informa al usuario:

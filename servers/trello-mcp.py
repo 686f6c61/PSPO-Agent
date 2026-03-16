@@ -18,17 +18,35 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+from datetime import datetime
+from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="[trello-mcp] %(message)s",
-    stream=sys.stderr,
-)
 log = logging.getLogger("trello-mcp")
+log.setLevel(logging.INFO)
+log.propagate = False
+log.addHandler(logging.NullHandler())
+DEBUG_LOG = Path("/tmp/pspo-agent-mcp-server.log")
+
+
+def _debug_log(message: str) -> None:
+    try:
+        DEBUG_LOG.parent.mkdir(parents=True, exist_ok=True)
+        with DEBUG_LOG.open("a", encoding="utf-8") as handle:
+            handle.write(f"{datetime.utcnow().isoformat()}Z {message}\n")
+    except OSError:
+        pass
+
+
+def _fatal_startup_error(message: str) -> None:
+    """Emite errores fatales de arranque a stderr sin activar logging continuo."""
+    try:
+        print(message, file=sys.stderr, flush=True)
+    except OSError:
+        pass
 
 # ---------------------------------------------------------------------------
 # Cliente HTTP para la API de Trello
@@ -249,6 +267,55 @@ def handle_get_board(client: TrelloClient, args: dict) -> dict:
     }
 
 
+def handle_get_card(client: TrelloClient, args: dict) -> dict:
+    card_id = _validate_trello_id(args.get("cardId") or "", "cardId")
+    card = client.get(
+        f"/1/cards/{card_id}",
+        {
+            "fields": "id,name,desc,url,idList,idLabels,idMembers",
+            "attachments": "true",
+            "attachment_fields": "id,name,url",
+            "checklists": "all",
+        },
+    )
+
+    checklists = []
+    for checklist in card.get("checklists", []):
+        checklists.append({
+            "id": checklist.get("id", ""),
+            "name": checklist.get("name", ""),
+            "items": [
+                {
+                    "id": item.get("id", ""),
+                    "name": item.get("name", ""),
+                    "state": item.get("state", "incomplete"),
+                }
+                for item in checklist.get("checkItems", [])
+            ],
+        })
+
+    attachments = [
+        {
+            "id": attachment.get("id", ""),
+            "name": attachment.get("name", ""),
+            "url": attachment.get("url", ""),
+        }
+        for attachment in card.get("attachments", [])
+    ]
+
+    return {
+        "id": card["id"],
+        "name": card.get("name", ""),
+        "desc": card.get("desc", ""),
+        "url": card.get("url", ""),
+        "idList": card.get("idList", ""),
+        "idLabels": card.get("idLabels", []),
+        "idMembers": card.get("idMembers", []),
+        "attachments": attachments,
+        "checklists": checklists,
+    }
+
+
 def handle_create_board(client: TrelloClient, args: dict) -> dict:
     name = (args.get("name") or "").strip()
     if not name:
@@ -315,7 +382,7 @@ def handle_manage_labels(client: TrelloClient, args: dict) -> dict:
         return _fmt(client.post(f"/1/boards/{board_id}/labels",
                                 {"name": name, "color": color}))
 
-    if action == "update":
+    if action in {"update", "rename"}:
         label_id = _validate_trello_id(label_id, "labelId")
         body = {}
         if name:
@@ -329,7 +396,7 @@ def handle_manage_labels(client: TrelloClient, args: dict) -> dict:
         client.delete(f"/1/labels/{label_id}")
         return {"id": label_id, "name": name or "", "color": color}
 
-    raise ValueError(f'Accion "{action}" no reconocida. Usa: create, update, delete.')
+    raise ValueError(f'Accion "{action}" no reconocida. Usa: create, update, rename, delete.')
 
 
 def _pspo_id_tag(card_name: str, card_desc: str) -> str:
@@ -338,9 +405,40 @@ def _pspo_id_tag(card_name: str, card_desc: str) -> str:
     return f"<!-- pspo-id: {prefix}-{h} -->"
 
 
-def handle_create_cards(client: TrelloClient, args: dict) -> dict:
-    list_id = _validate_trello_id(args.get("listId") or "", "listId")
+def _normalize_create_cards_args(args: dict) -> tuple[str, list[dict]]:
+    list_id = (args.get("listId") or args.get("idList") or "").strip()
     cards = args.get("cards") or []
+
+    if not cards and (args.get("name") or args.get("desc")):
+        single_card = {
+            "name": args.get("name", ""),
+            "desc": args.get("desc", ""),
+        }
+        if args.get("idLabels") is not None:
+            single_card["idLabels"] = args.get("idLabels")
+        if args.get("pos") is not None:
+            single_card["pos"] = args.get("pos")
+        if args.get("idMembers") is not None:
+            single_card["idMembers"] = args.get("idMembers")
+        elif args.get("idMember") is not None:
+            single_card["idMembers"] = [args.get("idMember")]
+        cards = [single_card]
+
+    normalized_cards = []
+    for card in cards:
+        normalized = dict(card)
+        if normalized.get("idMembers") and isinstance(normalized["idMembers"], str):
+            normalized["idMembers"] = [normalized["idMembers"]]
+        if normalized.get("idMember") and not normalized.get("idMembers"):
+            normalized["idMembers"] = [normalized["idMember"]]
+        normalized_cards.append(normalized)
+
+    return list_id, normalized_cards
+
+
+def handle_create_cards(client: TrelloClient, args: dict) -> dict:
+    list_id, cards = _normalize_create_cards_args(args)
+    list_id = _validate_trello_id(list_id, "listId")
     if not cards:
         raise ValueError("Al menos una tarjeta es necesaria.")
 
@@ -381,7 +479,7 @@ def handle_search_cards(client: TrelloClient, args: dict) -> dict:
     query = (args.get("query") or "").strip().lower()
 
     all_cards = client.get(f"/1/boards/{board_id}/cards",
-                           {"fields": "id,name,desc,url,idList,idLabels"})
+                           {"fields": "id,name,desc,url,idList,idLabels,idMembers"})
     if query:
         all_cards = [c for c in all_cards
                      if query in c.get("name", "").lower()
@@ -391,9 +489,63 @@ def handle_search_cards(client: TrelloClient, args: dict) -> dict:
         "cards": [
             {"id": c["id"], "name": c["name"], "desc": c.get("desc", ""),
              "url": c["url"], "idList": c.get("idList", ""),
-             "idLabels": c.get("idLabels", [])}
+             "idLabels": c.get("idLabels", []),
+             "idMembers": c.get("idMembers", [])}
             for c in all_cards
         ]
+    }
+
+
+def handle_update_card(client: TrelloClient, args: dict) -> dict:
+    card_id = _validate_trello_id(args.get("cardId") or "", "cardId")
+    body = {}
+
+    if "name" in args:
+        name = (args.get("name") or "").strip()
+        if not name:
+            raise ValueError("name no puede estar vacio al actualizar una tarjeta.")
+        body["name"] = name
+
+    if "desc" in args:
+        body["desc"] = args.get("desc") or ""
+
+    list_id = args.get("listId")
+    if list_id is not None:
+        body["idList"] = _validate_trello_id(list_id, "listId")
+
+    if "idLabels" in args:
+        labels = args.get("idLabels")
+        if labels is None:
+            body["idLabels"] = ""
+        else:
+            for label_id in labels:
+                _validate_trello_id(label_id, "idLabel")
+            body["idLabels"] = ",".join(labels)
+
+    if "idMembers" in args:
+        members = args.get("idMembers")
+        if members is None:
+            body["idMembers"] = ""
+        else:
+            for member_id in members:
+                _validate_trello_id(member_id, "idMember")
+            body["idMembers"] = ",".join(members)
+
+    if "pos" in args:
+        body["pos"] = args.get("pos")
+
+    if not body:
+        raise ValueError("Debes indicar al menos un campo a actualizar en la tarjeta.")
+
+    updated = client.put(f"/1/cards/{card_id}", body)
+    return {
+        "id": updated["id"],
+        "name": updated.get("name", body.get("name", "")),
+        "desc": updated.get("desc", body.get("desc", "")),
+        "url": updated.get("url", ""),
+        "idList": updated.get("idList", body.get("idList", "")),
+        "idLabels": updated.get("idLabels", args.get("idLabels", [])),
+        "idMembers": updated.get("idMembers", args.get("idMembers", [])),
     }
 
 
@@ -549,19 +701,23 @@ def handle_invite_member(client: TrelloClient, args: dict) -> dict:
 
                 # Buscar el memberId del miembro recien invitado
                 member_id = ""
+                invited = result.get("membersInvited", [])
+                if invited and invited[0].get("id"):
+                    member_id = invited[0]["id"]
                 try:
-                    client._wait_rate_limit()
-                    board_members = client.get(
-                        f"/1/boards/{board_id}/members",
-                        {"fields": "id,fullName,username"},
-                    )
-                    invite_name = (full_name or email.split("@")[0]).lower()
-                    for m in board_members:
-                        m_name = m.get("fullName", "").lower()
-                        m_user = m.get("username", "").lower()
-                        if invite_name == m_name or email.split("@")[0].lower() in m_user:
-                            member_id = m["id"]
-                            break
+                    if not member_id:
+                        client._wait_rate_limit()
+                        board_members = client.get(
+                            f"/1/boards/{board_id}/members",
+                            {"fields": "id,fullName,username"},
+                        )
+                        invite_name = (full_name or email.split("@")[0]).lower()
+                        for m in board_members:
+                            m_name = m.get("fullName", "").lower()
+                            m_user = m.get("username", "").lower()
+                            if invite_name == m_name or email.split("@")[0].lower() in m_user:
+                                member_id = m["id"]
+                                break
                 except Exception:
                     pass  # Si falla la busqueda, devuelve memberId vacio
 
@@ -636,6 +792,18 @@ TOOLS = [
         "handler": handle_get_board,
     },
     {
+        "name": "get-card",
+        "description": "Obtiene una tarjeta de Trello con descripcion, miembros, etiquetas, adjuntos y checklists.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "cardId": {"type": "string", "description": "ID de la tarjeta de Trello"},
+            },
+            "required": ["cardId"],
+        },
+        "handler": handle_get_card,
+    },
+    {
         "name": "create-board",
         "description": "Crea un tablero nuevo en Trello.",
         "inputSchema": {
@@ -681,19 +849,19 @@ TOOLS = [
     },
     {
         "name": "manage-labels",
-        "description": "Gestiona las etiquetas de un tablero de Trello. Acciones: create, update, delete.",
+        "description": "Gestiona las etiquetas de un tablero de Trello. Acciones: create, update, rename, delete.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "boardId": {"type": "string", "description": "ID del tablero de Trello"},
                 "action": {
                     "type": "string",
-                    "enum": ["create", "update", "delete"],
+                    "enum": ["create", "update", "rename", "delete"],
                     "description": "Accion a realizar",
                 },
                 "labelId": {
                     "type": "string",
-                    "description": "ID de la etiqueta (obligatorio para update y delete)",
+                    "description": "ID de la etiqueta (obligatorio para update, rename y delete)",
                 },
                 "name": {"type": "string", "description": "Nombre de la etiqueta"},
                 "color": {
@@ -760,6 +928,36 @@ TOOLS = [
             "required": ["boardId"],
         },
         "handler": handle_search_cards,
+    },
+    {
+        "name": "update-card",
+        "description": "Actualiza una tarjeta existente de Trello: nombre, descripcion, lista, etiquetas o miembros.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "cardId": {"type": "string", "description": "ID de la tarjeta de Trello"},
+                "name": {"type": "string", "description": "Nuevo nombre de la tarjeta"},
+                "desc": {"type": "string", "description": "Nueva descripcion Markdown"},
+                "listId": {"type": "string", "description": "ID de la lista destino"},
+                "idLabels": {
+                    "type": "array",
+                    "description": "IDs de etiquetas a dejar en la tarjeta",
+                    "items": {"type": "string"},
+                },
+                "idMembers": {
+                    "type": "array",
+                    "description": "IDs de miembros a dejar asignados en la tarjeta",
+                    "items": {"type": "string"},
+                },
+                "pos": {
+                    "type": "string",
+                    "enum": ["top", "bottom"],
+                    "description": "Nueva posicion relativa dentro de la lista",
+                },
+            },
+            "required": ["cardId"],
+        },
+        "handler": handle_update_card,
     },
     {
         "name": "add-checklist",
@@ -843,10 +1041,12 @@ class MCPServer:
 
     def run(self):
         log.info("Servidor MCP iniciado. Esperando mensajes en stdin.")
+        _debug_log("server-run-start")
         while True:
             try:
                 msg = self._read_message()
             except _StreamClosed:
+                _debug_log("server-stdin-closed")
                 break
             if msg is None:
                 continue  # Mensaje descartado (JSON malformado, oversized)
@@ -858,6 +1058,7 @@ class MCPServer:
         # Leer en modo binario para que Content-Length (bytes) sea coherente
         stdin = sys.stdin.buffer
         content_length = 0
+        header_lines = []
         while True:
             line = stdin.readline()
             if not line:
@@ -865,10 +1066,17 @@ class MCPServer:
             line_str = line.decode("utf-8", errors="replace").strip()
             if not line_str:
                 break
+            if len(header_lines) < 8:
+                header_lines.append(line_str[:200])
             if line_str.lower().startswith("content-length:"):
                 content_length = int(line_str.split(":", 1)[1].strip())
 
         if content_length == 0:
+            if header_lines:
+                _debug_log(
+                    "message-without-content-length "
+                    + " | ".join(header_lines)
+                )
             log.warning("Mensaje recibido sin Content-Length o con longitud 0.")
             return None
 
@@ -909,6 +1117,7 @@ class MCPServer:
         method = msg.get("method", "")
         req_id = msg.get("id")
         params = msg.get("params", {})
+        _debug_log(f"handle method={method} has_id={req_id is not None}")
 
         # Notificaciones (sin id) no requieren respuesta
         if req_id is None:
@@ -973,18 +1182,26 @@ class MCPServer:
 def main():
     api_key = os.environ.get("TRELLO_API_KEY", "")
     token = os.environ.get("TRELLO_TOKEN", "")
+    _debug_log(
+        "main-start "
+        f"api_key_set={bool(api_key)} token_set={bool(token)} "
+        f"cwd={Path.cwd().resolve()}"
+    )
 
     if not api_key:
-        log.error("TRELLO_API_KEY no esta definida en las variables de entorno.")
+        _fatal_startup_error("TRELLO_API_KEY no esta definida en las variables de entorno.")
+        _debug_log("main-missing-api-key")
         sys.exit(1)
     if not token:
-        log.error("TRELLO_TOKEN no esta definido en las variables de entorno.")
+        _fatal_startup_error("TRELLO_TOKEN no esta definido en las variables de entorno.")
+        _debug_log("main-missing-token")
         sys.exit(1)
 
     try:
         client = TrelloClient(api_key, token)
     except ValueError as e:
-        log.error(str(e))
+        _fatal_startup_error(str(e))
+        _debug_log(f"main-invalid-creds error={e}")
         sys.exit(1)
 
     server = MCPServer(client)

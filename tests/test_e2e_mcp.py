@@ -6,7 +6,7 @@ por stdin y lee las respuestas por stdout. No hay mocks.
 
 Verifica:
 - Protocolo completo: initialize -> tools/list -> ping -> tools/call
-- Las 12 herramientas responden correctamente ante errores de validacion
+- Las 14 herramientas responden correctamente ante errores de validacion
 - Resiliencia: JSON malformado, herramientas inexistentes, IDs invalidos
 - Consistencia: Content-Length coincide con el body
 - UTF-8 multibyte: tildes y enes no corrompen el protocolo
@@ -63,6 +63,18 @@ def start_server():
     )
 
 
+def stop_server(proc):
+    if proc.stdin and not proc.stdin.closed:
+        proc.stdin.close()
+    if proc.poll() is None:
+        proc.terminate()
+        proc.wait(timeout=5)
+    if proc.stdout and not proc.stdout.closed:
+        proc.stdout.close()
+    if proc.stderr and not proc.stderr.closed:
+        proc.stderr.close()
+
+
 def call_tool(proc, tool_id, tool_name, arguments):
     """Llama a una herramienta y devuelve la respuesta."""
     send_message(proc, {
@@ -107,7 +119,7 @@ class TestE2EProtocol(unittest.TestCase):
                 "params": {},
             })
 
-            # 3. Tools list: 12 herramientas
+            # 3. Tools list: 14 herramientas
             send_message(proc, {
                 "jsonrpc": "2.0", "id": 2,
                 "method": "tools/list", "params": {},
@@ -115,12 +127,13 @@ class TestE2EProtocol(unittest.TestCase):
             resp = read_message(proc)
             self.assertEqual(resp["id"], 2)
             tools = resp["result"]["tools"]
-            self.assertEqual(len(tools), 12)
+            self.assertEqual(len(tools), 14)
             tool_names = {t["name"] for t in tools}
             expected = {
                 "verify-credentials", "list-boards", "get-board",
+                "get-card",
                 "create-board", "manage-lists", "manage-labels",
-                "create-cards", "search-cards", "add-checklist", "attach-file",
+                "create-cards", "search-cards", "update-card", "add-checklist", "attach-file",
                 "get-board-members", "invite-member",
             }
             self.assertEqual(tool_names, expected)
@@ -159,9 +172,7 @@ class TestE2EProtocol(unittest.TestCase):
             self.assertIn("no encontrada", resp["result"]["content"][0]["text"])
 
         finally:
-            proc.stdin.close()
-            proc.terminate()
-            proc.wait(timeout=5)
+            stop_server(proc)
 
 
 class TestE2EToolValidation(unittest.TestCase):
@@ -173,9 +184,7 @@ class TestE2EToolValidation(unittest.TestCase):
         self._next_id = 10
 
     def tearDown(self):
-        self.proc.stdin.close()
-        self.proc.terminate()
-        self.proc.wait(timeout=5)
+        stop_server(self.proc)
 
     def _call(self, tool_name, arguments):
         self._next_id += 1
@@ -211,6 +220,10 @@ class TestE2EToolValidation(unittest.TestCase):
         resp = self._call("get-board", {"boardId": "abc123"})
         self._assert_error(resp, "formato valido")
 
+    def test_get_card_path_traversal(self):
+        resp = self._call("get-card", {"cardId": BAD_ID})
+        self._assert_error(resp, "formato valido")
+
     # -- create-board: validacion de name --
 
     def test_create_board_empty_name(self):
@@ -220,6 +233,10 @@ class TestE2EToolValidation(unittest.TestCase):
     def test_create_board_whitespace_name(self):
         resp = self._call("create-board", {"name": "   "})
         self._assert_error(resp, "obligatorio")
+
+    def test_update_card_without_fields(self):
+        resp = self._call("update-card", {"cardId": VALID_TRELLO_ID})
+        self._assert_error(resp, "al menos un campo")
 
     # -- manage-lists: validacion de action y boardId --
 
@@ -268,6 +285,15 @@ class TestE2EToolValidation(unittest.TestCase):
             "boardId": VALID_TRELLO_ID, "action": "create", "name": "",
         })
         self._assert_error(resp, "obligatorio")
+
+    def test_manage_labels_rename_accepts_label_id(self):
+        resp = self._call("manage-labels", {
+            "boardId": VALID_TRELLO_ID,
+            "action": "rename",
+            "labelId": VALID_TRELLO_ID,
+            "name": "Critica",
+        })
+        self.assertIn("result", resp)
 
     # -- create-cards: validacion --
 
@@ -401,9 +427,7 @@ class TestE2EResilience(unittest.TestCase):
             self.assertEqual(resp["id"], 99)
 
         finally:
-            proc.stdin.close()
-            proc.terminate()
-            proc.wait(timeout=5)
+            stop_server(proc)
 
     def test_utf8_multibyte_integrity(self):
         """Caracteres multibyte (tildes, ene) no corrompen Content-Length."""
@@ -421,9 +445,7 @@ class TestE2EResilience(unittest.TestCase):
             self.assertEqual(resp["id"], 2)
 
         finally:
-            proc.stdin.close()
-            proc.terminate()
-            proc.wait(timeout=5)
+            stop_server(proc)
 
     def test_multiple_rapid_messages(self):
         """10 pings rapidos consecutivos llegan y responden en orden."""
@@ -443,9 +465,7 @@ class TestE2EResilience(unittest.TestCase):
                 self.assertEqual(resp["id"], i)
 
         finally:
-            proc.stdin.close()
-            proc.terminate()
-            proc.wait(timeout=5)
+            stop_server(proc)
 
     def test_content_length_consistency(self):
         """Content-Length declarado coincide con bytes del body recibido."""
@@ -476,12 +496,10 @@ class TestE2EResilience(unittest.TestCase):
                              "Content-Length no coincide con bytes reales")
 
             parsed = json.loads(body.decode("utf-8"))
-            self.assertEqual(len(parsed["result"]["tools"]), 12)
+            self.assertEqual(len(parsed["result"]["tools"]), 14)
 
         finally:
-            proc.stdin.close()
-            proc.terminate()
-            proc.wait(timeout=5)
+            stop_server(proc)
 
 
 class TestE2EServerStartup(unittest.TestCase):
@@ -500,6 +518,7 @@ class TestE2EServerStartup(unittest.TestCase):
         self.assertNotEqual(proc.returncode, 0)
         stderr = proc.stderr.read().decode("utf-8", errors="replace")
         self.assertIn("TRELLO_API_KEY", stderr)
+        stop_server(proc)
 
     def test_invalid_api_key_format_exits(self):
         env = os.environ.copy()
@@ -514,6 +533,7 @@ class TestE2EServerStartup(unittest.TestCase):
         self.assertNotEqual(proc.returncode, 0)
         stderr = proc.stderr.read().decode("utf-8", errors="replace")
         self.assertIn("formato invalido", stderr)
+        stop_server(proc)
 
     def test_invalid_token_format_exits(self):
         env = os.environ.copy()
@@ -528,6 +548,7 @@ class TestE2EServerStartup(unittest.TestCase):
         self.assertNotEqual(proc.returncode, 0)
         stderr = proc.stderr.read().decode("utf-8", errors="replace")
         self.assertIn("formato invalido", stderr)
+        stop_server(proc)
 
 
 class TestE2EPluginIntegrity(unittest.TestCase):
@@ -557,9 +578,9 @@ class TestE2EPluginIntegrity(unittest.TestCase):
 
     def test_mcp_server_script_exists(self):
         with open(os.path.join(PLUGIN_ROOT, ".mcp.json")) as f:
-            mcp = json.load(f)
+            mcp = json.load(f)["mcpServers"]
         # La ruta usa ${CLAUDE_PLUGIN_ROOT}, extraemos el nombre del fichero
-        args = mcp["mcpServers"]["trello-client"]["args"]
+        args = mcp["trello-client"]["args"]
         script_name = os.path.basename(args[0].replace("${CLAUDE_PLUGIN_ROOT}/", ""))
         script_path = os.path.join(PLUGIN_ROOT, "servers", script_name)
         self.assertTrue(os.path.exists(script_path),
@@ -573,6 +594,12 @@ class TestE2EPluginIntegrity(unittest.TestCase):
                 for hook in matcher_group["hooks"]:
                     cmd = hook["command"]
                     script = cmd.replace("${CLAUDE_PLUGIN_ROOT}/", "")
+                    script = script.strip('"')
+                    if script.startswith("python3 "):
+                        script = script[len("python3 "):]
+                        script = script.strip('"')
+                    if script.startswith("test -f "):
+                        script = script[len("test -f "):].split(" && ", 1)[0]
                     script_path = os.path.join(PLUGIN_ROOT, script)
                     self.assertTrue(os.path.exists(script_path),
                                     f"Hook script no existe: {script}")
@@ -595,8 +622,8 @@ class TestE2EPluginIntegrity(unittest.TestCase):
     def test_agent_mcp_references_valid(self):
         """Los agentes que declaran mcpServers deben referenciar servidores existentes."""
         with open(os.path.join(PLUGIN_ROOT, ".mcp.json")) as f:
-            mcp = json.load(f)
-        valid_servers = set(mcp["mcpServers"].keys())
+            mcp = json.load(f)["mcpServers"]
+        valid_servers = set(mcp.keys())
 
         import re
         for agent_path in self.plugin["agents"]:

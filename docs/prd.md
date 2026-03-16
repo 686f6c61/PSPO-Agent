@@ -3,9 +3,9 @@
 | Campo | Valor |
 |-------|-------|
 | **Autor** | El Buscador de Problemas (PO) |
-| **Fecha** | 2026-03-13 |
-| **Estado** | Pendiente de aprobacion |
-| **Version** | 1.1 |
+| **Fecha** | 2026-03-15 |
+| **Estado** | En revision |
+| **Version** | 1.2 |
 
 ---
 
@@ -100,15 +100,16 @@ Un plugin de Claude Code que actua como Product Owner profesional certificado (P
 ### Flujo principal (alto nivel)
 
 ```
-[0] Primera ejecucion --> Asistente guiado de onboarding (credenciales + tablero)
-[1] Activacion        --> El usuario ejecuta el comando del plugin
-[2] Descubrimiento    --> El agente hace preguntas para entender el problema
-[3] Generacion        --> Produce artefactos de producto (vision, historias, criterios)
-[4] Validacion        --> El usuario revisa y aprueba cada artefacto
-[5] Publicacion       --> El plugin crea/actualiza el tablero de Trello
-[6] Equipo            --> El usuario define o importa su equipo
-[7] Distribucion      --> El PSPO distribuye historias al equipo con analisis de dependencias
-[8] Sincronizacion    --> Las asignaciones se reflejan en Trello
+[0] Primera ejecucion --> Onboarding guiado (credenciales + tablero)
+[1] Entrada           --> /pspo-agent:start o /pspo-agent:autopilot
+[2] Vision y contexto --> Analyze o discovery segun el input
+[3] Generacion        --> Historias + save-docs + auditoria obligatoria
+[4] Validacion        --> El usuario aprueba o corrige las HU
+[5] Equipo            --> Se detecta, importa o crea un CSV de equipo compatible
+[6] Asignacion        --> Ownership inicial por historia y reparto de carga
+[7] Dependencias      --> Mapa confirmado de bloqueos y personas impactadas
+[8] Sprint            --> DoD + estimacion en horas efectivas + sprint activo (max. 5 dias)
+[9] Publicacion       --> Sync a Trello con resumen, adjunto .md, miembros y checklists
 ```
 
 ### Principios de diseno
@@ -167,7 +168,9 @@ Given el usuario ha proporcionado una API Key con formato valido
 When el asistente avanza al paso de generar el token
 Then el plugin construye automaticamente la URL de autorizacion:
     https://trello.com/1/authorize?expiration=30days&name=PSPO+Agent&scope=read,write&response_type=token&key={API_KEY_DEL_USUARIO}
-  And muestra la URL al usuario y le explica:
+  And muestra al usuario una version segura de la URL o una plantilla con la API Key enmascarada
+  And NUNCA vuelve a mostrar la API Key completa en pantalla ni en logs
+  And le explica:
     1. Abrir esa URL en el navegador
     2. Autorizar a "PSPO Agent" cuando Trello lo pida
     3. Copiar el token que aparece en pantalla tras autorizar
@@ -235,7 +238,7 @@ ESCENARIO 2: Crear tablero nuevo
 Given el usuario elige crear un tablero nuevo
 When introduce el nombre del tablero (o acepta el nombre por defecto basado en el proyecto)
 Then el plugin crea el tablero en Trello
-  And crea las columnas por defecto: "Backlog", "Sprint actual", "En progreso", "En revision", "Hecho"
+  And crea las columnas por defecto: "Backlog", "Sprint activo", "Bloqueada", "En progreso", "En revision", "Hecho"
   And crea las etiquetas de prioridad: "Critica" (rojo), "Alta" (naranja), "Media" (amarillo), "Baja" (azul)
   And guarda el TRELLO_BOARD_ID en el fichero .env
   And muestra la URL del tablero creado para que el usuario pueda verlo
@@ -247,7 +250,7 @@ Then el plugin lee las columnas actuales del tablero
   And muestra las columnas existentes al usuario
   And pregunta si quiere:
     a) Usar las columnas tal como estan
-    b) Anadir las columnas estandar que falten ("Backlog", "Sprint actual", "En progreso", "En revision", "Hecho")
+    b) Anadir las columnas estandar que falten ("Backlog", "Sprint activo", "Bloqueada", "En progreso", "En revision", "Hecho")
   And guarda el TRELLO_BOARD_ID en el fichero .env
 
 ESCENARIO 4: Configuracion de etiquetas en tablero existente
@@ -425,15 +428,20 @@ ESCENARIO 1: Publicacion en tablero existente (configurado en onboarding)
 Given el usuario tiene un tablero configurado (TRELLO_BOARD_ID en .env)
   And las historias estan aprobadas
 When el usuario confirma la publicacion en Trello
-Then el plugin publica cada historia como una tarjeta en la columna "Backlog" del tablero configurado
+Then el plugin crea o sincroniza cada historia como tarjeta en la lista que corresponda del tablero configurado
+  And usa "Sprint activo" para historias del sprint sin bloqueo
+  And usa "Bloqueada" para historias del sprint con dependencias no resueltas
+  And usa "Backlog" para historias aun no comprometidas
   And NO duplica tarjetas que ya existan (comparacion por titulo)
 
 ESCENARIO 2: Formato de tarjetas
 Given el plugin crea una tarjeta en Trello para una historia de usuario
 When la tarjeta se publica
 Then el titulo de la tarjeta es la historia en formato corto
-  And la descripcion incluye la historia completa y los criterios de aceptacion en formato Given/When/Then
+  And la descripcion incluye un resumen corto con historia, escenarios clave, prioridad y estimacion
+  And la historia completa viaja como fichero Markdown adjunto a la tarjeta
   And la tarjeta tiene asignada la etiqueta de prioridad correspondiente
+  And si aplica, anade checklist de DoD y checklist de dependencias
 
 ESCENARIO 3: Vista previa antes de publicar
 Given las historias estan aprobadas y listas para publicar
@@ -498,7 +506,7 @@ para que el PSPO tenga la informacion necesaria para distribuir historias de for
 ```
 ESCENARIO 1: Deteccion de equipo no definido
 Given el usuario tiene historias aprobadas y listas para distribuir
-  And no existe el fichero team.csv en la raiz del proyecto
+  And no existe ningun CSV de equipo compatible en la raiz del proyecto
 When el usuario solicita distribuir historias al equipo
 Then el plugin detecta que no hay equipo definido
   And pregunta al usuario si tiene un equipo definido en algun formato (CSV, lista)
@@ -511,27 +519,27 @@ ESCENARIO 2: Importacion desde CSV
 Given el usuario elige importar un CSV existente
 When proporciona la ruta del fichero
 Then el plugin lee el fichero CSV
-  And espera las columnas: nombre, email, rol, categoria
-  And valida que cada fila tiene los cuatro campos rellenos (categoria puede estar vacia, por defecto "Sin especificar")
+  And espera las columnas: nombre, email, rol, categoria, dedicacion, usa_agente_ia
+  And valida que cada fila tiene los seis campos rellenos
   And valida que los emails tienen formato correcto
+  And valida que la dedicacion esta entre 0 y 100
+  And valida que usa_agente_ia sea "si" o "no"
   And muestra un resumen del equipo importado:
     - Numero de miembros
-    - Lista con nombre, email, rol y categoria de cada uno
+    - Lista con nombre, email, rol, categoria, dedicacion y uso de agente IA de cada uno
   And pide confirmacion antes de guardar
   And si hay filas invalidas, las muestra y permite corregirlas o descartarlas
 
 ESCENARIO 3: Generacion de plantilla CSV con ejemplos
 Given el usuario elige rellenar una plantilla
 When el plugin genera la plantilla
-Then crea un fichero team.csv con la cabecera: nombre,email,rol,categoria
+Then crea un fichero CSV compatible (por defecto `team.csv` si el usuario no indica otro nombre) con la cabecera: nombre,email,rol,categoria,dedicacion,usa_agente_ia
   And anade filas de ejemplo comentadas para que quede claro el formato:
     # Los siguientes son ejemplos. Borralos y anade los datos reales de tu equipo.
-    # nombre,email,rol,categoria
-    # Ana Garcia,ana@equipo.com,Frontend,Senior
-    # Carlos Lopez,carlos@equipo.com,Backend,Junior
-    # Maria Ruiz,maria@equipo.com,QA,Mid
-    # Pedro Sanchez,pedro@equipo.com,Fullstack,Senior
-    # Laura Torres,laura@equipo.com,UX,Lead
+    # nombre,email,rol,categoria,dedicacion,usa_agente_ia
+    # Ana Garcia,ana@equipo.com,Frontend,Senior,100,si
+    # Carlos Lopez,carlos@equipo.com,Backend,Junior,100,no
+    # Maria Ruiz,maria@equipo.com,QA,Mid,50,si
   And indica al usuario que borre los ejemplos, rellene con datos reales y vuelva a ejecutar el comando
   And muestra la ruta absoluta del fichero generado
 
@@ -543,8 +551,10 @@ Then para cada miembro pregunta:
     2. Email
     3. Rol en el equipo (texto libre, con sugerencias: Frontend, Backend, QA, UX, Fullstack, DevOps)
     4. Categoria o nivel (texto libre, con sugerencias: Junior, Mid, Senior, Lead)
+    5. Dedicacion al proyecto (0-100)
+    6. Usa agente de IA para desarrollar? (si/no)
   And tras cada miembro, pregunta si quiere anadir otro
-  And al terminar, muestra el resumen del equipo completo con nombre, email, rol y categoria
+  And al terminar, muestra el resumen del equipo completo con nombre, email, rol, categoria, dedicacion y uso de agente IA
   And pide confirmacion antes de guardar
 
 ESCENARIO 5: Roles y categorias de texto libre
@@ -561,27 +571,29 @@ Then acepta cualquier texto como rol valido (no hay lista cerrada)
 ESCENARIO 6: Persistencia del equipo
 Given el usuario ha confirmado la composicion del equipo
 When el plugin guarda los datos
-Then escribe el fichero team.csv en la raiz del proyecto
-  And el formato es CSV con cabecera: nombre,email,rol,categoria
+Then escribe el fichero CSV del equipo en la raiz del proyecto respetando el nombre original si el usuario venia de un fichero existente
+  And si el equipo se creo desde cero y no hay nombre previo, usa `team.csv` como convencion por defecto
+  And el formato es CSV con cabecera: nombre,email,rol,categoria,dedicacion,usa_agente_ia
   And el fichero se puede editar manualmente con cualquier editor de texto
-  And en futuras sesiones, el plugin lee team.csv automaticamente sin repetir el proceso de alta
+  And en futuras sesiones, el plugin lee cualquier CSV de equipo compatible automaticamente sin repetir el proceso de alta
 
 ESCENARIO 7: Modificacion del equipo existente
-Given existe un fichero team.csv con miembros definidos
+Given existe un CSV de equipo compatible con miembros definidos
 When el usuario solicita modificar el equipo
 Then el plugin muestra el equipo actual en formato tabla
   And permite:
     a) Anadir nuevos miembros
     b) Eliminar miembros existentes (con confirmacion)
     c) Modificar el rol de un miembro existente
-  And actualiza team.csv tras la confirmacion del usuario
+    d) Ajustar dedicacion o uso de agente IA de un miembro existente
+  And actualiza el mismo CSV tras la confirmacion del usuario
 
 ESCENARIO 8: Equipo vacio o fichero corrupto
-Given existe un fichero team.csv pero esta vacio o tiene formato invalido
+Given existe un CSV de equipo compatible pero esta vacio o tiene formato invalido
 When el plugin intenta leerlo
 Then muestra un mensaje descriptivo del problema
   And ofrece recrear el fichero desde cero (genera plantilla nueva)
-  And NO pierde el fichero original (lo renombra a team.csv.bak)
+  And NO pierde el fichero original (lo renombra a {nombre_original}.bak)
 ```
 
 ---
@@ -603,7 +615,7 @@ ESCENARIO 1: Condiciones previas para la distribucion
 Given el usuario solicita distribuir historias
 When el plugin verifica el estado
 Then comprueba que existen historias aprobadas (en docs/historias/ o en memoria)
-  And comprueba que existe un equipo definido (team.csv con al menos 2 miembros)
+  And comprueba que existe un equipo definido (CSV de equipo compatible con al menos 2 miembros)
   And si falta alguna de las dos condiciones, informa al usuario de que necesita primero:
     - Historias aprobadas (si no las hay): ejecutar el flujo de descubrimiento/generacion
     - Equipo definido (si no lo hay): ejecutar la gestion de equipo (HU-07)
@@ -614,15 +626,15 @@ When el PSPO analiza las historias y el equipo
 Then para cada historia, identifica que tipo de trabajo implica (frontend, backend, datos, testing, etc.)
   And cruza el tipo de trabajo con los roles de los miembros del equipo
   And genera una propuesta de asignacion en formato tabla:
-    | Historia | Miembro asignado | Rol | Razon de la asignacion |
-  And muestra la carga total por miembro (numero de historias asignadas a cada uno)
-  And si hay desequilibrio (un miembro tiene mas del doble de historias que otro), lo senala explicitamente
+    | Historia | Miembro asignado | Rol | Horas efectivas | Razon de la asignacion |
+  And muestra la carga total por miembro en horas efectivas
+  And si hay desequilibrio operativo claro, lo senala explicitamente
 
 ESCENARIO 3: Equilibrio de carga
 Given el PSPO ha generado una propuesta de distribucion
 When la carga esta desequilibrada entre miembros
 Then senala el desequilibrio con datos concretos:
-    "Ana tiene 5 historias, Carlos tiene 2. Quieres reequilibrar?"
+    "Ana tiene 14 h efectivas asignadas y Carlos tiene 6 h. Quieres reequilibrar?"
   And sugiere una redistribucion alternativa moviendo historias de perfil compatible
   And el usuario decide si acepta la redistribucion o mantiene la propuesta original
 
@@ -760,27 +772,19 @@ para que todo el equipo vea quien hace que y que depende de que sin salir de Tre
 ESCENARIO 1: Asignacion de miembros a tarjetas
 Given las historias estan publicadas en Trello como tarjetas
   And las asignaciones estan aprobadas por el usuario
-  And los miembros del equipo tienen cuenta en Trello vinculada al tablero
+  And el plugin dispone de un CSV de equipo compatible con emails validos
 When el plugin sincroniza las asignaciones con Trello
 Then para cada tarjeta, busca el miembro del equipo asignado por email
   And si el miembro existe como miembro del tablero en Trello, lo asigna a la tarjeta
-  And si el miembro NO existe en el tablero, lo senala:
-    "Ana Garcia (ana@equipo.com) no es miembro del tablero en Trello. No se puede asignar automaticamente."
-  And ofrece opciones para los miembros no encontrados:
-    a) Invitarle al tablero (si la API lo permite)
-    b) Anadir una nota en la tarjeta indicando el miembro asignado
-    c) Ignorar y asignar solo en la documentacion local
+  And si el miembro NO existe en el tablero, intenta invitarlo automaticamente como parte de la sincronizacion confirmada
+  And si despues de invitarlo no consigue `memberId`, marca la tarjeta como incompleta y la incluye en el reporte final para revision manual
 
 ESCENARIO 2: Invitacion de miembros al tablero de Trello
 Given las asignaciones estan aprobadas
   And hay miembros del equipo que NO son miembros del tablero en Trello
 When el plugin detecta miembros no vinculados
-Then pregunta al usuario: "Los siguientes miembros no estan en el tablero de Trello. Quieres enviarles una invitacion?"
-  And muestra la lista de miembros no vinculados con nombre y email
-  And el usuario puede:
-    a) Invitar a todos: el plugin envia invitacion via PUT /1/boards/{boardId}/members/{email} para cada uno
-    b) Seleccionar a cuales invitar
-    c) No invitar a ninguno (las asignaciones se registran solo localmente)
+Then incluye esas invitaciones en la vista previa final antes de sincronizar
+  And tras la confirmacion del usuario, envia invitacion via PUT /1/boards/{boardId}/members/{email} para cada miembro no vinculado
   And si la invitacion se envia correctamente, el plugin lo confirma:
     "Invitacion enviada a ana@equipo.com para unirse al tablero."
   And si la API devuelve error (email invalido, limite alcanzado), lo informa sin detener el resto
@@ -1013,17 +1017,17 @@ Ademas de los artefactos de producto (docs/), el MVP genera los siguientes fiche
 
 | Fichero | Contenido | Formato | Creado por |
 |---------|-----------|---------|-----------|
-| `team.csv` | Miembros del equipo | CSV con cabecera: nombre,email,rol,categoria | HU-07 (gestion de equipo) |
+| `team.csv` (por defecto) o cualquier CSV de equipo compatible | Miembros del equipo | CSV con cabecera: nombre,email,rol,categoria,dedicacion,usa_agente_ia | HU-07 (gestion de equipo) |
 | `docs/asignaciones.md` | Mapeo historia -> miembro con tabla y resumen de carga | Markdown | HU-08 (distribucion) |
 | `docs/dependencias.md` | Grafo de dependencias (Mermaid), tabla de relaciones, bloqueantes | Markdown | HU-09 (dependencias) |
 
-### Ejemplo de team.csv
+### Ejemplo de CSV de equipo compatible
 
 ```csv
-nombre,email,rol,categoria
-Ana Garcia,ana@equipo.com,Frontend,Senior
-Carlos Lopez,carlos@equipo.com,Backend,Junior
-Maria Ruiz,maria@equipo.com,QA,Mid
+nombre,email,rol,categoria,dedicacion,usa_agente_ia
+Ana Garcia,ana@equipo.com,Frontend,Senior,100,si
+Carlos Lopez,carlos@equipo.com,Backend,Junior,100,no
+Maria Ruiz,maria@equipo.com,QA,Mid,50,si
 ```
 
 ### Ejemplo de docs/asignaciones.md
@@ -1033,19 +1037,19 @@ Maria Ruiz,maria@equipo.com,QA,Mid
 
 Fecha: 2026-03-13
 
-| Historia | Miembro | Rol | Categoria | Estado |
-|----------|---------|-----|-----------|--------|
-| HU-01: Onboarding guiado | Carlos Lopez | Backend | Junior | Pendiente |
-| HU-02: Descubrimiento | Ana Garcia | Frontend | Senior | Pendiente |
-| HU-03: Generacion de HU | Carlos Lopez | Backend | Junior | Pendiente |
+| Historia | Responsable | Email | Rol | Horas | Estado |
+|----------|-------------|-------|-----|-------|--------|
+| HU-01: Onboarding guiado | Carlos Lopez | carlos@equipo.com | Backend | 4 h | Pendiente |
+| HU-02: Descubrimiento | Ana Garcia | ana@equipo.com | Frontend | 2 h | Pendiente |
+| HU-03: Generacion de HU | Carlos Lopez | carlos@equipo.com | Backend | 6 h | Pendiente |
 
 ## Carga por miembro
 
-| Miembro | Historias asignadas |
-|---------|-------------------|
-| Carlos Lopez | 2 |
-| Ana Garcia | 1 |
-| Maria Ruiz | 0 |
+| Miembro | Horas efectivas asignadas |
+|---------|--------------------------|
+| Carlos Lopez | 10 h |
+| Ana Garcia | 2 h |
+| Maria Ruiz | 0 h |
 ```
 
 ### Ejemplo de docs/dependencias.md
@@ -1083,7 +1087,7 @@ Fecha: 2026-03-13
 | Tasa de aprobacion a la primera | > 70% | Porcentaje de historias que el usuario aprueba sin pedir cambios |
 | Tiempo de descubrimiento a publicacion | < 30 minutos | Desde que el usuario describe la necesidad hasta que las tarjetas estan en Trello |
 | Tarjetas sin retrabajo | > 80% | Porcentaje de tarjetas que no se modifican despues de publicarse en Trello |
-| Tiempo de definicion de equipo | < 3 minutos | Desde que el usuario inicia la gestion de equipo hasta que team.csv esta guardado (para equipos de hasta 5 miembros) |
+| Tiempo de definicion de equipo | < 3 minutos | Desde que el usuario inicia la gestion de equipo hasta que el CSV compatible queda guardado (para equipos de hasta 5 miembros) |
 | Tasa de aceptacion de distribucion sugerida | > 60% | Porcentaje de asignaciones propuestas por el PSPO que el usuario acepta sin modificar |
 | Dependencias detectadas correctamente | > 80% | Porcentaje de dependencias reales que el PSPO identifica automaticamente (confirmadas por el usuario) |
 | Bloqueos evitados | Cualitativa | El usuario reporta que se evito al menos un bloqueo por sprint gracias al mapa de dependencias |
@@ -1105,7 +1109,7 @@ Fecha: 2026-03-13
 | **Cambios en la pagina de Power-Ups de Trello** (la URL o el flujo para obtener la API Key cambia) | Baja | Medio | Las instrucciones del onboarding se mantienen en un fichero separado facil de actualizar. El plugin valida el formato de la Key para detectar problemas temprano |
 | **Deteccion incorrecta de dependencias** (falsos positivos/negativos del LLM) | Alta | Medio | TODAS las dependencias detectadas son sugerencias que requieren confirmacion del usuario. El PSPO indica el nivel de confianza de cada deteccion. Las dependencias no confirmadas NO se tratan como bloqueantes |
 | **Miembros del equipo no vinculados en Trello** (emails no coinciden con cuentas de Trello) | Media | Medio | El plugin busca por email. Si no encuentra coincidencia, ofrece alternativas (nota en tarjeta, invitacion). Las asignaciones locales en docs/asignaciones.md siempre funcionan aunque Trello no las refleje |
-| **Equipo cambia con frecuencia** (altas y bajas frecuentes) | Media | Bajo | team.csv es editable manualmente. El plugin permite modificar el equipo en cualquier momento. Las asignaciones de historias ya distribuidas no se pierden si un miembro sale |
+| **Equipo cambia con frecuencia** (altas y bajas frecuentes) | Media | Bajo | El CSV de equipo compatible es editable manualmente. El plugin permite modificar el equipo en cualquier momento. Las asignaciones de historias ya distribuidas no se pierden si un miembro sale |
 | **Dependencias circulares** (A depende de B, B depende de A) | Baja | Alto | El PSPO detecta ciclos en el grafo de dependencias y los senala como error critico. No permite confirmar mapas con ciclos. El usuario debe reformular las historias para romper la circularidad |
 
 ---
@@ -1129,14 +1133,14 @@ Fecha: 2026-03-13
 ## 12. Fuera de alcance (explicito)
 
 - **No se gestiona la ejecucion del sprint.** El plugin crea el backlog y distribuye historias, no gestiona el flujo diario.
-- **No se estima esfuerzo.** La estimacion es del equipo tecnico, no del PO.
+- **No se sustituye al criterio tecnico del equipo.** El plugin propone estimaciones iniciales en horas efectivas con agentes, pero el equipo puede corregirlas.
 - **No se integra con otras herramientas** mas alla de Trello en el MVP.
 - **No se genera codigo.** El plugin es de producto, no de desarrollo.
 - **No se reemplazan ceremonias de Scrum.** El plugin asiste con artefactos, no facilita reuniones.
 - **No se implementa OAuth 1.0 de servidor.** La autenticacion es manual (API Key + Token). Suficiente para un plugin local.
-- **No se gestiona disponibilidad ni capacidad del equipo.** El PSPO distribuye por rol, no por horas disponibles.
+- **No se integra con calendarios, vacaciones ni festivos externos.** La capacidad se calcula con la dedicacion declarada en el CSV del equipo.
 - **No se hace seguimiento en tiempo real del progreso.** El mapa de dependencias es una foto del momento. No hay polling continuo a Trello.
-- **No se gestionan sprints multiples.** La distribucion se hace para el conjunto de historias actual, no planifica varios sprints hacia adelante.
+- **No se crean columnas por sprint futuro en Trello.** Solo existe un sprint activo en el tablero; la planificacion futura se mantiene en documentacion local.
 
 ---
 
@@ -1160,11 +1164,11 @@ Fecha: 2026-03-13
 | **Grafo de dependencias** | Representacion visual de las relaciones de dependencia entre historias, donde cada historia es un nodo y cada dependencia es una flecha |
 | **Radio de impacto** | Numero total de historias y miembros afectados si una historia especifica se retrasa |
 | **Distribucion de historias** | Asignacion de historias de usuario a miembros del equipo basada en el rol de cada miembro y el tipo de trabajo de cada historia |
-| **team.csv** | Fichero CSV que contiene la definicion del equipo del proyecto (nombre, email, rol, categoria por miembro) |
+| **CSV de equipo compatible** | Fichero CSV que contiene la definicion del equipo del proyecto. Puede llamarse como quiera el usuario si mantiene la cabecera `nombre,email,rol,categoria,dedicacion,usa_agente_ia` |
 
 ---
 
-**Estado del documento: PENDIENTE DE APROBACION v1.1 -- Generado el 2026-03-13.**
+**Estado del documento: EN REVISION v1.2 -- Actualizado el 2026-03-15.**
 
 **Cambios respecto a v1.0:**
 - Nuevo problema (5) en la seccion 1: distribucion de trabajo sin criterio ni visibilidad.
@@ -1179,7 +1183,7 @@ Fecha: 2026-03-13
 - Renumeracion de historias SHOULD: HU-07 -> HU-11s, HU-08 -> HU-12s, HU-09 -> HU-13s.
 - Renumeracion de historias COULD: HU-10 -> HU-14c, HU-11 -> HU-15c, HU-12 -> HU-16c.
 - Alcance del MVP ampliado con puntos 8, 9, 10 y 11.
-- Nueva seccion 8: persistencia de ficheros de equipo y distribucion (team.csv, asignaciones.md, dependencias.md).
+- Nueva seccion 8: persistencia de ficheros de equipo y distribucion (CSV de equipo compatible, asignaciones.md, dependencias.md).
 - Cinco nuevas metricas de exito para las funcionalidades de equipo.
 - Cuatro nuevos riesgos: deteccion incorrecta de dependencias, miembros no vinculados en Trello, equipo que cambia, dependencias circulares.
 - Nuevas dependencias de API de Trello: miembros del tablero, asignacion a tarjetas, checklists.
@@ -1188,18 +1192,12 @@ Fecha: 2026-03-13
 - Glosario ampliado con 6 terminos nuevos.
 - URLs nuevas de la API de Trello en la seccion de contexto.
 
-**Cambios respecto a v1.1 (v0.1.2):**
-- HU-07: Anadida columna "categoria" al CSV del equipo (4 columnas: nombre, email, rol, categoria).
-- HU-07 Escenario 3: Plantilla CSV con ejemplos que incluyen categorias (Senior, Junior, Mid, Lead).
-- HU-07 Escenario 4: Alta guiada pregunta por categoria como cuarto campo.
-- HU-07 Escenario 5: Renombrado a "Roles y categorias de texto libre", explica por que la categoria importa.
-- HU-07 Escenario 6: Formato CSV actualizado a 4 columnas.
-- HU-10: Nuevo Escenario 2 "Invitacion de miembros al tablero de Trello" (pregunta al usuario, envia invitacion via PUT /1/boards/{boardId}/members/{email}).
-- HU-10: Escenarios renumerados (2->3, 3->4, 4->5, 5->6, 6->7).
-- HU-10 Escenario 5: Vista previa incluye invitaciones pendientes.
-- Seccion 2: Nueva URL de API para invitacion de miembros al tablero.
-- Seccion 8: Tabla y ejemplo CSV actualizados a 4 columnas. Ejemplo de asignaciones.md incluye categoria.
-- Seccion 11: Nueva dependencia de API para invitacion de miembros.
-- Seccion 13: Definicion de team.csv actualizada con categoria.
+**Cambios respecto a v1.1:**
+- El flujo principal refleja ya el recorrido real: equipo -> asignacion -> dependencias -> sprint -> publicacion.
+- El onboarding y la publicacion usan listas estables en Trello: `Backlog`, `Sprint activo`, `Bloqueada`, `En progreso`, `En revision`, `Hecho`.
+- La gestion de equipo pasa de `team.csv` rigido a **CSV de equipo compatible** con 6 columnas y nombre libre.
+- La publicacion en Trello queda descrita como resumen corto + adjunto `.md` + checklists + sync incremental.
+- La estimacion de sprint se define en horas efectivas con agentes y sprints de hasta 5 dias laborables.
+- El alcance fuera de scope se alinea con el producto actual: sin calendarios externos ni columnas por sprint futuro.
 
 *Este PRD ha sido generado por El Buscador de Problemas (PO del equipo Alfred Dev). Ninguna historia se mueve a arquitectura ni desarrollo sin aprobacion explicita.*

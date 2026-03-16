@@ -1,5 +1,9 @@
 # Informe de QA: PSPO Agent -- Revision de calidad completa
 
+> Nota de estado (2026-03-15): este informe recoge una revision anterior del proyecto y contiene referencias a una etapa ya superada del servidor MCP. Se mantiene por trazabilidad, no como descripcion exacta del estado actual.
+>
+> Fuente tecnica actual: `Documents/testing-and-release.md`.
+
 | Campo | Valor |
 |-------|-------|
 | **Auditor** | El Rompe-cosas (QA Engineer, equipo Alfred Dev) |

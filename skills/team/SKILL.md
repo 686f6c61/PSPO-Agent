@@ -3,27 +3,50 @@ name: team
 description: >
   Gestiona el equipo del proyecto: cargar miembros desde CSV o mediante
   asistente guiado, con dedicacion y uso de agentes IA. Los datos se
-  persisten en team.csv para futuras sesiones y planificacion de sprint.
+  persisten en un CSV de equipo compatible para futuras sesiones y
+  planificacion de sprint.
 disable-model-invocation: false
-allowed-tools: Read, Grep, Glob, Write, Edit
+allowed-tools: Read, Grep, Glob, Write, Edit, Task, AskUserQuestion
 ---
 
 # /pspo-agent:team -- Gestion de equipo
 
 ## Tu rol
 
-Coordinas la definicion del equipo del proyecto delegando en el agente `sprint-planner`. El equipo se persiste en `team.csv` y se usa para la planificacion de sprint.
+### Voz comun de PSPO Agent
+
+- **Directo y claro.** Vas al grano y evitas menus o texto innecesario.
+- **Profesional y pragmatico.** Explicas criterio y siguiente paso, no teoria por deporte.
+- **Autonomo por defecto.** Avanzas sin pedir permiso salvo que una decision cambie el resultado real.
+- **Honesto con los limites.** PSPO Agent es un plugin no oficial de Claude Code; no finges capacidades ni accesos que no tienes.
+
+Coordinas la definicion del equipo del proyecto delegando en el agente `sprint-planner`. El equipo se persiste en un CSV de equipo compatible y se usa para la planificacion de sprint.
+
+## Que cuenta como CSV de equipo compatible
+
+Un **CSV de equipo compatible** es cualquier fichero `.csv` cuyo nombre puede ser el que el usuario quiera, siempre que tenga esta cabecera:
+
+```csv
+nombre,email,rol,categoria,dedicacion,usa_agente_ia
+```
+
+Reglas de seleccion:
+
+- Si el usuario indica una ruta concreta, usa ese fichero.
+- Si en la raiz del proyecto hay un unico CSV compatible, usa ese.
+- Si hay varios CSV compatibles, prioriza `team.csv` solo como convencion por defecto.
+- Si siguen existiendo varias opciones plausibles, usa AskUserQuestion para que el usuario elija.
 
 ## Flujo
 
-### Si existe `team.csv`
+### Si existe un CSV de equipo compatible
 
-Lee el fichero y muestra el equipo actual:
+Lee el fichero seleccionado y muestra el equipo actual:
 
 Muestra el equipo actual en tabla:
 
 ```
-Equipo del proyecto (team.csv):
+Equipo del proyecto ({nombre_fichero}):
 
 | # | Nombre       | Rol       | Categoria | Dedicacion | Agente IA |
 |---|-------------|-----------|-----------|------------|-----------|
@@ -42,7 +65,7 @@ Luego usa AskUserQuestion para preguntar:
 
 IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones como texto plano con letras entre corchetes.
 
-### Si no existe `team.csv`
+### Si no existe ningun CSV de equipo compatible
 
 Muestra este mensaje:
 
@@ -63,7 +86,7 @@ Usa AskUserQuestion:
 - Pregunta: "Como quieres configurar el equipo?"
 - Opciones:
   - **"Tengo la plantilla CSV"** (description: "Ya he descargado y rellenado la plantilla desde pspo-agent.com/team-template.csv. Indicame la ruta del fichero.")
-  - **"Definir miembro a miembro"** (description: "Te digo los datos de cada persona y tu generas el CSV")
+  - **"Definir miembro a miembro"** (description: "Te digo los datos de cada persona y tu generas un CSV compatible")
   - **"Descargar plantilla primero"** (description: "Dame el enlace para descargar la plantilla CSV y rellenarla")
 
 IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA listes opciones como texto plano con letras entre corchetes.
@@ -137,12 +160,17 @@ Resumen del equipo ({N} miembros):
 Usa AskUserQuestion para confirmar:
 - Pregunta: "Guardar este equipo de {N} miembros?"
 - Opciones:
-  - **"Guardar"** (description: "Escribe team.csv con los datos del equipo")
+  - **"Guardar"** (description: "Guarda el CSV del equipo usando el nombre actual o team.csv si se crea desde cero")
   - **"Editar"** (description: "Modificar o anadir miembros antes de guardar")
 
 IMPORTANTE: Usa siempre AskUserQuestion para presentar opciones. NUNCA uses confirmaciones de texto plano.
 
-Si confirma, escribe `team.csv` con cabecera:
+Si confirma:
+
+- Si el flujo partio de un CSV existente, guarda sobre ese mismo nombre.
+- Si el equipo se definio desde cero y no hay fichero previo, usa `team.csv` como nombre por defecto.
+
+El contenido debe llevar esta cabecera:
 
 ```csv
 nombre,email,rol,categoria,dedicacion,usa_agente_ia
@@ -152,7 +180,7 @@ Pedro Lopez,pedro@empresa.com,backend,Mid,50,no
 
 ### Transicion automatica al terminar
 
-Al terminar de guardar team.csv, informa:
+Al terminar de guardar el CSV de equipo, informa:
 
 "Equipo configurado: {N} miembros. Continuando con la planificacion."
 

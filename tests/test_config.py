@@ -1,7 +1,11 @@
 """Tests de validacion de configuracion del plugin."""
+import importlib.util
 import json
 import os
+import tempfile
 import unittest
+from pathlib import Path
+from unittest import mock
 
 PLUGIN_ROOT = os.path.join(os.path.dirname(__file__), "..")
 
@@ -16,6 +20,9 @@ class TestPluginJson(unittest.TestCase):
         for skill_path in self.plugin["skills"]:
             full_path = os.path.join(PLUGIN_ROOT, skill_path.lstrip("./"))
             self.assertTrue(os.path.exists(full_path), f"Skill no encontrada: {skill_path}")
+            self.assertTrue(os.path.isdir(full_path), f"La skill debe declararse como directorio: {skill_path}")
+            self.assertTrue(os.path.exists(os.path.join(full_path, "SKILL.md")),
+                            f"Falta SKILL.md dentro de {skill_path}")
 
     def test_all_agents_exist(self):
         for agent_path in self.plugin["agents"]:
@@ -32,17 +39,25 @@ class TestPluginJson(unittest.TestCase):
         self.assertNotIn("hooks", self.plugin,
                          "plugin.json no debe tener campo 'hooks' - se carga automaticamente")
 
-    def test_mcp_file_exists(self):
-        raw = self.plugin["mcpServers"]
-        # Normalizar ruta relativa: "./.mcp.json" -> ".mcp.json"
-        if raw.startswith("./"):
-            raw = raw[2:]
-        mcp_path = os.path.join(PLUGIN_ROOT, raw)
-        self.assertTrue(os.path.exists(mcp_path), f"MCP config no encontrado: {mcp_path}")
-
     def test_required_fields(self):
         for field in ("name", "version", "skills", "agents", "mcpServers"):
             self.assertIn(field, self.plugin, f"Falta campo: {field}")
+
+    def test_manifest_points_to_plugin_mcp_config(self):
+        self.assertEqual(self.plugin["mcpServers"], "./.mcp.json",
+                         "plugin.json debe apuntar al fichero .mcp.json del plugin")
+
+    def test_start_command_registered(self):
+        self.assertIn("./commands/start.md", self.plugin["commands"])
+
+    def test_autopilot_command_registered(self):
+        self.assertIn("./commands/autopilot.md", self.plugin["commands"])
+
+    def test_assign_command_registered(self):
+        self.assertIn("./commands/assign.md", self.plugin["commands"])
+
+    def test_dependencies_command_registered(self):
+        self.assertIn("./commands/dependencies.md", self.plugin["commands"])
 
     def test_skills_are_array(self):
         self.assertIsInstance(self.plugin["skills"], list)
@@ -51,7 +66,12 @@ class TestPluginJson(unittest.TestCase):
         self.assertIsInstance(self.plugin["agents"], list)
 
     def test_skill_count(self):
-        self.assertEqual(len(self.plugin["skills"]), 14)
+        self.assertEqual(len(self.plugin["skills"]), 18)
+
+    def test_skill_manifest_uses_directories_not_skill_files(self):
+        for skill_path in self.plugin["skills"]:
+            self.assertFalse(skill_path.endswith("SKILL.md"),
+                             f"plugin.json no debe apuntar al fichero SKILL.md: {skill_path}")
 
     def test_agent_count(self):
         self.assertEqual(len(self.plugin["agents"]), 6)
@@ -89,8 +109,16 @@ class TestSettingsJson(unittest.TestCase):
         self.assertEqual(self.defaults["sprint"]["ai_agent_factor_recommended"], 0.70)
 
     def test_all_sections_exist(self):
-        for section in ("trello", "discovery", "stories", "validation", "docs", "publish", "sprint", "dod"):
+        for section in ("trello", "discovery", "stories", "validation", "docs", "publish", "sprint", "autopilot", "dod"):
             self.assertIn(section, self.defaults, f"Falta seccion: {section}")
+
+    def test_sprint_duration_is_one_week_or_less(self):
+        self.assertLessEqual(self.defaults["sprint"]["duration_days"], 5)
+
+    def test_default_lists_include_blocked_and_active_sprint(self):
+        lists = self.defaults["trello"]["default_lists"]
+        self.assertIn("Sprint activo", lists)
+        self.assertIn("Bloqueada", lists)
 
 
 class TestMarketplaceJson(unittest.TestCase):
@@ -111,17 +139,26 @@ class TestMcpJson(unittest.TestCase):
 
     def setUp(self):
         with open(os.path.join(PLUGIN_ROOT, ".mcp.json")) as f:
-            self.mcp = json.load(f)
+            self.mcp = json.load(f)["mcpServers"]
 
     def test_trello_client_uses_python(self):
-        srv = self.mcp["mcpServers"]["trello-client"]
+        srv = self.mcp["trello-client"]
         self.assertEqual(srv["command"], "python3")
-        self.assertIn("trello-mcp.py", srv["args"][0])
+        self.assertIn("trello-mcp-launcher.py", srv["args"][0])
 
-    def test_env_vars_defined(self):
-        env = self.mcp["mcpServers"]["trello-client"]["env"]
-        self.assertIn("TRELLO_API_KEY", env)
-        self.assertIn("TRELLO_TOKEN", env)
+    def test_plugin_mcp_file_exists(self):
+        path = os.path.join(PLUGIN_ROOT, ".mcp.json")
+        self.assertTrue(os.path.exists(path), "Falta .mcp.json")
+
+    def test_no_plugin_scoped_mcp_duplicate(self):
+        plugin_scoped = os.path.join(PLUGIN_ROOT, ".claude-plugin", "mcp.json")
+        self.assertFalse(os.path.exists(plugin_scoped),
+                         "No debe existir .claude-plugin/mcp.json para evitar configuraciones MCP duplicadas")
+
+    def test_no_inline_env_placeholders(self):
+        srv = self.mcp["trello-client"]
+        self.assertNotIn("env", srv,
+                         ".mcp.json no debe inyectar placeholders; el launcher carga .env")
 
     def test_no_nodejs_reference(self):
         raw = json.dumps(self.mcp)
@@ -134,10 +171,57 @@ class TestMcpServerExists(unittest.TestCase):
         path = os.path.join(PLUGIN_ROOT, "servers", "trello-mcp.py")
         self.assertTrue(os.path.exists(path))
 
+    def test_trello_mcp_launcher_exists(self):
+        path = os.path.join(PLUGIN_ROOT, "servers", "trello-mcp-launcher.py")
+        self.assertTrue(os.path.exists(path))
+
+    def test_trello_fallback_exists(self):
+        path = os.path.join(PLUGIN_ROOT, "servers", "trello-fallback.py")
+        self.assertTrue(os.path.exists(path))
+
+    def test_persist_active_skill_hook_exists(self):
+        path = os.path.join(PLUGIN_ROOT, "hooks", "scripts", "persist-active-skill.py")
+        self.assertTrue(os.path.exists(path))
+
     def test_no_typescript_legacy(self):
         legacy = os.path.join(PLUGIN_ROOT, "servers", "trello-mcp")
         self.assertFalse(os.path.isdir(legacy),
                          "El directorio TypeScript legacy no deberia existir")
+
+
+class TestTrelloMcpLauncher(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        launcher_path = os.path.join(PLUGIN_ROOT, "servers", "trello-mcp-launcher.py")
+        spec = importlib.util.spec_from_file_location("trello_mcp_launcher", launcher_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        cls.launcher = module
+
+    def test_placeholder_env_values_are_overridden_from_dotenv(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env_path = Path(tmpdir) / ".env"
+            env_path.write_text(
+                "TRELLO_API_KEY=abc123\n"
+                "TRELLO_TOKEN=token456\n"
+                "TRELLO_BOARD_ID=board789\n",
+                encoding="utf-8",
+            )
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(tmpdir)
+                with mock.patch.dict(os.environ, {
+                    "TRELLO_API_KEY": "${TRELLO_API_KEY}",
+                    "TRELLO_TOKEN": "${TRELLO_TOKEN}",
+                    "TRELLO_BOARD_ID": "${TRELLO_BOARD_ID}",
+                }, clear=False):
+                    self.launcher._load_project_env()
+                    self.assertEqual(os.environ["TRELLO_API_KEY"], "abc123")
+                    self.assertEqual(os.environ["TRELLO_TOKEN"], "token456")
+                    self.assertEqual(os.environ["TRELLO_BOARD_ID"], "board789")
+            finally:
+                os.chdir(original_cwd)
 
 
 if __name__ == "__main__":
