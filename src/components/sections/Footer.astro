@@ -39,8 +39,9 @@ const currentYear = new Date().getFullYear();
           <span class="text-lg font-bold text-white">{site.name}</span>
         </div>
         <p class="mt-3 max-w-md text-sm text-primary-200 leading-relaxed">
-          Proyecto en fase alfa para descubrimiento de producto, historias de
-          usuario, dependencias, sprint con agentes y publicación en Trello.
+          Plugin no oficial y open source para descubrimiento de producto,
+          historias de usuario, dependencias, sprint con agentes y publicación
+          operativa en Trello.
         </p>
       </div>
 
@@ -90,6 +91,16 @@ const currentYear = new Date().getFullYear();
           <li>
             <a href="#arquitectura" class="text-sm text-primary-200 hover:text-white transition-colors">
               Arquitectura
+            </a>
+          </li>
+          <li>
+            <a
+              href={`${site.repository}/tree/main/Documents`}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-sm text-primary-200 hover:text-white transition-colors"
+            >
+              Developer Docs
             </a>
           </li>
           <li>

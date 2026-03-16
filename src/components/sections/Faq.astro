@@ -8,6 +8,7 @@
  */
 import SectionHeading from '../ui/SectionHeading.astro';
 import CodeBlock from '../ui/CodeBlock.astro';
+import { pluginMeta } from '../../data/plugin';
 
 const faqCategories = [
   {
@@ -31,8 +32,8 @@ const faqCategories = [
       },
       {
         question: 'El servidor MCP no arranca',
-        answer: 'Verifica que Python 3 esta en el PATH. El servidor es un unico fichero Python puro sin dependencias. Si el error persiste, comprueba que las variables TRELLO_API_KEY y TRELLO_TOKEN estan en .env.',
-        code: 'python3 --version\npython3 servers/trello-mcp.py  # Deberia esperar mensajes stdin',
+        answer: 'No necesitas arrancar el servidor de Trello a mano. El plugin usa .mcp.json, trello-mcp-launcher.py y un fallback oficial. Verifica que Python 3 esta en el PATH, reinicia Claude Code y relanza /pspo-agent:start o /pspo-agent:onboarding.',
+        code: 'claude plugin list\npython3 --version\n/pspo-agent:onboarding',
       },
     ],
   },
@@ -51,7 +52,7 @@ const faqCategories = [
       },
       {
         question: 'Donde se guardan las credenciales?',
-        answer: 'En el fichero .env de la raiz del proyecto. El flujo del plugin comprueba que no se versionen y añade barreras para evitar exponerlas en lecturas o llamadas directas a Trello fuera del MCP.',
+        answer: 'En el fichero .env de la raiz del proyecto. El launcher MCP las carga automáticamente y los hooks del plugin bloquean lecturas o llamadas directas que puedan exponerlas fuera del carril seguro.',
       },
     ],
   },
@@ -65,16 +66,28 @@ const faqCategories = [
       },
       {
         question: 'Como funciona el flujo autonomo entre fases?',
-        answer: 'El flujo recomendado es /pspo-agent:start y, si trabajas por carpeta, /pspo-agent:autopilot. El plugin avanza onboarding, documentación, equipo, asignaciones, dependencias, sprint y auditoría sin menús intermedios. Solo se detiene cuando necesita una decisión real: aprobar contenido, resolver un bloqueo o autorizar la publicación final.',
+        answer: 'El flujo guiado es /pspo-agent:start. El flujo autónomo es /pspo-agent:autopilot cuando ya traes brief y CSV compatibles. En ambos casos el plugin encadena onboarding, producto, asignación, dependencias, sprint y publicación, y solo se detiene cuando necesita una decisión real o una revisión final.',
       },
       {
         question: 'Que pasa si tengo mas de 10 historias de usuario?',
-        answer: 'No necesitas cambiar tu forma de trabajar. Si el contexto se vuelve demasiado grande, el plugin puede repartir análisis o publicación en varias tandas o en varios agentes, pero mantiene el mismo contrato: resumen corto en la tarjeta, fichero .md adjunto, DoD y dependencias cuando apliquen.',
+        answer: 'No hay un numero fijo de historias. El plugin decide si necesita 4 o 40 HU segun el alcance real, persiste la vision/HU-00, backlog y HU individuales en disco, y mantiene el mismo contrato de publicacion: resumen corto en la tarjeta, fichero .md adjunto, asignacion real, DoD y dependencias cuando apliquen.',
+      },
+      {
+        question: 'Que termina en Trello y que se queda en docs/?',
+        answer: 'Trello recibe la capa operativa: resumen corto de cada HU, adjunto .md, miembro asignado y checklists. docs/ conserva los artefactos completos del proyecto: vision/HU-00, backlog, historias individuales, asignaciones, dependencias, sprint y reportes.',
       },
       {
         question: 'Puedo exportar las historias a Jira u otras herramientas?',
         answer: 'Si. El comando /pspo-agent:export genera las historias en formato CSV, JSON o Jira CSV. El formato Jira CSV es compatible con la importacion nativa de Jira.',
         code: '/pspo-agent:export  # Elige formato: CSV, JSON o Jira CSV',
+      },
+      {
+        question: 'Donde esta la documentacion tecnica del plugin?',
+        answer: 'La fuente viva para desarrolladores esta en Documents/ dentro del repositorio. Ahi se documentan configuracion, arquitectura, hooks, MCP, fallback, testing y release.',
+        link: {
+          href: pluginMeta.docsUrl,
+          label: 'Abrir Developer Docs',
+        },
       },
       {
         question: 'Que es la Definition of Done (DoD)?',
@@ -157,6 +170,19 @@ const faqJsonLd = {
                     <div class="mt-3">
                       <CodeBlock code={item.code} />
                     </div>
+                  )}
+                  {item.link && (
+                    <a
+                      href={item.link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="mt-3 inline-flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700"
+                    >
+                      {item.link.label}
+                      <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 17h-8.5A2.25 2.25 0 012 14.75v-8.5A2.25 2.25 0 014.25 4h5a.75.75 0 010 1.5h-5zm7.5-3a.75.75 0 01.75-.75h4.5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0V4.06l-5.22 5.22a.75.75 0 11-1.06-1.06l5.22-5.22h-2.69a.75.75 0 01-.75-.75z" clip-rule="evenodd" />
+                      </svg>
+                    </a>
                   )}
                 </div>
               </details>
