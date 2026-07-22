@@ -31,7 +31,6 @@ docs/
 # Capturas de pantalla (desarrollo)
 *.png
 !public/*.png
-!landing/assets/og-image.png
 
 # MCP config local
 .mcp.json.bak

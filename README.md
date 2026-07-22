@@ -4,7 +4,7 @@ Plugin no oficial de Product Owner profesional para Claude Code. Analisis de req
 
 [![Landing de PSPO Agent](public/landing-es.png)](https://pspo-agent.com)
 
-Web oficial: [pspo-agent.com](https://pspo-agent.com) (español) · [pspo-agent.com/en](https://pspo-agent.com/en/) (english)
+Web oficial: [pspo-agent.com](https://pspo-agent.com) (español) · [pspo-agent.com/en](https://pspo-agent.com/en/) (english). El codigo de la web vive en la rama [`landing`](https://github.com/686f6c61/PSPO-Agent/tree/landing).
 
 ## Documentacion del plugin
 
@@ -186,7 +186,6 @@ pspo-agent/
 ├── tests/                   # tests unitarios, de contenido y runtime
 ├── Documents/               # documentación viva del plugin
 ├── docs/                    # artefactos generados por el flujo de producto
-├── landing/                 # web bilingue de pspo-agent.com (ES/EN)
 ├── public/                  # imagenes del README
 ├── .mcp.json
 ├── .env.example
