@@ -2,6 +2,10 @@
 
 Plugin no oficial de Product Owner profesional para Claude Code. Analisis de requisitos, descubrimiento de producto, historias de usuario con criterios Given/When/Then, asignacion operativa, mapa de dependencias, planificacion de sprint con factor de productividad por agentes IA, y publicacion remota en Trello, Notion o GitHub Projects.
 
+[![Landing de PSPO Agent](public/landing-es.png)](https://pspo-agent.com)
+
+Web oficial: [pspo-agent.com](https://pspo-agent.com) (español) · [pspo-agent.com/en](https://pspo-agent.com/en/) (english)
+
 ## Documentacion del plugin
 
 La documentacion tecnica y de desarrollador vive en:
@@ -65,7 +69,7 @@ La documentación de esta capa vive en:
 |-------|---------|-------------|
 | analyze | `/pspo-agent:analyze` | Analiza un documento crudo (brief, email, PRD) hasta alcanzar un 80% de claridad en 8 categorias. |
 | start | `/pspo-agent:start` | Punto de entrada. Detecta configuracion y redirige al flujo correcto. |
-| onboarding | `/pspo-agent:onboarding` | Asistente guiado: credenciales de Trello y configuracion de tablero. |
+| onboarding | `/pspo-agent:onboarding` | Asistente guiado: proveedor remoto (Trello, Notion o GitHub Projects), credenciales y destino de publicacion. |
 | discovery | `/pspo-agent:discovery` | Preguntas de descubrimiento desde cero (sin documento de partida). |
 | generate-stories | `/pspo-agent:generate-stories` | Genera historias con criterios de aceptacion Given/When/Then. |
 | validate | `/pspo-agent:validate` | Revision historia por historia: aprobar, rechazar o pedir cambios. |
@@ -87,7 +91,7 @@ La documentación de esta capa vive en:
 |--------|----------------|
 | requirement-analyst | Interroga documentos hasta alcanzar claridad suficiente para generar historias. |
 | product-owner | Descubrimiento de producto, generacion de historias y validacion. |
-| publisher | Publicacion operativa en Trello; Notion usa fallback oficial zero-template desde la skill `publish`. |
+| publisher | Publicacion operativa en Trello; Notion y GitHub Projects usan fallback oficial zero-template desde la skill `publish`. |
 | sprint-planner | DoD, equipo, capacidad con factor IA y planificacion de sprint. |
 | culture-guardian | Revisor de estilo: normas RAE, tono profesional, aprende del proyecto. |
 | senior-auditor | Auditoria de fondo: completitud, coherencia, HU que faltan/sobran. |
@@ -157,6 +161,8 @@ El fichero `settings.json` permite personalizar el comportamiento del plugin:
 | sprint.focus_hours_per_day | 6 | Horas reales productivas por dia para el calculo de capacidad |
 | trello.default_lists | Backlog, Sprint activo, Bloqueada, En progreso, En revision, Hecho | Columnas por defecto |
 | trello.default_labels | Critica, Alta, Media, Baja | Etiquetas de prioridad |
+| github.project_title_prefix | PSPO | Prefijo del titulo del Project v2 privado |
+| github.status_options | Backlog, Sprint activo, Bloqueada, En progreso, En revision, Hecho | Estados del kanban de GitHub Projects |
 | docs.date_format | DD/MM/AAAA | Formato de fechas |
 
 ## Estructura del proyecto
@@ -180,6 +186,8 @@ pspo-agent/
 ├── tests/                   # tests unitarios, de contenido y runtime
 ├── Documents/               # documentación viva del plugin
 ├── docs/                    # artefactos generados por el flujo de producto
+├── landing/                 # web bilingue de pspo-agent.com (ES/EN)
+├── public/                  # imagenes del README
 ├── .mcp.json
 ├── .env.example
 ├── settings.json
@@ -188,6 +196,26 @@ pspo-agent/
 ├── uninstall.sh
 └── uninstall.ps1
 ```
+
+## Conformidad con el SDK de Anthropic y buenas practicas
+
+El plugin esta construido sobre la especificacion oficial de plugins de Claude Code
+(el ecosistema del Agent SDK de Anthropic) y sigue sus buenas practicas publicadas:
+
+- **Manifiesto minimo con autodescubrimiento:** `plugin.json` solo declara metadatos y
+  `mcpServers`; comandos, skills y agentes se descubren desde los directorios estandar,
+  asi que anadir un componente no exige tocar el manifiesto.
+- **Validacion estricta:** `claude plugin validate . --strict` pasa sin avisos, tanto para
+  el manifiesto del plugin como para el del marketplace.
+- **Skills con divulgacion progresiva:** cada `SKILL.md` declara su condicion de disparo
+  ("Usar cuando...") y delega el detalle en ficheros auxiliares que se leen bajo demanda.
+- **Hooks con el esquema vigente:** decisiones `permissionDecision` en PreToolUse, gate de
+  `Stop` para autopilot, y envoltorio poliglota `run-hook.cmd` para que los guardarrailes
+  funcionen igual en Linux, macOS y Windows.
+- **MCP en Python puro:** servidor JSON-RPC sobre stdio con stdlib exclusivamente, sin
+  dependencias que instalar.
+- **Verificacion continua:** 514 tests (unitarios, contenido, protocolo MCP end-to-end y
+  runtime de hooks) que se ejecutan con `pytest` antes de cada release.
 
 ## Desinstalacion
 
@@ -215,7 +243,8 @@ El usuario es el unico responsable de las decisiones de producto y de la informa
 en Trello o cualquier otro sistema.
 
 Este proyecto **no esta afiliado, asociado ni respaldado** por Anthropic (Claude), Atlassian
-(Trello) ni Scrum.org (PSPO). Las marcas mencionadas pertenecen a sus respectivos propietarios.
+(Trello), Notion Labs, GitHub ni Scrum.org (PSPO). Las marcas mencionadas pertenecen a sus
+respectivos propietarios.
 
 El software se proporciona "tal cual", sin garantia de ningun tipo, expresa o implicita.
 

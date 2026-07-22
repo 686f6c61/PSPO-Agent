@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-1 3 17 14" role="img" aria-label="Claw sosteniendo un tablero de columnas">
+  <style>
+    .breathe { transform-origin: 7.5px 13px; animation: br 3.2s infinite ease-in-out; }
+    .cap     { transform-origin: 7.5px 6px;  animation: cap 2.8s infinite ease-in-out; }
+    .blink   { transform-origin: 7.5px 9px;  animation: bl 4.6s infinite linear; }
+    .shadow  { transform-origin: 7.5px 15.5px; animation: sh 3.2s infinite ease-in-out; }
+    @keyframes br  { 0%,100% { transform: scale(1,1) translate(0,0); } 50% { transform: scale(1.02,0.98) translate(0,0.4px); } }
+    @keyframes cap { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+    @keyframes bl  { 0%,3%,7%,40%,44%,100% { transform: scaleY(1); } 5%,42% { transform: scaleY(0.1); } }
+    @keyframes sh  { 0%,100% { transform: scaleX(1); opacity:.5; } 50% { transform: scaleX(0.96); opacity:.42; } }
+    @media (prefers-reduced-motion: reduce) { .breathe,.cap,.blink,.shadow { animation: none; } }
+  </style>
+  <g shape-rendering="crispEdges">
+    <rect class="shadow" x="3" y="15" width="9" height="1" fill="#000000" opacity="0.5"/>
+    <g fill="#DE886D">
+      <rect x="3" y="13" width="1" height="2"/><rect x="5" y="13" width="1" height="2"/>
+      <rect x="9" y="13" width="1" height="2"/><rect x="11" y="13" width="1" height="2"/>
+    </g>
+    <g class="breathe">
+      <rect x="2" y="6" width="11" height="7" fill="#DE886D"/>
+      <rect x="0" y="9" width="2" height="2" fill="#DE886D"/>
+      <rect x="13" y="9" width="2" height="2" fill="#DE886D"/>
+      <g class="blink" fill="#000000"><rect x="4" y="8" width="1" height="2"/><rect x="10" y="8" width="1" height="2"/></g>
+      <g class="cap">
+        <rect x="1.4" y="5.4" width="2.4" height="0.9" fill="#2E3A5E"/>
+        <rect x="3" y="4.4" width="8" height="1.7" fill="#3E4C7A"/>
+        <rect x="3" y="4.4" width="8" height="0.5" fill="#56659E"/>
+        <rect x="7" y="3.9" width="1" height="0.6" fill="#3E4C7A"/>
+      </g>
+    </g>
+    <!-- Prop: tablero con columnas -->
+    <g>
+      <rect x="3.4" y="10.5" width="8.2" height="4.5" fill="#ffd84a"/>
+      <rect x="4.2" y="11.3" width="1.9" height="2.9" fill="#fff"/>
+      <rect x="6.55" y="11.3" width="1.9" height="1.5" fill="#fff"><animate attributeName="height" values="1.5;2.9;1.5" dur="2.4s" repeatCount="indefinite"/></rect>
+      <rect x="8.9" y="11.3" width="1.9" height="2.2" fill="#fff"/>
+    </g>
+  </g>
+</svg>
