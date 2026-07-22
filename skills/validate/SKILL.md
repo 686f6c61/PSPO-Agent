@@ -4,8 +4,8 @@ description: >
   Presenta las historias de usuario generadas para revision y aprobacion del usuario.
   Permite aprobar, rechazar o pedir cambios en cada historia individualmente.
   No avanza a publicacion sin aprobacion explicita. Se encadena automaticamente
-  despues de la generacion de historias.
-disable-model-invocation: false
+  despues de la generacion de historias. Usar cuando hay historias generadas
+  pendientes de revision.
 allowed-tools: Read, Grep, Glob, Write, Edit, Task, AskUserQuestion
 ---
 

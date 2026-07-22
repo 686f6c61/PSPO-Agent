@@ -37,22 +37,42 @@ def _project_env_path() -> Path:
     return Path.cwd() / ".env"
 
 
+def _strip_quotes(value: str) -> str:
+    value = value.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+        return value[1:-1]
+    return value
+
+
+def _candidate_env_paths() -> list[Path]:
+    """Busca .env en el cwd y sus padres, igual que el launcher de Trello."""
+    cwd = Path.cwd()
+    seen: set[Path] = set()
+    candidates: list[Path] = []
+    for directory in (cwd, *cwd.parents):
+        if directory not in seen:
+            seen.add(directory)
+            candidates.append(directory / ".env")
+    return candidates
+
+
 def _load_project_env() -> None:
-    env_path = _project_env_path()
-    if not env_path.is_file():
-        return
-    try:
-        with env_path.open(encoding="utf-8") as handle:
-            for raw_line in handle:
-                line = raw_line.strip()
-                if not line or line.startswith("#") or "=" not in line:
-                    continue
-                key, value = line.split("=", 1)
-                key = key.strip()
-                value = value.strip()
-                if not os.environ.get(key):
-                    os.environ[key] = value
-    except OSError:
+    for env_path in _candidate_env_paths():
+        if not env_path.is_file():
+            continue
+        try:
+            with env_path.open(encoding="utf-8") as handle:
+                for raw_line in handle:
+                    line = raw_line.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        continue
+                    key, value = line.split("=", 1)
+                    key = key.strip()
+                    value = _strip_quotes(value)
+                    if not os.environ.get(key):
+                        os.environ[key] = value
+        except OSError:
+            continue
         return
 
 

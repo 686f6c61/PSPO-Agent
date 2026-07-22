@@ -3,8 +3,8 @@ name: dependencies
 description: >
   Detecta, confirma y guarda dependencias y bloqueantes entre historias
   aprobadas. Genera docs/dependencias.md con grafo Mermaid, tabla de relaciones
-  e impacto operativo sobre las personas asignadas.
-disable-model-invocation: false
+  e impacto operativo sobre las personas asignadas. Usar cuando el usuario pide
+  detectar dependencias o bloqueos entre historias.
 allowed-tools: Read, Grep, Glob, Write, Edit, Task, AskUserQuestion
 ---
 

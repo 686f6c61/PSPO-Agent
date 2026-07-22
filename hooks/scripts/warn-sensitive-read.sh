@@ -4,9 +4,18 @@
 
 set -euo pipefail
 
+# Resolver interprete de Python sin depender de 'python3' (en Windows suele ser
+# 'python'). Sin interprete no se puede extraer la ruta objetivo: fail-open
+# avisado, porque bloquear Read de forma global romperia la sesion.
+PY="$(command -v python3 || command -v python || true)"
+if [ -z "${PY}" ]; then
+    echo "[pspo-agent] Aviso: no se encontro python3 ni python; se omite el aviso de lecturas sensibles (fail-open)." >&2
+    exit 0
+fi
+
 INPUT=$(cat)
 
-TARGETS=$(echo "$INPUT" | python3 -c "
+TARGETS=$(echo "$INPUT" | "$PY" -c "
 import json, sys
 try:
     data = json.load(sys.stdin)
@@ -28,8 +37,8 @@ except Exception:
 if echo "$TARGETS" | grep -Eqi '(^|/)\.env($|[.])|credentials|secret|token'; then
     if echo "$TARGETS" | grep -Eqi '(^|/)\.env($|[.])'; then
         echo "BLOCKED" >&2
-        echo "No leas .env en crudo: expone secretos en el historial. Usa Bash con los helpers oficiales: .pspo-agent/runtime/trello-fallback.sh env-status --pretty, .pspo-agent/runtime/notion-fallback.sh env-status --pretty o .pspo-agent/runtime/publish-provider.py ." >&2
-        echo "No leas .env en crudo: expone secretos en el historial. Usa Bash con los helpers oficiales: .pspo-agent/runtime/trello-fallback.sh env-status --pretty, .pspo-agent/runtime/notion-fallback.sh env-status --pretty o .pspo-agent/runtime/publish-provider.py ."
+        echo "No leas .env en crudo: expone secretos en el historial. Usa Bash con los helpers oficiales: .pspo-agent/runtime/trello-fallback.sh env-status --pretty, .pspo-agent/runtime/notion-fallback.sh env-status --pretty, .pspo-agent/runtime/github-fallback.sh env-status --pretty o .pspo-agent/runtime/publish-provider.py ." >&2
+        echo "No leas .env en crudo: expone secretos en el historial. Usa Bash con los helpers oficiales: .pspo-agent/runtime/trello-fallback.sh env-status --pretty, .pspo-agent/runtime/notion-fallback.sh env-status --pretty, .pspo-agent/runtime/github-fallback.sh env-status --pretty o .pspo-agent/runtime/publish-provider.py ."
         exit 2
     fi
     echo "[pspo-agent] Aviso: lectura de fichero sensible detectada." >&2

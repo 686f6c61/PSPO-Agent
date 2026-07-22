@@ -1,9 +1,9 @@
 {
   "plugin": "pspo-agent",
-  "version": "1.0.8",
+  "version": "2.0.0",
   "defaults": {
     "providers": {
-      "supported": ["trello", "notion", "local"],
+      "supported": ["trello", "notion", "github", "local"],
       "selection_file": ".pspo-agent/runtime/publish-provider.json",
       "default": "local"
     },
@@ -43,6 +43,27 @@
         "En progreso",
         "En revision",
         "Hecho"
+      ]
+    },
+    "github": {
+      "project_title_prefix": "PSPO",
+      "project_visibility": "private",
+      "status_field_name": "Estado",
+      "status_options": [
+        "Backlog",
+        "Sprint activo",
+        "Bloqueada",
+        "En progreso",
+        "En revision",
+        "Hecho"
+      ],
+      "required_env": ["GITHUB_TOKEN"],
+      "optional_env": [
+        "GH_TOKEN",
+        "GITHUB_PROJECT_NUMBER",
+        "GITHUB_PROJECT_ID",
+        "GITHUB_PROJECT_OWNER",
+        "GITHUB_PROJECT_URL"
       ]
     },
     "discovery": {

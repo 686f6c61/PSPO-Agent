@@ -18,6 +18,15 @@ emit_block() {
     echo "$message"
 }
 
+# Resolver interprete de Python sin depender de 'python3' (en Windows suele ser
+# 'python'). Sin interprete no se puede computar el estado: fail-open avisado,
+# porque bloquear Bash/Fetch de forma global romperia la sesion.
+PY="$(command -v python3 || command -v python || true)"
+if [ -z "${PY}" ]; then
+    echo "[pspo-agent] Aviso: no se encontro python3 ni python; se omite el guardarrail de Bash/Fetch (fail-open)." >&2
+    exit 0
+fi
+
 # Leer el input del hook (JSON con tool_input)
 INPUT=$(cat)
 TOOL_NAME=""
@@ -26,7 +35,7 @@ PAYLOAD=""
 COMMAND_TEXT=""
 ALL_STRINGS=""
 
-eval "$(printf '%s' "$INPUT" | python3 -c "
+eval "$(printf '%s' "$INPUT" | "$PY" -c "
 import json, os, shlex, sys
 try:
     data = json.load(sys.stdin)
@@ -63,14 +72,8 @@ print(f'ALL_STRINGS={shlex.quote(chr(10).join(all_strings))}')
 " 2>/dev/null || true)"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-phase="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --ensure-scaffold --field phase "${CWD}")"
-gate_status="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field gate_status "${CWD}")"
-branch_skill="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field branch_skill "${CWD}")"
-active_skill="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field active_skill "${CWD}")"
-start_bootstrap="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field start_bootstrap "${CWD}")"
-onboarding_bootstrap="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field onboarding_bootstrap "${CWD}")"
-start_bootstrap_file="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field start_bootstrap_file "${CWD}")"
-onboarding_bootstrap_file="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field onboarding_bootstrap_file "${CWD}")"
+# Un unico volcado del estado del guard en vez de reinvocarlo campo a campo.
+eval "$("$PY" "${SCRIPT_DIR}/autopilot-guard.py" --ensure-scaffold --dump-shell "${CWD}")"
 PAYLOAD_LOWER=$(printf '%s' "$PAYLOAD" | tr '[:upper:]' '[:lower:]')
 COMMAND_TEXT_LOWER=$(printf '%s' "$COMMAND_TEXT" | tr '[:upper:]' '[:lower:]')
 ALL_STRINGS_LOWER=$(printf '%s' "$ALL_STRINGS" | tr '[:upper:]' '[:lower:]')
@@ -79,7 +82,7 @@ uses_env_status="false"
 uses_provider_helper="false"
 
 if [[ "${TOOL_NAME}" == "Bash" ]] && echo "${COMMAND_TEXT_LOWER}
-${ALL_STRINGS_LOWER}" | grep -qiE '(^|[[:space:]"'\''`;/])([[:alnum:]_./-]*)(trello|notion)-fallback(\.py|\.sh)\b'; then
+${ALL_STRINGS_LOWER}" | grep -qiE '(^|[[:space:]"'\''`;/])([[:alnum:]_./-]*)(trello|notion|github)-fallback(\.py|\.sh)\b'; then
     uses_official_fallback="true"
 fi
 
@@ -109,21 +112,21 @@ case "${phase}" in
 esac
 
 if [[ "${active_skill}" == "pspo-agent:start" ]] && [[ "${start_bootstrap}" != "done" ]] && [[ "${uses_official_fallback}" != "true" && "${uses_provider_helper}" != "true" ]]; then
-    emit_block "En /pspo-agent:start no uses Bash ni Fetch todavia. La primera accion valida es consultar el estado con .pspo-agent/runtime/trello-fallback.sh env-status --pretty, .pspo-agent/runtime/notion-fallback.sh env-status --pretty o .pspo-agent/runtime/publish-provider.py ."
+    emit_block "En /pspo-agent:start no uses Bash ni Fetch todavia. La primera accion valida es consultar el estado con .pspo-agent/runtime/trello-fallback.sh env-status --pretty, .pspo-agent/runtime/notion-fallback.sh env-status --pretty, .pspo-agent/runtime/github-fallback.sh env-status --pretty o .pspo-agent/runtime/publish-provider.py ."
     exit 2
 fi
 
 if [[ "${active_skill}" == "pspo-agent:onboarding" ]] && [[ "${onboarding_bootstrap}" != "done" ]] && [[ "${uses_official_fallback}" != "true" && "${uses_provider_helper}" != "true" ]]; then
-    emit_block "En /pspo-agent:onboarding no uses Bash ni Fetch todavia. La primera accion valida es consultar el estado con .pspo-agent/runtime/trello-fallback.sh env-status --pretty, .pspo-agent/runtime/notion-fallback.sh env-status --pretty o .pspo-agent/runtime/publish-provider.py ."
+    emit_block "En /pspo-agent:onboarding no uses Bash ni Fetch todavia. La primera accion valida es consultar el estado con .pspo-agent/runtime/trello-fallback.sh env-status --pretty, .pspo-agent/runtime/notion-fallback.sh env-status --pretty, .pspo-agent/runtime/github-fallback.sh env-status --pretty o .pspo-agent/runtime/publish-provider.py ."
     exit 2
 fi
 
 if [[ "${active_skill}" == "pspo-agent:onboarding" ]] && [[ "${uses_official_fallback}" != "true" && "${uses_provider_helper}" != "true" ]]; then
-    emit_block "En /pspo-agent:onboarding no uses Bash ni Fetch genericos. Usa solo .pspo-agent/runtime/publish-provider.py o los wrappers oficiales: notion-fallback.sh para Notion, publisher/trello-fallback.sh para Trello."
+    emit_block "En /pspo-agent:onboarding no uses Bash ni Fetch genericos. Usa solo .pspo-agent/runtime/publish-provider.py o los wrappers oficiales: notion-fallback.sh para Notion, github-fallback.sh para GitHub Projects, publisher/trello-fallback.sh para Trello."
     exit 2
 fi
 
-if [[ "${uses_official_fallback}" == "true" ]] && echo "$PAYLOAD_LOWER" | grep -qiE '(\|\||&&|curl|wget|grep .*(trello_|notion_)|grep .*token|\.claude/|cat .*\.env|sed )'; then
+if [[ "${uses_official_fallback}" == "true" ]] && echo "$PAYLOAD_LOWER" | grep -qiE '(\|\||&&|curl|wget|grep .*(trello_|notion_|github_)|grep .*token|\.claude/|cat .*\.env|sed )'; then
     emit_block "Usa el wrapper oficial en un comando limpio y aislado. No mezcles los wrappers runtime con curl, grep, .claude ni lecturas manuales de .env."
     exit 2
 fi
@@ -162,22 +165,29 @@ if [[ "${phase}" == "product-ready" && "${gate_status}" == "plan-publish" && "${
     exit 2
 fi
 
-# Patrones prohibidos: cualquier acceso directo a Trello
+# Patrones prohibidos: cualquier acceso directo a Trello, Notion o GitHub
 BLOCKED_PATTERNS=(
     "api.trello.com"
     "trello.com/1/"
     "api.notion.com"
+    "api.github.com"
     "TRELLO_API_KEY"
     "TRELLO_TOKEN"
     "NOTION_TOKEN"
+    "GITHUB_TOKEN"
+    "GH_TOKEN"
     "curl.*trello"
     "curl.*notion"
+    "curl.*github"
     "wget.*trello"
     "wget.*notion"
+    "wget.*github"
     "urllib.*trello"
     "urllib.*notion"
+    "urllib.*github"
     "requests.*trello"
     "requests.*notion"
+    "requests.*github"
 )
 
 # Patrones prohibidos en autopilot local: la inbox y sus copias se manejan
@@ -191,8 +201,8 @@ AUTOPILOT_LOCAL_PATTERNS=(
 for pattern in "${BLOCKED_PATTERNS[@]}"; do
     pattern_lower=$(echo "$pattern" | tr '[:upper:]' '[:lower:]')
     if echo "$PAYLOAD_LOWER" | grep -qiE "$pattern_lower"; then
-        emit_block "Acceso directo a APIs remotas bloqueado. Usa el MCP trello-client o los wrappers oficiales .pspo-agent/runtime/trello-fallback.sh y .pspo-agent/runtime/notion-fallback.sh; nunca Bash, Fetch o curl manual."
-        echo "Wrappers oficiales disponibles: .pspo-agent/runtime/trello-fallback.sh y .pspo-agent/runtime/notion-fallback.sh." >&2
+        emit_block "Acceso directo a APIs remotas bloqueado. Usa el MCP trello-client o los wrappers oficiales .pspo-agent/runtime/trello-fallback.sh, .pspo-agent/runtime/notion-fallback.sh y .pspo-agent/runtime/github-fallback.sh; nunca Bash, Fetch o curl manual."
+        echo "Wrappers oficiales disponibles: .pspo-agent/runtime/trello-fallback.sh, .pspo-agent/runtime/notion-fallback.sh y .pspo-agent/runtime/github-fallback.sh." >&2
         exit 2
     fi
 done

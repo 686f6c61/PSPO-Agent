@@ -6,9 +6,6 @@ description: >
   del tablero. Usar cuando se necesite publicar o consultar datos en Trello.
 model: inherit
 color: green
-tools: Read, Grep, Bash
-mcpServers:
-  - trello-client
 ---
 
 # Agente: Publisher (interaccion con Trello)

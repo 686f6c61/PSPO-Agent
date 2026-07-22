@@ -1,7 +1,6 @@
 ---
 name: update
-description: "Comprueba y aplica actualizaciones del plugin PSPO Agent"
-disable-model-invocation: false
+description: "Comprueba y aplica actualizaciones del plugin PSPO Agent. Usar cuando el usuario pide actualizar el plugin o comprobar si hay version nueva."
 allowed-tools: Read, Grep, Glob, Bash, AskUserQuestion
 ---
 

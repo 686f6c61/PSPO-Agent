@@ -4,7 +4,7 @@ description: >
   Exporta las historias de usuario aprobadas a ficheros en distintos formatos:
   CSV, JSON o Jira CSV (compatible con importacion de Jira). Genera los ficheros
   en docs/export/ para facilitar la integracion con otras herramientas.
-disable-model-invocation: false
+  Usar cuando el usuario pide exportar el backlog o las historias.
 allowed-tools: Read, Grep, Glob, Write, AskUserQuestion
 ---
 

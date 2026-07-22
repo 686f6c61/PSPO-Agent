@@ -198,6 +198,11 @@ class TestAutopilotHooksRuntime(unittest.TestCase):
             with open(notion_wrapper, encoding="utf-8") as handle:
                 notion_content = handle.read()
             self.assertIn("notion-fallback.py", notion_content)
+            github_wrapper = os.path.join(tmpdir, ".pspo-agent", "runtime", "github-fallback.sh")
+            self.assertTrue(os.path.isfile(github_wrapper))
+            with open(github_wrapper, encoding="utf-8") as handle:
+                github_content = handle.read()
+            self.assertIn("github-fallback.py", github_content)
             provider_wrapper = os.path.join(tmpdir, ".pspo-agent", "runtime", "publish-provider.py")
             self.assertTrue(os.path.isfile(provider_wrapper))
             with open(provider_wrapper, encoding="utf-8") as handle:
@@ -779,9 +784,9 @@ class TestAutopilotHooksRuntime(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             payload = json.loads(result.stdout)
-            self.assertEqual(payload["decision"], "block")
-            self.assertIn("no preguntes de nuevo", payload["reason"].lower())
-            self.assertIn("notion-fallback.sh verify-credentials", payload["reason"])
+            self.assertEqual(payload["hookSpecificOutput"]["permissionDecision"], "deny")
+            self.assertIn("no preguntes de nuevo", payload["hookSpecificOutput"]["permissionDecisionReason"].lower())
+            self.assertIn("notion-fallback.sh verify-credentials", payload["hookSpecificOutput"]["permissionDecisionReason"])
 
     def test_onboarding_branch_blocks_global_claude_glob(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1193,8 +1198,8 @@ class TestAutopilotHooksRuntime(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             payload = json.loads(result.stdout)
-            self.assertEqual(payload["decision"], "block")
-            self.assertIn("No vuelvas a pedir API Key ni Token", payload["reason"])
+            self.assertEqual(payload["hookSpecificOutput"]["permissionDecision"], "deny")
+            self.assertIn("No vuelvas a pedir API Key ni Token", payload["hookSpecificOutput"]["permissionDecisionReason"])
 
     def test_onboarding_credential_reask_is_allowed_when_env_is_missing(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1223,8 +1228,8 @@ class TestAutopilotHooksRuntime(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             payload = json.loads(result.stdout)
-            self.assertEqual(payload["decision"], "block")
-            self.assertIn("Crea automaticamente un tablero nuevo", payload["reason"])
+            self.assertEqual(payload["hookSpecificOutput"]["permissionDecision"], "deny")
+            self.assertIn("Crea automaticamente un tablero nuevo", payload["hookSpecificOutput"]["permissionDecisionReason"])
 
     def test_autopilot_reentry_without_context_blocks_inbox_glob(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1281,5 +1286,5 @@ class TestAutopilotHooksRuntime(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             payload = json.loads(result.stdout)
-            self.assertEqual(payload["decision"], "block")
-            self.assertIn("Crea automaticamente un tablero nuevo", payload["reason"])
+            self.assertEqual(payload["hookSpecificOutput"]["permissionDecision"], "deny")
+            self.assertIn("Crea automaticamente un tablero nuevo", payload["hookSpecificOutput"]["permissionDecisionReason"])

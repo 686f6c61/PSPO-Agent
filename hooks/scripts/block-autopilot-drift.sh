@@ -11,9 +11,19 @@ emit_block() {
     echo "$message"
 }
 
+# Resolver interprete de Python sin depender de que 'python3' exista en PATH
+# (en Windows suele ser 'python'). Sin interprete no se puede computar el
+# estado del autopilot: fail-open avisado, porque bloquear Read/Glob de forma
+# global dejaria la sesion inutilizable.
+PY="$(command -v python3 || command -v python || true)"
+if [ -z "${PY}" ]; then
+    echo "[pspo-agent] Aviso: no se encontro python3 ni python; se omite el guardarrail de desvios (fail-open)." >&2
+    exit 0
+fi
+
 INPUT=$(cat)
 
-eval "$(printf '%s' "$INPUT" | python3 -c "
+eval "$(printf '%s' "$INPUT" | "$PY" -c "
 import json, os, shlex, sys
 
 try:
@@ -36,16 +46,9 @@ print(f'ALL_VALUES={shlex.quote(joined_values)}')
 ")"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-phase="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --ensure-scaffold --field phase "${CWD}")"
-gate_status="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field gate_status "${CWD}")"
-branch_skill="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field branch_skill "${CWD}")"
-next_review_skill="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field next_review_skill "${CWD}")"
-next_plan_publish_skill="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field next_plan_publish_skill "${CWD}")"
-active_skill="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field active_skill "${CWD}")"
-start_bootstrap="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field start_bootstrap "${CWD}")"
-onboarding_bootstrap="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field onboarding_bootstrap "${CWD}")"
-publish_provider="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field publish_provider "${CWD}")"
-provider_needs_choice="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field publish_provider_needs_choice "${CWD}")"
+# Un unico volcado del estado del guard en vez de reinvocarlo campo a campo.
+eval "$("$PY" "${SCRIPT_DIR}/autopilot-guard.py" --ensure-scaffold --dump-shell "${CWD}")"
+provider_needs_choice="${publish_provider_needs_choice}"
 is_autopilot_entry=0
 if [[ -z "${active_skill}" || "${active_skill}" == "pspo-agent:autopilot" ]]; then
     is_autopilot_entry=1
@@ -70,7 +73,7 @@ docs_audit_hint="docs/auditoria-hu.md"
 docs_stories_hint="docs/historias/hu-"
 
 if [[ "${phase}" == "prepare-context" ]]; then
-    python3 "${SCRIPT_DIR}/autopilot-bootstrap.py" "${CWD}" >/dev/null 2>&1 || true
+    "$PY" "${SCRIPT_DIR}/autopilot-bootstrap.py" "${CWD}" >/dev/null 2>&1 || true
 fi
 
 case "${phase}" in
@@ -174,11 +177,15 @@ if [[ "${phase}" == "product-ready" ]]; then
                     exit 0
                 fi
                 if [[ "${provider_needs_choice}" == "1" || -z "${publish_provider}" ]]; then
-                    emit_block "Durante onboarding desde autopilot primero resuelve el proveedor remoto. Secuencia valida: Bash(\".pspo-agent/runtime/trello-fallback.sh env-status --pretty\"), Bash(\".pspo-agent/runtime/notion-fallback.sh env-status --pretty\") y Bash(\".pspo-agent/runtime/publish-provider.py .\"). Solo puedes tocar .env.example, .gitignore, .claude/settings.local.json, .pspo-agent/runtime/autopilot-context.md y .pspo-agent/inbox/*."
+                    emit_block "Durante onboarding desde autopilot primero resuelve el proveedor remoto. Secuencia valida: Bash(\".pspo-agent/runtime/trello-fallback.sh env-status --pretty\"), Bash(\".pspo-agent/runtime/notion-fallback.sh env-status --pretty\"), Bash(\".pspo-agent/runtime/github-fallback.sh env-status --pretty\") y Bash(\".pspo-agent/runtime/publish-provider.py .\"). Solo puedes tocar .env.example, .gitignore, .claude/settings.local.json, .pspo-agent/runtime/autopilot-context.md y .pspo-agent/inbox/*."
                     exit 2
                 fi
                 if [[ "${publish_provider}" == "notion" ]]; then
                     emit_block "Durante onboarding desde autopilot con proveedor Notion no explores .claude global, caches ni rutas externas. Siguiente secuencia valida: Bash(\".pspo-agent/runtime/notion-fallback.sh env-status --pretty\"), luego Bash(\".pspo-agent/runtime/notion-fallback.sh verify-credentials --pretty\"), despues retrieve-page/create-project/save-project-targets. Solo puedes tocar .env.example, .gitignore, .claude/settings.local.json, .pspo-agent/runtime/autopilot-context.md y .pspo-agent/inbox/*."
+                    exit 2
+                fi
+                if [[ "${publish_provider}" == "github" ]]; then
+                    emit_block "Durante onboarding desde autopilot con proveedor GitHub Projects no explores .claude global, caches ni rutas externas. Siguiente secuencia valida: Bash(\".pspo-agent/runtime/github-fallback.sh env-status --pretty\"), luego Bash(\".pspo-agent/runtime/github-fallback.sh verify-credentials --pretty\"), despues create-project/save-project-targets. Solo puedes tocar .env.example, .gitignore, .claude/settings.local.json, .pspo-agent/runtime/autopilot-context.md y .pspo-agent/inbox/*."
                     exit 2
                 fi
                 if [[ "${publish_provider}" == "local" ]]; then

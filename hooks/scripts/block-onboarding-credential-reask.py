@@ -36,6 +36,17 @@ BOARD_HINTS = (
 )
 
 
+def _deny(message: str) -> None:
+    """Emite la denegacion con el esquema vigente de PreToolUse."""
+    print(json.dumps({
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": message,
+        }
+    }, ensure_ascii=False))
+
+
 def _load_guard():
     spec = importlib.util.spec_from_file_location("autopilot_guard", GUARD_PATH)
     module = importlib.util.module_from_spec(spec)
@@ -118,7 +129,7 @@ def main() -> int:
                 "list-boards, seleccion interactiva o creacion de tablero nuevo, y guarda "
                 "TRELLO_BOARD_ID."
             )
-        print(json.dumps({"decision": "block", "reason": message}, ensure_ascii=False))
+        _deny(message)
         return 0
 
     branch_skill = str(state.get("branch_skill") or "").strip()
@@ -141,7 +152,7 @@ def main() -> int:
             "configura las listas estandar (Backlog, Sprint activo, Bloqueada, En progreso, "
             "En revision, Hecho), crea las etiquetas de prioridad y guarda TRELLO_BOARD_ID."
         )
-        print(json.dumps({"decision": "block", "reason": message}, ensure_ascii=False))
+        _deny(message)
         return 0
 
     tool_name = str(payload.get("tool_name") or "")
@@ -159,7 +170,7 @@ def main() -> int:
             "si quieres crear la estructura o dejarla para mas tarde. Continua automaticamente con "
             "notion-fallback.sh verify-credentials, retrieve-page, create-project y save-project-targets."
         )
-        print(json.dumps({"decision": "block", "reason": message}, ensure_ascii=False))
+        _deny(message)
         return 0
 
     if (
@@ -176,7 +187,7 @@ def main() -> int:
             "Continua automaticamente con notion-fallback.sh verify-credentials, "
             "retrieve-page, create-project y save-project-targets."
         )
-        print(json.dumps({"decision": "block", "reason": message}, ensure_ascii=False))
+        _deny(message)
         return 0
 
     return 0

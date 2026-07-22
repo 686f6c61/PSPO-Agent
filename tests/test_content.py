@@ -27,8 +27,8 @@ class TestAgentColors(unittest.TestCase):
         "product-owner": "blue",
         "requirement-analyst": "cyan",
         "publisher": "green",
-        "sprint-planner": "amber",
-        "culture-guardian": "magenta",
+        "sprint-planner": "orange",
+        "culture-guardian": "pink",
     }
 
     def test_all_agents_have_color(self):
@@ -194,6 +194,15 @@ class TestPublishFlow(unittest.TestCase):
         self.assertIn("trello-fallback.py", self.content,
                       "Publish debe documentar el fallback oficial controlado")
 
+    def test_publish_has_github_projects_path(self):
+        self.assertIn("Ruta GitHub Projects", self.content)
+        self.assertIn(".pspo-agent/runtime/github-fallback.sh env-status --pretty", self.content)
+        self.assertIn("sync-stories-from-folder", self.content)
+        self.assertIn("set-story-status", self.content)
+        self.assertIn("find-story-item", self.content)
+        self.assertIn("los draft items no admiten ficheros", self.content)
+        self.assertIn("scope `project`", self.content)
+
     def test_publish_has_provider_routing_and_notion_path(self):
         self.assertIn("Paso 0: Resolver proveedor remoto", self.content)
         self.assertIn("Ruta Notion", self.content)
@@ -340,7 +349,7 @@ class TestFlexibleTeamCsv(unittest.TestCase):
         self.assertIn("CSV de equipo compatible", content)
 
     def test_prd_documents_compatible_csv(self):
-        content = read_file("docs/prd.md")
+        content = read_file("Documents/prd.md")
         self.assertIn("CSV de equipo compatible", content)
         self.assertIn("nombre,email,rol,categoria,dedicacion,usa_agente_ia", content)
 
@@ -515,15 +524,6 @@ class TestHistoricalDocsWarnings(unittest.TestCase):
         self.assertIn("historial de releases", content)
         self.assertIn("fuente de verdad", content)
 
-    def test_plan_docs_are_marked_historical(self):
-        for path in [
-            "docs/plans/2026-03-14-sprint-planner-design.md",
-            "docs/plans/2026-03-14-fix-real-usage-issues.md",
-        ]:
-            content = read_file(path)
-            self.assertIn("plan historico", content,
-                          f"{path} debe indicar que es historico")
-
 
 class TestProviderDocs(unittest.TestCase):
     """La documentación viva debe reflejar la capa de proveedores."""
@@ -549,6 +549,20 @@ class TestProviderDocs(unittest.TestCase):
         self.assertIn("zero-template", content)
         self.assertIn("NOTION_PARENT_PAGE_ID", content)
         self.assertIn("HU-00 · Vision", content)
+
+    def test_documents_readme_links_github_integration(self):
+        content = read_file("Documents/README.md")
+        self.assertIn("github-projects-integration.md", content)
+        self.assertIn("github-fallback.py", content)
+
+    def test_github_integration_doc_exists_and_is_zero_template(self):
+        content = read_file("Documents/github-projects-integration.md")
+        self.assertIn("zero-template", content)
+        self.assertIn("Project v2", content)
+        self.assertIn("GITHUB_PROJECT_ID", content)
+        self.assertIn("gh auth refresh -s project", content)
+        self.assertIn("draft item", content)
+        self.assertIn("adjuntar ficheros", content)
 
     def test_env_example_includes_notion_variables(self):
         content = read_file(".env.example")
@@ -605,6 +619,14 @@ class TestOnboardingAskUserQuestion(unittest.TestCase):
         self.assertIn("crea automaticamente", self.content)
         self.assertIn("no preguntes si quieres crearla", self.content)
 
+    def test_onboarding_has_github_route(self):
+        self.assertIn("Ruta GitHub", self.content)
+        self.assertIn(".pspo-agent/runtime/github-fallback.sh env-status --pretty", self.content)
+        self.assertIn("gh auth refresh -s project", self.content)
+        self.assertIn("create-project", self.content)
+        self.assertIn("GITHUB_PROJECT_ID", self.content)
+        self.assertIn("Project v2 privado", self.content)
+
 
 # ---------------------------------------------------------------------------
 # Hooks: bloqueo de bash con Trello
@@ -625,8 +647,8 @@ class TestHooksConfig(unittest.TestCase):
 
     def test_fetch_hook_exists(self):
         matchers = [h["matcher"] for h in self.hooks["hooks"]["PreToolUse"]]
-        self.assertIn("Fetch", matchers,
-                       "No hay hook PreToolUse para Fetch")
+        self.assertIn("WebFetch", matchers,
+                       "No hay hook PreToolUse para WebFetch")
 
     def test_read_hook_exists(self):
         matchers = [h["matcher"] for h in self.hooks["hooks"]["PreToolUse"]]
@@ -669,9 +691,18 @@ class TestHooksConfig(unittest.TestCase):
                       "No hay hook PreToolUse para Task en autopilot")
 
     def test_trello_mcp_hook_exists(self):
+        """El matcher debe cubrir el esquema de nombres de tools MCP de plugins:
+        mcp__plugin_<plugin>_<server>__<tool> (y el esquema corto por compatibilidad)."""
         matchers = [h["matcher"] for h in self.hooks["hooks"]["PreToolUse"]]
-        self.assertIn("mcp__trello-client__.*", matchers,
+        mcp_matcher = "mcp__(plugin_pspo-agent_)?trello-client__.*"
+        self.assertIn(mcp_matcher, matchers,
                       "No hay hook PreToolUse para MCP Trello en autopilot")
+        self.assertTrue(
+            re.fullmatch(mcp_matcher, "mcp__plugin_pspo-agent_trello-client__create-cards"),
+            "El matcher no cubre el nombre real de las tools MCP del plugin")
+        self.assertTrue(
+            re.fullmatch(mcp_matcher, "mcp__trello-client__create-cards"),
+            "El matcher no cubre el esquema corto de nombres MCP")
 
     def test_block_trello_bash_script_exists(self):
         path = os.path.join(PLUGIN_ROOT, "hooks", "scripts", "block-trello-bash.sh")
@@ -687,6 +718,7 @@ class TestHooksConfig(unittest.TestCase):
         content = read_file("hooks/scripts/warn-sensitive-read.sh")
         self.assertIn(".pspo-agent/runtime/trello-fallback.sh env-status --pretty", content)
         self.assertIn(".pspo-agent/runtime/notion-fallback.sh env-status --pretty", content)
+        self.assertIn(".pspo-agent/runtime/github-fallback.sh env-status --pretty", content)
         self.assertIn(".pspo-agent/runtime/publish-provider.py .", content)
 
     def test_block_autopilot_agent_script_exists(self):
@@ -742,20 +774,23 @@ class TestHooksConfig(unittest.TestCase):
         self.assertIn("emit_block", drift_hook)
         self.assertIn("emit_block", trello_hook)
         self.assertIn("Nunca copies API keys ni tokens", secret_hook)
-        self.assertIn("Trello o Notion", secret_hook)
+        self.assertIn("Trello, Notion o GitHub", secret_hook)
         self.assertIn("Usa Glob para listar", bash_hook)
         self.assertIn("trello-fallback.sh", bash_hook)
         self.assertIn("notion-fallback.sh", bash_hook)
+        self.assertIn("github-fallback.sh", bash_hook)
         self.assertIn("publish-provider.py", bash_hook)
         self.assertIn("Skill(\\\"pspo-agent:product-phase\\\")", agent_hook)
         self.assertIn("pspo-agent:product-phase", agent_hook)
         self.assertIn("notion-fallback.sh verify-credentials", agent_hook)
+        self.assertIn("github-fallback.sh verify-credentials", agent_hook)
         self.assertIn("no uses ToolSearch ni TodoWrite", drift_hook)
         self.assertIn("No leas docs, .claude, .env", drift_hook)
         self.assertIn(".pspo-agent/inbox", drift_hook)
         self.assertIn("Durante product-phase no inspecciones .claude, .env", drift_hook)
         self.assertIn("publish-provider.py", drift_hook)
         self.assertIn("notion-fallback.sh verify-credentials", drift_hook)
+        self.assertIn("github-fallback.sh verify-credentials", drift_hook)
         self.assertIn("Trello va despues de la fase de producto", trello_hook)
         self.assertIn("product-phase.status", guard_script)
         self.assertIn("modo_producto", bootstrap_script)
@@ -767,6 +802,8 @@ class TestStartProviderRouting(unittest.TestCase):
         self.assertIn("Paso 0: Resolver proveedor remoto", content)
         self.assertIn("Solo local", content)
         self.assertIn("runtime/notion-fallback.sh", content)
+        self.assertIn("runtime/github-fallback.sh", content)
+        self.assertIn("GitHub Projects", content)
         self.assertIn("publish-provider.py", content)
 
     def test_onboarding_forces_bash_first_call(self):

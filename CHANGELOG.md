@@ -2,6 +2,54 @@
 
 > Nota de estado (2026-03-16): este changelog se conserva como historial de releases y se mantiene en orden descendente por versión. Las entradas antiguas describen el comportamiento de cada versión en su momento y pueden mencionar términos ya sustituidos, como `Sprint actual` o `team.csv`. La fuente de verdad del estado actual es `README.md` y `Documents/`.
 
+## v2.0.0 (22/07/2026)
+
+### Nuevas funcionalidades
+
+- **GitHub Projects como tercer proveedor remoto:** nuevo fallback oficial `servers/github-fallback.py` y su wrapper de runtime `.pspo-agent/runtime/github-fallback.sh`. Si el usuario tiene `gh` autenticado (con scope `project`) o un `GITHUB_TOKEN`/`GH_TOKEN`, el plugin crea un Project v2 **privado** del usuario y publica las historias como draft items con su estado.
+- **Backend dual `gh` + urllib:** el cliente GraphQL usa `gh api graphql` como backend primario y cae a GraphQL directo con `urllib` usando `GITHUB_TOKEN` o `GH_TOKEN` cuando `gh` no está disponible.
+- **Zero-template con esquema de campos completo:** `create-project` crea el Project v2 privado con título `PSPO · {nombre_proyecto}`, edita las opciones del campo Status nativo (`updateProjectV2Field`) con las 6 estándar y descripciones semánticas, y crea los campos Prioridad, Talla, Horas, Sprint (bajo demanda) y Responsable. Deja el proyecto autodocumentado con `shortDescription` y `readme` (tabla de estados, glosario de campos y vistas recomendadas).
+- **Mapeo campo a campo:** cada metadato de la HU va a su propio campo (Status, Prioridad, Talla, Horas, Sprint, Responsable), igual que en Trello y Notion. El cuerpo del draft item lleva el markdown en bruto de la HU (GitHub renderiza Mermaid) con la DoD como task list `- [ ]`.
+- **Publicación por lote en GitHub:** `sync-stories-from-folder` recorre `docs/historias/HU-*.md` + `docs/vision.md` en dos pasadas, crea o actualiza cada HU sin duplicar (dedupe por título `HU-XX`), mapea los campos, resuelve dependencias a item ids como trazabilidad y genera `docs/publish-report.md` con el mapeo campo a campo.
+- **Asignación real cuando hay login:** el `Responsable` (texto) es siempre `Nombre (email)`; además, si el CSV de equipo trae una columna opcional `github` con el login, el item recibe el assignee real de GitHub. Sin login, la HU se reporta en `unresolvedAssignments`.
+- **Onboarding, start, publish y ayuda hablan de tres proveedores:** nuevas rutas GitHub coherentes con las de Trello y Notion, con carril estricto que usa solo `.pspo-agent/runtime/github-fallback.sh`.
+- **Guardrails al día para GitHub:** `block-trello-bash.sh`, `block-autopilot-drift.sh`, `block-autopilot-agent.sh`, `warn-sensitive-read.sh` y `persist-active-skill.py` reconocen el wrapper `github-fallback.sh`; `block-secret-prompt-leak.py` detecta y bloquea tokens de GitHub filtrados en prompts.
+- **Selector de proveedor determinista:** `publish-provider.py` registra `github` y lo considera configurado por señales de proyecto (token en `.env` o targets persistidos), no por el estado global de `gh`, para no reconfigurar cada proyecto por la sesión global de la máquina.
+- **Configuración y documentación de GitHub:** nueva sección `defaults.github` en `settings.json`, variables `GITHUB_*` en `.env.example`, nuevo `Documents/github-projects-integration.md` y README actualizado.
+
+### Límites conocidos de GitHub Projects
+
+- Los draft items de GitHub Projects no admiten adjuntos: el markdown en bruto de cada HU (incluida la DoD como task list) viaja en el cuerpo del item.
+- La asignación real requiere el login de GitHub; el email no es resoluble por la API.
+- Las dependencias se resuelven a item ids como trazabilidad; los draft items no admiten relaciones nativas de proyecto.
+- La API pública no permite crear vistas de Project v2: el README del proyecto documenta el tablero por Status y la tabla por Sprint para crearlas a mano.
+
+### Correccion de errores
+
+- **Los hooks del MCP de Trello vuelven a ejecutarse:** el matcher `mcp__trello-client__.*` no coincidia con el nombre real que Claude Code asigna a las herramientas MCP de un plugin (`mcp__plugin_pspo-agent_trello-client__...`), asi que el gate de credenciales y el bloqueo de autopilot sobre Trello nunca se disparaban. El matcher acepta ahora ambos esquemas de nombre.
+- **El matcher `Fetch` pasa a `WebFetch`:** la herramienta `Fetch` no existe en Claude Code; el bloqueo de accesos directos a Trello por fetch era codigo muerto.
+- **El publisher puede usar de verdad el MCP:** su frontmatter restringia `tools` a Read/Grep/Bash y declaraba un campo `mcpServers` que los agentes no soportan, con lo que las 14 herramientas MCP de Trello quedaban fuera de su alcance. Se elimina la restriccion y el campo invalido (tambien en sprint-planner).
+- **Las skills localizan la configuracion del plugin:** las referencias sueltas a `settings.json` en generate-stories, sprint-plan, team y sprint-planner apuntan ahora a `${CLAUDE_PLUGIN_ROOT}/settings.json`; antes buscaban el fichero en el proyecto del usuario, donde no existe.
+- **`/pspo-agent:audit` aparece en la ayuda:** faltaba en la tabla de `help.md`.
+- **`datetime.utcnow()` obsoleto eliminado** del launcher y del servidor MCP (aviso de deprecacion en Python 3.12+).
+- **El hook de credenciales usa el esquema vigente de PreToolUse:** `block-onboarding-credential-reask.py` emitia `{"decision": "block"}`, la forma antigua que hoy solo funciona por retrocompatibilidad; ahora emite `hookSpecificOutput.permissionDecision: "deny"`.
+- **El cargador de `.env` de Notion se comporta como el de Trello:** quita comillas de los valores (un `NOTION_TOKEN="ntn_..."` entre comillas rompia la autenticacion) y busca el `.env` en el directorio actual y sus padres.
+- **Logs de diagnostico multiplataforma:** las rutas `/tmp/...` hardcodeadas del servidor y el launcher MCP usan ahora el directorio temporal del sistema (en Windows `/tmp` no existe y se perdia el diagnostico).
+
+### Portabilidad y robustez de hooks
+
+- **Los hooks funcionan en Windows nativo:** nuevo envoltorio poliglota `hooks/run-hook.cmd` (valido a la vez como batch de Windows y script sh de Unix) por el que pasan los 15 comandos de `hooks.json`. Ejecuta los `.sh` con bash (en Windows, el bash de Git) y los `.py` con `python3` o, si no existe, `python`. Antes, en Windows nativo toda la capa de guardarrailes quedaba inactiva.
+- **Los guardarrailes ya no se desactivan en silencio si falta Python:** los scripts `.sh` resolvian toda la decision con `eval "$(python3 ...)"`; sin `python3` en el PATH las variables quedaban vacias y todo pasaba (fail-open silencioso). Ahora resuelven `python3` o `python`, avisan por stderr si no hay interprete y `check-env.sh` (el gate de credenciales del MCP) falla cerrado con exit 2.
+- **Latencia de hooks reducida ~10x durante autopilot:** `block-autopilot-drift.sh`, `block-autopilot-agent.sh` y `block-trello-bash.sh` invocaban `autopilot-guard.py` entre 7 y 10 veces por evento (una por campo); el guard incorpora un modo `--dump-shell` que vuelca todos los campos en una sola llamada.
+
+### Mejoras
+
+- **Manifiesto minimo con autodescubrimiento:** `plugin.json` deja de listar comandos, skills y agentes a mano (el campo `skills` ni siquiera esta soportado); Claude Code los descubre de los directorios estandar, con lo que anadir un componente ya no exige tocar el manifiesto.
+- **Divulgacion progresiva completa:** los ficheros auxiliares `templates.md`, `steps.md`, `card-format.md` y `file-templates.md` estaban huerfanos; ahora sus skills los referencian explicitamente.
+- **Descripciones de skills con condicion de disparo:** las 18 skills siguen el patron "Usar cuando..." para mejorar la invocacion automatica.
+- **Colores de agente dentro de la paleta soportada:** `magenta` pasa a `pink` y `amber` a `orange`.
+- **Ayuda y README alineados con el multi-proveedor:** textos de Trello generalizados a proveedor remoto, tabla MCP completa con `get-card` y `update-card`, y tabla de hooks con los 14 scripts reales.
+
 ## v1.0.8 (16/03/2026)
 
 ### Nuevas funcionalidades
@@ -104,7 +152,7 @@
 
 - **README actualizado:** refleja que PSPO Agent es un plugin no oficial, expone el flujo actual, los comandos nuevos y las 14 herramientas MCP.
 - **PRD alineado con la implementacion real:** equipo flexible, flujo autonomo, sprint con agentes, columnas actuales de Trello y sincronizacion incremental.
-- **Documentos historicos marcados como tales:** `CHANGELOG`, `docs/arquitectura.md`, `docs/seguridad.md`, `docs/qa-report.md` y `docs/plans/*` avisan cuando son referencia historica y no especificacion viva.
+- **Documentos historicos marcados como tales:** el `CHANGELOG` avisa cuando es referencia historica y no especificacion viva; la documentacion viva del plugin vive en `README.md` y `Documents/`.
 - **Ayuda y comandos revisados:** `help`, `autopilot` y el resto de descripciones ya usan el lenguaje actual del producto.
 
 ### Infraestructura

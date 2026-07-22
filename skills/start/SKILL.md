@@ -2,11 +2,10 @@
 name: start
 description: >
   Punto de entrada del plugin PSPO Agent. Detecta el estado de configuracion
-  del proveedor remoto (Trello, Notion o local) y redirige al flujo correcto:
+  del proveedor remoto (Trello, Notion, GitHub Projects o local) y redirige al flujo correcto:
   onboarding si falta configuracion, o flujo normal de descubrimiento si todo
   esta listo. Ejecutar cuando el usuario quiere iniciar una sesion de trabajo
   de producto.
-disable-model-invocation: false
 allowed-tools: Read, Grep, Glob, Write, Edit, Bash, Task, AskUserQuestion
 ---
 
@@ -26,7 +25,7 @@ Eres el punto de entrada del plugin PSPO Agent. Tu unica responsabilidad es **de
 Debes pensar siempre en capas:
 
 - producto local (`docs/`)
-- proveedor remoto (`trello`, `notion` o `local`)
+- proveedor remoto (`trello`, `notion`, `github` o `local`)
 - siguiente skill valida
 
 ## Regla de arranque estricto
@@ -36,6 +35,7 @@ Debes pensar siempre en capas:
 - Tus primeras comprobaciones validas son:
   - `.pspo-agent/runtime/trello-fallback.sh env-status --pretty`
   - `.pspo-agent/runtime/notion-fallback.sh env-status --pretty`
+  - `.pspo-agent/runtime/github-fallback.sh env-status --pretty`
   - `python3 "$CLAUDE_PLUGIN_ROOT/hooks/scripts/publish-provider.py" . --field ...`
 - Los wrappers runtime los prepara el propio plugin al entrar en la skill; no necesitas descubrir la ruta real del plugin.
 - Solo cuando llegues al paso 4 puedes usar globs concretos y acotados como:
@@ -53,14 +53,16 @@ Sigue este arbol de decision de forma estricta:
 
 1. Consulta el estado seguro de Trello con `.pspo-agent/runtime/trello-fallback.sh env-status --pretty`.
 2. Consulta el estado seguro de Notion con `.pspo-agent/runtime/notion-fallback.sh env-status --pretty`.
-3. Consulta el selector con `python3 "$CLAUDE_PLUGIN_ROOT/hooks/scripts/publish-provider.py" .`.
+3. Consulta el estado seguro de GitHub con `.pspo-agent/runtime/github-fallback.sh env-status --pretty`.
+4. Consulta el selector con `python3 "$CLAUDE_PLUGIN_ROOT/hooks/scripts/publish-provider.py" .`.
 
 Reglas:
 
 - Si solo hay un proveedor configurado/listo, adopta ese proveedor sin preguntar.
-- Si hay varios proveedores remotos configurados, usa **AskUserQuestion** una sola vez:
+- Si hay varios proveedores remotos configurados, usa **AskUserQuestion** una sola vez (maximo 4 opciones):
   - **"Trello"**: publicar en tablero
   - **"Notion"**: publicar en workspace/paginas
+  - **"GitHub Projects"**: publicar en un Project v2 privado del usuario
   - **"Solo local"**: trabajar en `docs/` sin publicar remoto
 - Tras la eleccion, persiste el proveedor con `publish-provider.py --select ...`.
 
@@ -75,6 +77,11 @@ Si el proveedor es `notion`:
 
 1. Usa `.pspo-agent/runtime/notion-fallback.sh env-status --pretty`.
 2. Comprueba si existen `NOTION_TOKEN` y `NOTION_PARENT_PAGE_ID`.
+
+Si el proveedor es `github`:
+
+1. Usa `.pspo-agent/runtime/github-fallback.sh env-status --pretty`.
+2. Comprueba que `authMethod` no es `none` (`gh` autenticado o `GITHUB_TOKEN`/`GH_TOKEN`).
 
 Si el proveedor es `local`:
 
@@ -168,6 +175,13 @@ Si el proveedor es `notion`:
 4. Si existe `NOTION_DATABASE_ID`, usa `.pspo-agent/runtime/notion-fallback.sh retrieve-database {id}` para verificar acceso.
 5. Si falla cualquiera, redirige a `/pspo-agent:onboarding`.
 
+Si el proveedor es `github`:
+
+1. Comprueba si existe `GITHUB_PROJECT_ID` o `GITHUB_PROJECT_NUMBER`.
+2. Si no existe ninguno, redirige a `/pspo-agent:onboarding` para crear el Project v2 zero-template.
+3. Si existe, usa `.pspo-agent/runtime/github-fallback.sh verify-credentials --pretty` para confirmar acceso y scope `project`.
+4. Si falla, redirige a `/pspo-agent:onboarding`.
+
 ### Paso 4: Decidir el siguiente paso automaticamente
 
 Muestra un mensaje de estado:
@@ -190,6 +204,16 @@ PSPO Agent listo.
   Proveedor: Notion
   Workspace / bot: {nombre_integracion}
   Destino: {nombre_pagina_o_database}
+```
+
+Si el proveedor es `github`, muestra:
+
+```
+PSPO Agent listo.
+
+  Proveedor: GitHub Projects
+  Cuenta: {login_de_github}
+  Destino: Project v2 #{numero} ({url_del_project})
 ```
 
 Si el proveedor es `local`, muestra:

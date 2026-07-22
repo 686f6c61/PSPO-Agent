@@ -1,6 +1,6 @@
 # PSPO Agent
 
-Plugin no oficial de Product Owner profesional para Claude Code. Analisis de requisitos, descubrimiento de producto, historias de usuario con criterios Given/When/Then, asignacion operativa, mapa de dependencias, planificacion de sprint con factor de productividad por agentes IA, y publicacion remota en Trello o Notion.
+Plugin no oficial de Product Owner profesional para Claude Code. Analisis de requisitos, descubrimiento de producto, historias de usuario con criterios Given/When/Then, asignacion operativa, mapa de dependencias, planificacion de sprint con factor de productividad por agentes IA, y publicacion remota en Trello, Notion o GitHub Projects.
 
 ## Documentacion del plugin
 
@@ -15,8 +15,9 @@ Importante:
 
 ## Requisitos
 
-- Python 3.8+
+- Python 3.8+ (accesible como `python3` o `python`)
 - Claude Code
+- En Windows: Git para Windows (los hooks usan su bash a traves del envoltorio `hooks/run-hook.cmd`)
 
 ## Instalacion
 
@@ -50,11 +51,13 @@ Estado actual:
 
 - `trello`: integrado y validado
 - `notion`: integrado y validado para flujo zero-template
+- `github`: integrado (GitHub Projects v2 privado). Requiere `gh` autenticado con scope `project` o `GITHUB_TOKEN`/`GH_TOKEN` con ese scope
 - `local`: artefactos solo en `docs/`
 
 La documentación de esta capa vive en:
 
 - [`Documents/notion-integration.md`](./Documents/notion-integration.md)
+- [`Documents/github-projects-integration.md`](./Documents/github-projects-integration.md)
 
 ## Skills disponibles
 
@@ -107,20 +110,38 @@ Trello se opera con 12 herramientas operativas + 2 de sincronizacion via MCP en 
 | attach-file | Adjuntar fichero .md completo a tarjetas |
 | get-board-members | Obtener miembros del tablero con sus IDs |
 | invite-member | Invitar miembros al tablero por email |
+| get-card | Obtener tarjeta existente (sincronizacion incremental) |
+| update-card | Actualizar tarjeta existente sin duplicar |
 
 Notion se opera por fallback oficial zero-template desde:
 
 - `servers/notion-fallback.py`
 - `.pspo-agent/runtime/notion-fallback.sh`
 
-## Hooks de seguridad
+GitHub Projects v2 se opera por fallback oficial zero-template desde:
+
+- `servers/github-fallback.py`
+- `.pspo-agent/runtime/github-fallback.sh`
+
+Backend primario: la CLI `gh` (`gh api graphql`); fallback a GraphQL directo con `GITHUB_TOKEN`/`GH_TOKEN`.
+
+## Hooks de seguridad y runtime
 
 | Hook | Evento | Funcion |
 |------|--------|---------|
-| check-env.sh | PreToolUse (MCP) | Bloquea llamadas MCP si faltan credenciales en .env |
-| block-trello-bash.sh | PreToolUse (Bash, Fetch) | Bloquea acceso directo a Trello fuera del MCP |
+| check-env.sh | PreToolUse (MCP trello-client) | Bloquea llamadas MCP si faltan credenciales en .env |
+| block-autopilot-trello.sh | PreToolUse (MCP trello-client) | Impide publicar en Trello antes de la gate final de autopilot |
+| block-trello-bash.sh | PreToolUse (Bash, WebFetch) | Bloquea acceso directo a Trello fuera del MCP |
+| block-secret-prompt-leak.py | PreToolUse (Agent, Task) | Impide que se filtren credenciales en prompts de subagentes |
+| block-autopilot-agent.sh | PreToolUse (Agent, Task) | Restringe delegaciones fuera del carril de autopilot |
+| block-autopilot-drift.sh | PreToolUse (Read, Glob, ToolSearch, TodoWrite) | Evita exploracion lateral durante autopilot |
 | warn-sensitive-read.sh | PreToolUse (Read) | Avisa cuando se intenta leer .env u otros ficheros sensibles |
+| persist-active-skill.py | PreToolUse (Skill) | Persiste la skill activa en el runtime |
+| block-autopilot-skill.sh | PreToolUse (Skill) | Valida que la skill invocada corresponde a la fase de autopilot |
+| block-onboarding-credential-reask.py | PreToolUse (AskUserQuestion) | Evita volver a pedir credenciales ya configuradas |
+| persist-autopilot-gate.py | PostToolUse (AskUserQuestion) | Persiste la decision de la gate final de autopilot |
 | check-gitignore.sh | PostToolUse (Write) | Verifica que .env esta en .gitignore |
+| autopilot-stop.py | Stop | Impide cerrar el flujo autopilot antes de materializar los artefactos |
 
 ## Configuracion
 
@@ -151,8 +172,10 @@ pspo-agent/
 │   ├── trello-mcp.py        # Servidor MCP Trello
 │   ├── trello-mcp-launcher.py
 │   ├── trello-fallback.py   # Fallback oficial Trello
-│   └── notion-fallback.py   # Fallback oficial Notion
+│   ├── notion-fallback.py   # Fallback oficial Notion
+│   └── github-fallback.py   # Fallback oficial GitHub Projects
 ├── hooks/
+│   ├── run-hook.cmd         # envoltorio poliglota (Windows/macOS/Linux)
 │   └── scripts/             # hooks de runtime y seguridad
 ├── tests/                   # tests unitarios, de contenido y runtime
 ├── Documents/               # documentación viva del plugin

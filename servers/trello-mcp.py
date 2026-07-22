@@ -14,11 +14,12 @@ import os
 import re
 import sys
 import time
+import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -29,14 +30,14 @@ log = logging.getLogger("trello-mcp")
 log.setLevel(logging.INFO)
 log.propagate = False
 log.addHandler(logging.NullHandler())
-DEBUG_LOG = Path("/tmp/pspo-agent-mcp-server.log")
+DEBUG_LOG = Path(tempfile.gettempdir()) / "pspo-agent-mcp-server.log"
 
 
 def _debug_log(message: str) -> None:
     try:
         DEBUG_LOG.parent.mkdir(parents=True, exist_ok=True)
         with DEBUG_LOG.open("a", encoding="utf-8") as handle:
-            handle.write(f"{datetime.utcnow().isoformat()}Z {message}\n")
+            handle.write(f"{datetime.now(timezone.utc).isoformat()} {message}\n")
     except OSError:
         pass
 

@@ -11,9 +11,17 @@ emit_block() {
     echo "$message"
 }
 
+# Resolver interprete de Python sin depender de 'python3' (en Windows suele ser
+# 'python'). Sin interprete no se puede computar el estado: fail-open avisado.
+PY="$(command -v python3 || command -v python || true)"
+if [ -z "${PY}" ]; then
+    echo "[pspo-agent] Aviso: no se encontro python3 ni python; se omite el guardarrail de Trello (fail-open)." >&2
+    exit 0
+fi
+
 INPUT=$(cat)
 
-eval "$(printf '%s' "$INPUT" | python3 -c "
+eval "$(printf '%s' "$INPUT" | "$PY" -c "
 import json, os, shlex, sys
 try:
     data = json.load(sys.stdin)
@@ -26,7 +34,7 @@ print(f'TOOL_NAME={shlex.quote(tool_name)}')
 ")"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-phase="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --ensure-scaffold --field phase "${CWD}")"
+phase="$("$PY" "${SCRIPT_DIR}/autopilot-guard.py" --ensure-scaffold --field phase "${CWD}")"
 
 case "${phase}" in
     inactive|product-ready)

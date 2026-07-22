@@ -9,9 +9,21 @@
 
 set -euo pipefail
 
+# Resolver interprete de Python sin depender de que 'python3' exista en PATH
+# (en Windows suele ser 'python'). Este hook es el gate de credenciales del MCP
+# de Trello y solo afecta a llamadas MCP de Trello: fail-closed si no hay
+# interprete, para no permitir operaciones sin validar credenciales.
+PY="$(command -v python3 || command -v python || true)"
+if [ -z "${PY}" ]; then
+    echo "BLOCKED" >&2
+    echo "No se encontro python3 ni python para validar las credenciales de Trello." >&2
+    echo "Instala Python 3 (o asegurate de que 'python' esta en el PATH) y reintenta." >&2
+    exit 2
+fi
+
 # Intentar resolver la raiz real del proyecto para no depender del cwd.
 INPUT=$(cat)
-PROJECT_DIR=$(echo "$INPUT" | python3 -c "
+PROJECT_DIR=$(echo "$INPUT" | "$PY" -c "
 import sys, json
 try:
     data = json.load(sys.stdin)

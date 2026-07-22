@@ -4,8 +4,8 @@ description: >
   Publica historias de usuario aprobadas en el proveedor remoto activo.
   Trello sigue siendo el carril completo mas maduro; Notion ya soporta
   zero-template, cuerpo largo, asignacion por people y adjunto .md.
-  Siempre guarda localmente antes de publicar.
-disable-model-invocation: false
+  Siempre guarda localmente antes de publicar. Usar cuando el usuario pide
+  publicar las historias aprobadas.
 allowed-tools: Read, Grep, Glob, Write, Edit, Bash, Task, AskUserQuestion
 ---
 
@@ -21,7 +21,7 @@ allowed-tools: Read, Grep, Glob, Write, Edit, Bash, Task, AskUserQuestion
 - **Honesto con los limites.** PSPO Agent es un plugin no oficial de Claude Code; no finges capacidades ni accesos que no tienes.
 
 Coordinas la publicacion de historias aprobadas en el proveedor remoto activo. Tu trabajo es:
-1. Asegurar que las historias estan guardadas localmente (ADR-006: local antes de Trello).
+1. Asegurar que las historias estan guardadas localmente (guardado local antes de publicar).
 2. Mostrar una vista previa clara de lo que se va a crear.
 3. Verificar que no haya duplicados.
 4. Asignar miembros reales a las tarjetas (no solo texto).
@@ -41,6 +41,7 @@ Nota de arquitectura:
 - En modo `autopilot`, o si el backend remoto no esta disponible por MCP, esta skill puede ejecutar el fallback oficial directamente con `Bash`, usando SOLO:
   - `.pspo-agent/runtime/trello-fallback.sh`
   - `.pspo-agent/runtime/notion-fallback.sh`
+  - `.pspo-agent/runtime/github-fallback.sh`
 - El modelo principal NO llama a APIs remotas por su cuenta.
 - Si el carril oficial falla, ABORTA con error claro y conserva los artefactos locales.
 - NUNCA uses Bash generico, Fetch, curl, wget, python ad hoc ni URLs manuales como fallback.
@@ -62,6 +63,7 @@ Nota de arquitectura:
 - Si usas `Bash`, el comando debe empezar por:
   - `.pspo-agent/runtime/trello-fallback.sh `
   - `.pspo-agent/runtime/notion-fallback.sh `
+  - `.pspo-agent/runtime/github-fallback.sh `
 - No hay otras excepciones.
 
 ## Paso 0: Resolver proveedor remoto
@@ -76,6 +78,7 @@ Casos:
 
 - `trello` -> sigue la ruta Trello descrita mas abajo
 - `notion` -> sigue la ruta Notion de esta seccion
+- `github` -> sigue la ruta GitHub Projects de esta seccion
 - `local` -> no publiques remotamente; deja los artefactos en `docs/` y termina con un mensaje claro
 
 ## Ruta Notion
@@ -145,7 +148,65 @@ Si falta algo, redirige a `/pspo-agent:onboarding`.
 - Las dependencias deben quedar en `relation`, no solo en texto
 - Si el email no se puede resolver, no mientas: marca la HU como pendiente de revision manual
 
+## Ruta GitHub Projects
+
+Si el proveedor activo es `github`, usa esta ruta y NO sigas por la parte de Trello:
+
+### Prerequisitos de GitHub
+
+- `gh` autenticado con scope `project`, o `GITHUB_TOKEN`/`GH_TOKEN` con scope `project`
+- `GITHUB_PROJECT_ID` (o `GITHUB_PROJECT_NUMBER`) persistido
+
+Si falta algo, redirige a `/pspo-agent:onboarding`.
+
+### Carril estricto de la ruta GitHub
+
+Usa SOLO el fallback oficial `.pspo-agent/runtime/github-fallback.sh ...`. Nunca `gh` suelto, curl, Fetch ni scripts ad hoc.
+
+### Flujo GitHub
+
+1. Valida localmente:
+   - `docs/historias/HU-*.md`
+   - `docs/backlog.md`
+   - `docs/vision.md`
+2. Verifica acceso:
+   - `.pspo-agent/runtime/github-fallback.sh env-status --pretty`
+   - `.pspo-agent/runtime/github-fallback.sh verify-credentials --pretty`
+   - si `hasProjectScope` es `false`, redirige a onboarding (el usuario debe ejecutar `gh auth refresh -s project`)
+3. Si falta `GITHUB_PROJECT_ID` o `GITHUB_PROJECT_NUMBER`:
+   - crea el Project v2 privado con `.pspo-agent/runtime/github-fallback.sh create-project --pretty`
+   - persiste IDs con `.pspo-agent/runtime/github-fallback.sh save-project-targets --pretty`
+4. Garantiza `HU-00`:
+   - sincroniza `docs/vision.md` con `.pspo-agent/runtime/github-fallback.sh sync-vision-from-markdown --pretty`
+5. Carril principal recomendado:
+   - si ya tienes `docs/vision.md` y `docs/historias/HU-*.md`, usa `.pspo-agent/runtime/github-fallback.sh sync-stories-from-folder --pretty`
+   - ese carril crea o actualiza cada HU como draft item sin duplicar (dedup por titulo `HU-XX`), mapea campo a campo los metadatos (Status, Prioridad, Talla, Horas, Sprint, Responsable) y ejecuta la segunda pasada de dependencias
+   - el resultado debe reportar `unresolvedAssignments`
+   - ese carril debe dejar tambien `docs/publish-report.md` con el mapeo campo a campo por HU
+6. Carril diagnostico por HU:
+   - parsea la HU local con `.pspo-agent/runtime/github-fallback.sh parse-story-markdown --pretty`
+   - localiza el item existente con `.pspo-agent/runtime/github-fallback.sh find-story-item --pretty`
+   - sincroniza create/update + cuerpo en bruto + campos con `.pspo-agent/runtime/github-fallback.sh sync-story-from-markdown --pretty`
+   - fija el estado con `.pspo-agent/runtime/github-fallback.sh set-story-status --pretty` si necesitas diagnosticarlo
+7. Verifica resultado:
+   - el item existe en el Project v2
+   - el cuerpo del item tiene el markdown EN BRUTO de la HU (incluida la DoD como task list `- [ ]`)
+   - cada campo esta relleno: Status, Prioridad, Talla, Horas, Sprint y Responsable
+   - si `unresolvedAssignments` no esta vacio, repórtalo como revision manual pendiente
+   - `docs/publish-report.md` existe y resume el mapeo campo a campo y las asignaciones pendientes
+
+### Reglas de negocio en GitHub
+
+- El cuerpo del draft item lleva el markdown en bruto de la HU (no hay adjunto: los draft items no admiten ficheros); GitHub renderiza Mermaid y la DoD como task list
+- Cada metadato va a SU campo: Status, Prioridad, Talla, Horas, Sprint y Responsable. Nada de volcar todo en el cuerpo
+- El `Responsable` (texto) es siempre `Nombre (email)`; ademas se asigna el usuario real de GitHub cuando el CSV de equipo aporta la columna opcional `github` con el login
+- La asignacion en GitHub necesita el login de GitHub: si no hay login, la HU se reporta como asignacion pendiente
+- Las dependencias `HU-XX` se resuelven a item ids como trazabilidad (los draft items no admiten relaciones nativas)
+- La API no permite crear vistas: el README del proyecto documenta el tablero por Status y la tabla por Sprint para crearlas a mano
+
 Solo si el proveedor activo es `trello`, aplica desde aqui la ruta Trello original.
+
+Para la estructura exacta de cada tarjeta (titulo, descripcion resumida, adjunto y checklists), lee el fichero `card-format.md` de esta skill.
 
 ## Contrato obligatorio con `publisher`
 

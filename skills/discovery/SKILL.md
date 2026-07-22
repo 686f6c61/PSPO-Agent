@@ -5,7 +5,6 @@ description: >
   para definir el problema, el usuario objetivo, las restricciones y el alcance
   antes de generar ninguna historia de usuario. Usar cuando el usuario describe
   una idea o necesidad de producto.
-disable-model-invocation: false
 allowed-tools: Read, Grep, Glob, Write, Edit, Task, AskUserQuestion
 ---
 

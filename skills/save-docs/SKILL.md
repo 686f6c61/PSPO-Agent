@@ -3,8 +3,8 @@ name: save-docs
 description: >
   Guarda los artefactos de producto (vision, historias de usuario, backlog) en
   el sistema de ficheros local en formato Markdown. Garantiza la persistencia
-  de todo el trabajo del plugin independientemente de Trello.
-disable-model-invocation: false
+  de todo el trabajo del plugin independientemente del proveedor remoto.
+  Usar cuando hay artefactos generados pendientes de persistir en docs/.
 allowed-tools: Read, Grep, Glob, Write, Edit
 ---
 
@@ -34,6 +34,8 @@ docs/
     HU-02-titulo-corto.md
     HU-03-titulo-corto.md
 ```
+
+Las plantillas completas de cada tipo de fichero estan en `file-templates.md` de esta skill; las secciones siguientes muestran la estructura minima.
 
 ## Proceso de guardado
 

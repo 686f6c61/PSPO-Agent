@@ -4,7 +4,7 @@ description: >
   Cierra un sprint revisando el estado de las historias en Trello.
   Evalua el cumplimiento de la Definition of Done por posicion de columna,
   presenta un informe de resultados y archiva el sprint en docs/sprints/.
-disable-model-invocation: false
+  Usar cuando el usuario pide cerrar o revisar un sprint.
 allowed-tools: Read, Grep, Glob, Write, Task, AskUserQuestion
 ---
 

@@ -4,8 +4,8 @@ description: >
   Gestiona el equipo del proyecto: cargar miembros desde CSV o mediante
   asistente guiado, con dedicacion y uso de agentes IA. Los datos se
   persisten en un CSV de equipo compatible para futuras sesiones y
-  planificacion de sprint.
-disable-model-invocation: false
+  planificacion de sprint. Usar cuando el usuario pide definir o modificar
+  el equipo del proyecto.
 allowed-tools: Read, Grep, Glob, Write, Edit, Task, AskUserQuestion
 ---
 
@@ -127,7 +127,7 @@ Para cada miembro, pregunta en secuencia:
 4. **Categoria:** Junior, Mid o Senior
 5. **Dedicacion al proyecto:** porcentaje de 0 a 100 (100 = tiempo completo)
 6. **Usa agente de IA para desarrollar?** (si/no)
-   - Si responde "si", informa brevemente: "Se aplicara un factor de correccion del 65% en la planificacion de sprint (configurable en settings.json)."
+   - Si responde "si", informa brevemente: "Se aplicara un factor de correccion del 65% en la planificacion de sprint (configurable en `${CLAUDE_PLUGIN_ROOT}/settings.json`)."
 
 Tras cada miembro:
 

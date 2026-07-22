@@ -65,7 +65,7 @@ Fuente:
 |---|---|---|---|
 | `product-owner` | [`../agents/product-owner.md`](../agents/product-owner.md) | `blue` | discovery y generación de historias |
 | `requirement-analyst` | [`../agents/requirement-analyst.md`](../agents/requirement-analyst.md) | `cyan` | análisis de requisitos |
-| `publisher` | [`../agents/publisher.md`](../agents/publisher.md) | `green` | Trello; la ruta Notion se ejecuta por fallback oficial desde `publish` |
+| `publisher` | [`../agents/publisher.md`](../agents/publisher.md) | `green` | Trello; las rutas Notion y GitHub Projects se ejecutan por fallback oficial desde `publish` |
 | `sprint-planner` | [`../agents/sprint-planner.md`](../agents/sprint-planner.md) | `amber` | capacidad y sprint |
 | `culture-guardian` | [`../agents/culture-guardian.md`](../agents/culture-guardian.md) | `magenta` | estilo y calidad del texto |
 | `senior-auditor` | [`../agents/senior-auditor.md`](../agents/senior-auditor.md) | ver archivo | auditoría de backlog/HUs |

@@ -36,10 +36,11 @@ Archivo:
 Declara:
 
 - nombre, versión, homepage, keywords
-- `commands`
-- `skills`
-- `agents`
-- `mcpServers`
+- `mcpServers` (apunta a `.mcp.json`)
+
+Los comandos, skills y agentes NO se listan en el manifiesto: Claude Code los
+autodescubre desde los directorios estándar `commands/`, `skills/` y `agents/`.
+Añadir un componente nuevo solo requiere crear el fichero en su directorio.
 
 ## Dos modos de operación
 
@@ -145,7 +146,9 @@ Ficheros relevantes:
 | `start-bootstrap.status` | bootstrap de `start` |
 | `onboarding-bootstrap.status` | bootstrap de `onboarding` |
 | `publish-provider.json` | proveedor de publicación elegido o auto-detectado |
-| `trello-fallback.sh` | wrapper runtime al fallback oficial |
+| `trello-fallback.sh` | wrapper runtime al fallback oficial de Trello |
+| `notion-fallback.sh` | wrapper runtime al fallback oficial de Notion |
+| `github-fallback.sh` | wrapper runtime al fallback oficial de GitHub Projects |
 
 Lógica de estado:
 
@@ -160,6 +163,7 @@ Contrato actual:
 
 - `trello`: implementación completa
 - `notion`: implementación zero-template activa con fallback oficial
+- `github`: implementación zero-template activa con fallback oficial (Project v2 privado, mapeo campo a campo)
 - `local`: sin publicación remota, artefactos solo en `docs/`
 
 Reglas:
@@ -176,6 +180,6 @@ El diseño actual intenta que el sistema mande más que el modelo:
 
 - guardrails en hooks
 - runtime persistido en disco
-- Trello y Notion encapsulados en carriles oficiales
+- Trello, Notion y GitHub Projects encapsulados en carriles oficiales
 - menos delegación libre en `autopilot`
 - más rutas deterministas en `product-phase` y `publish`

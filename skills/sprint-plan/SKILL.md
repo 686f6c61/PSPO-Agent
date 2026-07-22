@@ -4,7 +4,7 @@ description: >
   Planifica un sprint: configura la Definition of Done, calcula la capacidad
   del equipo (con factor de correccion por agentes IA) y evalua si las
   historias aprobadas caben en el sprint. Sugiere recortes si se desborda.
-disable-model-invocation: false
+  Usar cuando el usuario pide planificar el sprint o calcular capacidad.
 allowed-tools: Read, Grep, Glob, Write, Edit, Task, AskUserQuestion
 ---
 
@@ -93,7 +93,7 @@ Guarda en `docs/dod.md`.
 
 ### Paso 2: Leer configuracion
 
-Lee de `settings.json`:
+Lee de `${CLAUDE_PLUGIN_ROOT}/settings.json`:
 - `sprint.duration_days` (defecto: 5)
 - `sprint.max_duration_days` (defecto: 5)
 - `sprint.ai_agent_factor` (defecto: 0.65)
@@ -107,8 +107,8 @@ Lee de `docs/historias/`: las historias aprobadas.
 
 ### Paso 3: Estimar historias con tallas (t-shirt sizing)
 
-Lee de `settings.json` la tabla de conversion `stories.estimation_sizes`:
-- XS = 1 h, S = 2 h, M = 4 h, L = 8 h, XL = 16 h (horas efectivas con agentes; valores por defecto, configurables en settings.json).
+Lee de `${CLAUDE_PLUGIN_ROOT}/settings.json` la tabla de conversion `stories.estimation_sizes`:
+- XS = 1 h, S = 2 h, M = 4 h, L = 8 h, XL = 16 h (horas efectivas con agentes; valores por defecto, configurables en `${CLAUDE_PLUGIN_ROOT}/settings.json`).
 
 Haz una **primera propuesta autonoma de estimacion** para cada historia aprobada delegando en el agente `sprint-planner`.
 
@@ -124,7 +124,7 @@ No pidas al usuario que rellene tallas desde cero salvo que el contexto sea insu
 ```
 Estimacion propuesta por el agente (horas efectivas con agentes)
 
-Conversion (configurable en settings.json):
+Conversion (configurable en `${CLAUDE_PLUGIN_ROOT}/settings.json`):
   XS = 1 h | S = 2 h | M = 4 h | L = 8 h | XL = 16 h
 
 | #  | Historia              | Talla | Horas efectivas | Prioridad | Motivo breve |
@@ -226,7 +226,7 @@ La primera vez que presentes el factor IA, explica brevemente:
 El factor de correccion por agente IA (65%) esta respaldado por estudios
 con agentes autonomos (Devin/Cognition 2025, Amazon Q 2024, Claude Code 2026).
 Significa que una tarea de 10 horas sin agente se completa en unas 3.5 horas con agente.
-Es configurable en settings.json (recomendado: 70%, rango: 30-80%).
+Es configurable en `${CLAUDE_PLUGIN_ROOT}/settings.json` (recomendado: 70%, rango: 30-80%).
 ```
 
 ### Paso 5: Veredicto

@@ -3,8 +3,8 @@ name: generate-stories
 description: >
   Genera historias de usuario con criterios de aceptacion en formato Given/When/Then
   a partir del contexto del descubrimiento. Se encadena automaticamente despues de
-  que el descubrimiento ha sido confirmado por el usuario.
-disable-model-invocation: false
+  que el descubrimiento ha sido confirmado. Usar cuando el usuario pide generar
+  o ampliar historias de usuario.
 allowed-tools: Read, Grep, Glob, Write, Edit, Task, AskUserQuestion
 ---
 
@@ -49,7 +49,8 @@ Antes de generar, revisa:
 
 1. **Contexto confirmado:** Los puntos clave que el usuario confirmo (usuario, problema, resultado, restricciones, fuera de alcance).
 2. **Historias existentes:** Lee `docs/historias/` y `docs/backlog.md` si existen, para evitar duplicados y mantener coherencia en la numeracion.
-3. **Configuracion:** Lee `settings.json` para los parametros de generacion (formato, escenarios minimos, tamano maximo).
+3. **Configuracion:** Lee `${CLAUDE_PLUGIN_ROOT}/settings.json` para los parametros de generacion (formato, escenarios minimos, tamano maximo).
+4. **Plantillas:** Lee el fichero `templates.md` de esta skill para la plantilla base de historia y los ejemplos completos de referencia.
 
 ### Paso 2: Identificar roles de usuario
 

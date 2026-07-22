@@ -4,7 +4,7 @@ description: >
   Propone y confirma asignaciones de historias aprobadas al equipo, equilibrando
   carga, especialidad y capacidad real en equipos que trabajan con agentes. El
   resultado se persiste en docs/asignaciones.md y en los metadatos de cada HU.
-disable-model-invocation: false
+  Usar cuando el usuario pide asignar historias o repartir el trabajo del equipo.
 allowed-tools: Read, Grep, Glob, Write, Edit, Task, AskUserQuestion
 ---
 

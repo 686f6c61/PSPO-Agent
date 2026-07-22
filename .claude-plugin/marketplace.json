@@ -1,5 +1,4 @@
 {
-  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "pspo-agent",
   "description": "Product Owner profesional con IA para Claude Code",
   "owner": {
@@ -8,8 +7,8 @@
   "plugins": [
     {
       "name": "pspo-agent",
-      "description": "Plugin de Product Owner profesional: descubrimiento de producto, historias de usuario con criterios Given/When/Then, validacion, documentacion local y publicacion en Trello o Notion.",
-      "version": "1.0.8",
+      "description": "Plugin de Product Owner profesional: descubrimiento de producto, historias de usuario con criterios Given/When/Then, validacion, documentacion local y publicacion en Trello, Notion o GitHub Projects.",
+      "version": "2.0.0",
       "source": "./",
       "author": {
         "name": "686f6c61"

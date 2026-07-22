@@ -35,7 +35,7 @@ Secciones activas:
 
 ### `defaults.providers`
 
-- `supported`: `trello`, `notion`, `local`
+- `supported`: `trello`, `notion`, `github`, `local`
 - `selection_file`: `.pspo-agent/runtime/publish-provider.json`
 - `default`: `local`
 
@@ -80,6 +80,27 @@ Secciones activas:
   - `En progreso`
   - `En revision`
   - `Hecho`
+
+### `defaults.github`
+
+- `project_title_prefix`: `PSPO`
+- `project_visibility`: `private`
+- `status_field_name`: `Status` (campo nativo del Project v2)
+- `status_options`:
+  - `Backlog`
+  - `Sprint activo`
+  - `Bloqueada`
+  - `En progreso`
+  - `En revision`
+  - `Hecho`
+- `required_env`:
+  - `GITHUB_TOKEN` (o `gh` autenticado con scope `project`)
+- `optional_env`:
+  - `GH_TOKEN`
+  - `GITHUB_PROJECT_NUMBER`
+  - `GITHUB_PROJECT_ID`
+  - `GITHUB_PROJECT_OWNER`
+  - `GITHUB_PROJECT_URL`
 
 ### `defaults.discovery`
 
@@ -168,6 +189,11 @@ Variables activas:
 | `NOTION_DATABASE_ID` | backlog de Notion ya existente, opcional |
 | `NOTION_PROJECT_PAGE_ID` | página raíz del proyecto ya creada, opcional |
 | `NOTION_VISION_PAGE_ID` | página HU-00 ya creada, opcional |
+| `GITHUB_TOKEN` / `GH_TOKEN` | token con scope `project` como fallback sin `gh` |
+| `GITHUB_PROJECT_NUMBER` | número del Project v2 del usuario |
+| `GITHUB_PROJECT_ID` | node id del Project v2 |
+| `GITHUB_PROJECT_OWNER` | login del propietario del Project v2 |
+| `GITHUB_PROJECT_URL` | URL del Project v2 |
 
 Notas:
 
@@ -197,9 +223,12 @@ Contrato actual:
 
 ## Qué vive en `docs/` y qué vive en `Documents/`
 
-`docs/` es salida operativa del plugin, no documentación de desarrollador.
+Toda la documentación del plugin (incluido el PRD) vive en `Documents/`, en una
+sola carpeta.
 
-`Documents/` es la documentación técnica mantenida en el repositorio.
+`docs/` no contiene documentación: es la salida operativa que el plugin genera
+en el proyecto del usuario (vision, backlog, historias, etc.) y está en
+`.gitignore`, por lo que no se versiona ni se distribuye.
 
 ## Selección de proveedor de publicación
 
@@ -209,7 +238,7 @@ Helper runtime:
 
 Responsabilidades:
 
-- detectar `trello`, `notion` o `local` según `.env`
+- detectar `trello`, `notion`, `github` o `local` según señales de proyecto (`.env` o targets persistidos)
 - persistir una selección explícita en `.pspo-agent/runtime/publish-provider.json`
 - exponer al runtime si hace falta preguntar una sola vez al usuario
 - mantener una selección estable del proveedor activo para runtime y autopilot

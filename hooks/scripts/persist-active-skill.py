@@ -42,6 +42,7 @@ def main() -> int:
     onboarding_bootstrap_file = os.path.join(runtime_dir, "onboarding-bootstrap.status")
     trello_fallback_wrapper = os.path.join(runtime_dir, "trello-fallback.sh")
     notion_fallback_wrapper = os.path.join(runtime_dir, "notion-fallback.sh")
+    github_fallback_wrapper = os.path.join(runtime_dir, "github-fallback.sh")
     publish_provider_wrapper = os.path.join(runtime_dir, "publish-provider.py")
     plugin_root = (os.environ.get("CLAUDE_PLUGIN_ROOT") or "").strip()
 
@@ -68,6 +69,16 @@ def main() -> int:
             handle.write(notion_wrapper_body)
         current_mode = os.stat(notion_fallback_wrapper).st_mode
         os.chmod(notion_fallback_wrapper, current_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+        github_wrapper_body = (
+            "#!/usr/bin/env bash\n"
+            "set -euo pipefail\n"
+            f"python3 {json.dumps(os.path.join(plugin_root, 'servers', 'github-fallback.py'))} \"$@\"\n"
+        )
+        with open(github_fallback_wrapper, "w", encoding="utf-8") as handle:
+            handle.write(github_wrapper_body)
+        current_mode = os.stat(github_fallback_wrapper).st_mode
+        os.chmod(github_fallback_wrapper, current_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
         publish_provider_body = textwrap.dedent(
             f"""\

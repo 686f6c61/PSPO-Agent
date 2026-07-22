@@ -5,7 +5,6 @@ description: >
   alcanzar un 80% de claridad en 8 categorias. Sustituye al discovery cuando el
   usuario aporta un documento como punto de partida. Usar cuando el usuario pega
   texto o referencia un documento existente.
-disable-model-invocation: false
 allowed-tools: Read, Grep, Glob, Write, Edit, Task, AskUserQuestion
 ---
 

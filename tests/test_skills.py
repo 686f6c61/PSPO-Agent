@@ -152,7 +152,11 @@ class TestAgentStructure(unittest.TestCase):
         self.assertEqual(actual, expected)
 
     def test_agents_have_tools(self):
+        """Los agentes restringen tools salvo el publisher, que hereda todas
+        para poder usar las tools MCP de trello-client."""
         for path in self._get_agent_files():
+            if os.path.basename(path) == "publisher.md":
+                continue
             with open(path) as f:
                 content = f.read()
             self.assertIn("tools:", content,
@@ -202,8 +206,18 @@ class TestHooksStructure(unittest.TestCase):
         path = os.path.join(PLUGIN_ROOT, "hooks", "hooks.json")
         with open(path, encoding="utf-8") as handle:
             content = handle.read()
-        self.assertIn("\\\"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/autopilot-stop.py\\\"", content)
-        self.assertNotIn("python3 ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/autopilot-stop.py", content)
+        # Contrato del envoltorio poliglota: la ruta de run-hook.cmd va entre
+        # comillas (protege espacios en Windows) y el script pasa como argumento.
+        self.assertIn("\\\"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd\\\" autopilot-stop.py", content)
+        # Ya no se invoca python3 ni los .sh directamente desde hooks.json.
+        self.assertNotIn("python3 ", content)
+        self.assertNotIn("/hooks/scripts/", content)
+
+    def test_run_hook_wrapper_exists_and_executable(self):
+        wrapper = os.path.join(PLUGIN_ROOT, "hooks", "run-hook.cmd")
+        self.assertTrue(os.path.exists(wrapper), "Falta hooks/run-hook.cmd")
+        self.assertTrue(os.access(wrapper, os.X_OK),
+                        "hooks/run-hook.cmd no es ejecutable")
 
 
 class TestDocumentation(unittest.TestCase):
@@ -214,11 +228,9 @@ class TestDocumentation(unittest.TestCase):
     def test_env_example_exists(self):
         self.assertTrue(os.path.exists(os.path.join(PLUGIN_ROOT, ".env.example")))
 
-    def test_adr_007_exists(self):
-        path = os.path.join(PLUGIN_ROOT, "docs", "adr",
-                            "ADR-007-python-para-servidor-mcp.md")
-        self.assertTrue(os.path.exists(path),
-                        "Falta ADR-007 (migracion a Python)")
+    def test_prd_exists(self):
+        self.assertTrue(os.path.exists(os.path.join(PLUGIN_ROOT, "Documents", "prd.md")),
+                        "Falta Documents/prd.md")
 
 
 if __name__ == "__main__":

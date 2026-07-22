@@ -9,6 +9,10 @@
 
 ---
 
+> Nota de estado: este PRD es la definición de producto original (baseline) y se conserva como referencia. El plugin ya publica en **Trello, Notion o GitHub Projects**; los ejemplos de este documento usan Trello por ser el primer proveedor. La fuente de verdad del comportamiento actual es `README.md` y `Documents/`.
+
+---
+
 ## 1. Problema
 
 Los desarrolladores independientes y equipos pequenos que usan Claude Code carecen de una figura de Product Owner dedicada. Esto provoca cinco problemas concretos:

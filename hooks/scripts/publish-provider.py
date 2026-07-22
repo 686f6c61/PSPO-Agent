@@ -10,7 +10,10 @@ import sys
 from typing import Any
 
 
-SUPPORTED_PROVIDERS = ("trello", "notion", "local")
+SUPPORTED_PROVIDERS = ("trello", "notion", "github", "local")
+
+# Proveedores remotos en el orden de preferencia para deteccion y auto-seleccion.
+REMOTE_PROVIDERS = ("trello", "notion", "github")
 
 
 def _runtime_dir(cwd: str) -> str:
@@ -84,6 +87,35 @@ def notion_targets_ready(cwd: str) -> bool:
     )
 
 
+def github_targets_ready(cwd: str) -> bool:
+    return any(
+        _valid_secret(_get_env(cwd, name))
+        for name in ("GITHUB_PROJECT_ID", "GITHUB_PROJECT_NUMBER")
+    )
+
+
+def github_credentials_ready(cwd: str) -> bool:
+    """GitHub se considera configurado por señales de proyecto, no por el estado
+    global de `gh` en la maquina.
+
+    Cuenta como configurado si el proyecto tiene un token propio en `.env`
+    (`GITHUB_TOKEN`/`GH_TOKEN`) o si ya tiene targets persistidos (creados vía
+    `gh` durante el onboarding). Esto mantiene la deteccion determinista: la
+    autenticacion global de `gh` la resuelve el fallback `github-fallback.py`
+    y la superficie el `env-status` para que el onboarding pueda ofrecer GitHub.
+    """
+    if any(
+        _valid_secret(_get_env(cwd, name))
+        for name in ("GITHUB_TOKEN", "GH_TOKEN")
+    ):
+        return True
+    return github_targets_ready(cwd)
+
+
+def github_ready(cwd: str) -> bool:
+    return github_credentials_ready(cwd) and github_targets_ready(cwd)
+
+
 def _provider_details(cwd: str) -> dict[str, dict[str, bool]]:
     return {
         "trello": {
@@ -93,6 +125,10 @@ def _provider_details(cwd: str) -> dict[str, dict[str, bool]]:
         "notion": {
             "credentials_ready": notion_credentials_ready(cwd),
             "ready": notion_ready(cwd),
+        },
+        "github": {
+            "credentials_ready": github_credentials_ready(cwd),
+            "ready": github_ready(cwd),
         },
         "local": {
             "credentials_ready": True,
@@ -141,12 +177,12 @@ def compute_state(cwd: str) -> dict[str, Any]:
     details = _provider_details(cwd)
     configured_providers = [
         provider
-        for provider in ("trello", "notion")
+        for provider in REMOTE_PROVIDERS
         if details[provider]["credentials_ready"]
     ]
     ready_providers = [
         provider
-        for provider in ("trello", "notion")
+        for provider in REMOTE_PROVIDERS
         if details[provider]["ready"]
     ]
 
@@ -192,6 +228,9 @@ def compute_state(cwd: str) -> dict[str, Any]:
         "notion_credentials_ready": details["notion"]["credentials_ready"],
         "notion_ready": details["notion"]["ready"],
         "notion_targets_ready": notion_targets_ready(cwd),
+        "github_credentials_ready": details["github"]["credentials_ready"],
+        "github_ready": details["github"]["ready"],
+        "github_targets_ready": github_targets_ready(cwd),
         "local_ready": True,
     }
 

@@ -3,8 +3,8 @@ name: autopilot
 description: >
   Modo carpeta-autopilot. Lee instrucciones y cualquier CSV de equipo
   compatible desde una carpeta y ejecuta el flujo completo hasta la gate
-  final.
-disable-model-invocation: false
+  final. Usar cuando el usuario pide ejecutar el flujo de producto de forma
+  autonoma a partir de una carpeta de instrucciones.
 allowed-tools: Read, Glob, Write, AskUserQuestion
 ---
 

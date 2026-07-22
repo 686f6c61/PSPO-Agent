@@ -88,6 +88,65 @@ class TestPublishProvider(unittest.TestCase):
             self.assertTrue(state["publish_provider_needs_choice"])
             self.assertEqual(state["publish_provider"], "")
 
+    def test_github_credentials_ready_from_token(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with open(os.path.join(tmpdir, ".env"), "w", encoding="utf-8") as handle:
+                handle.write("GITHUB_TOKEN=ghp_token_value_abcdefghij\n")
+            with mock.patch.dict(os.environ, {}, clear=True):
+                self.assertTrue(self.module.github_credentials_ready(tmpdir))
+                self.assertFalse(self.module.github_ready(tmpdir))
+
+    def test_github_credentials_ready_from_persisted_targets(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with open(os.path.join(tmpdir, ".env"), "w", encoding="utf-8") as handle:
+                handle.write("GITHUB_PROJECT_ID=PVT_kwABCDEF\n")
+            with mock.patch.dict(os.environ, {}, clear=True):
+                self.assertTrue(self.module.github_credentials_ready(tmpdir))
+                self.assertTrue(self.module.github_ready(tmpdir))
+
+    def test_github_not_configured_without_project_signals(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with mock.patch.dict(os.environ, {}, clear=True):
+                self.assertFalse(self.module.github_credentials_ready(tmpdir))
+
+    def test_auto_selects_github_when_it_is_the_only_provider(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with open(os.path.join(tmpdir, ".env"), "w", encoding="utf-8") as handle:
+                handle.write(
+                    "GITHUB_TOKEN=ghp_token_value_abcdefghij\n"
+                    "GITHUB_PROJECT_ID=PVT_kwABCDEF\n"
+                    "GITHUB_PROJECT_NUMBER=7\n"
+                )
+            with mock.patch.dict(os.environ, {}, clear=True):
+                state = self.module.compute_state(tmpdir)
+            self.assertEqual(state["publish_provider"], "github")
+            self.assertEqual(state["publish_provider_source"], "auto-ready")
+            self.assertEqual(state["configured_providers"], ["github"])
+            self.assertEqual(state["ready_providers"], ["github"])
+            self.assertTrue(state["github_targets_ready"])
+
+    def test_requires_user_choice_with_three_remote_providers(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with open(os.path.join(tmpdir, ".env"), "w", encoding="utf-8") as handle:
+                handle.write(
+                    "TRELLO_API_KEY=0123456789abcdef0123456789abcdef\n"
+                    "TRELLO_TOKEN=ATTA1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ123456\n"
+                    "TRELLO_BOARD_ID=0123456789abcdef01234567\n"
+                    "NOTION_TOKEN=secret_notion_token\n"
+                    "NOTION_PARENT_PAGE_ID=9f8c1256-4f4d-4eef-8dc9-6a72c53da111\n"
+                    "GITHUB_TOKEN=ghp_token_value_abcdefghij\n"
+                )
+            with mock.patch.dict(os.environ, {}, clear=True):
+                state = self.module.compute_state(tmpdir)
+            self.assertEqual(set(state["configured_providers"]), {"trello", "notion", "github"})
+            self.assertTrue(state["publish_provider_needs_choice"])
+            self.assertEqual(state["publish_provider"], "")
+
+    def test_github_appears_in_supported_providers(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            state = self.module.compute_state(tmpdir)
+        self.assertIn("github", state["supported_providers"])
+
     def test_runtime_selection_persists_provider_choice(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             with open(os.path.join(tmpdir, ".env"), "w", encoding="utf-8") as handle:

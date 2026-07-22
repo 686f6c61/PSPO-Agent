@@ -559,22 +559,31 @@ class TestE2EPluginIntegrity(unittest.TestCase):
             self.plugin = json.load(f)
 
     def test_all_skill_files_referenced_in_plugin_exist(self):
-        for skill_path in self.plugin["skills"]:
-            full_path = os.path.join(PLUGIN_ROOT, skill_path.lstrip("./"))
-            self.assertTrue(os.path.exists(full_path),
-                            f"Skill referenciada no existe: {skill_path}")
+        """Autodescubrimiento: cada directorio de skills/ debe contener SKILL.md."""
+        skills_dir = os.path.join(PLUGIN_ROOT, "skills")
+        for skill in os.listdir(skills_dir):
+            if os.path.isdir(os.path.join(skills_dir, skill)):
+                self.assertTrue(
+                    os.path.exists(os.path.join(skills_dir, skill, "SKILL.md")),
+                    f"Falta SKILL.md en skills/{skill}")
 
     def test_all_agent_files_referenced_in_plugin_exist(self):
-        for agent_path in self.plugin["agents"]:
-            full_path = os.path.join(PLUGIN_ROOT, agent_path.lstrip("./"))
-            self.assertTrue(os.path.exists(full_path),
-                            f"Agente referenciado no existe: {agent_path}")
+        """Autodescubrimiento: agents/ solo debe contener ficheros .md."""
+        agents_dir = os.path.join(PLUGIN_ROOT, "agents")
+        agents = os.listdir(agents_dir)
+        self.assertTrue(agents, "agents/ no puede estar vacio")
+        for agent in agents:
+            self.assertTrue(agent.endswith(".md"),
+                            f"Fichero inesperado en agents/: {agent}")
 
     def test_all_command_files_referenced_in_plugin_exist(self):
-        for cmd_path in self.plugin["commands"]:
-            full_path = os.path.join(PLUGIN_ROOT, cmd_path.lstrip("./"))
-            self.assertTrue(os.path.exists(full_path),
-                            f"Comando referenciado no existe: {cmd_path}")
+        """Autodescubrimiento: commands/ solo debe contener ficheros .md."""
+        commands_dir = os.path.join(PLUGIN_ROOT, "commands")
+        commands = os.listdir(commands_dir)
+        self.assertTrue(commands, "commands/ no puede estar vacio")
+        for cmd in commands:
+            self.assertTrue(cmd.endswith(".md"),
+                            f"Fichero inesperado en commands/: {cmd}")
 
     def test_mcp_server_script_exists(self):
         with open(os.path.join(PLUGIN_ROOT, ".mcp.json")) as f:
@@ -587,22 +596,28 @@ class TestE2EPluginIntegrity(unittest.TestCase):
                         f"Script MCP no existe: {script_path}")
 
     def test_hooks_scripts_referenced_exist(self):
+        import shlex
+
         with open(os.path.join(PLUGIN_ROOT, "hooks", "hooks.json")) as f:
             hooks = json.load(f)
+        wrapper_rel = "hooks/run-hook.cmd"
+        wrapper_path = os.path.join(PLUGIN_ROOT, wrapper_rel)
+        self.assertTrue(os.path.exists(wrapper_path),
+                        f"Falta el envoltorio poliglota: {wrapper_rel}")
         for event_hooks in hooks["hooks"].values():
             for matcher_group in event_hooks:
                 for hook in matcher_group["hooks"]:
                     cmd = hook["command"]
-                    script = cmd.replace("${CLAUDE_PLUGIN_ROOT}/", "")
-                    script = script.strip('"')
-                    if script.startswith("python3 "):
-                        script = script[len("python3 "):]
-                        script = script.strip('"')
-                    if script.startswith("test -f "):
-                        script = script[len("test -f "):].split(" && ", 1)[0]
-                    script_path = os.path.join(PLUGIN_ROOT, script)
+                    # Contrato nuevo: "${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd" <script>
+                    parts = shlex.split(cmd.replace("${CLAUDE_PLUGIN_ROOT}/", ""))
+                    self.assertEqual(parts[0], wrapper_rel,
+                                     f"El hook no usa el envoltorio: {cmd}")
+                    self.assertGreaterEqual(len(parts), 2,
+                                            f"El hook no indica script: {cmd}")
+                    script = parts[1]
+                    script_path = os.path.join(PLUGIN_ROOT, "hooks", "scripts", script)
                     self.assertTrue(os.path.exists(script_path),
-                                    f"Hook script no existe: {script}")
+                                    f"Hook script no existe: hooks/scripts/{script}")
 
     def test_versions_consistent(self):
         """La version debe ser la misma en plugin.json, settings.json y marketplace.json."""
@@ -620,24 +635,22 @@ class TestE2EPluginIntegrity(unittest.TestCase):
                          "Version de marketplace.json no coincide con plugin.json")
 
     def test_agent_mcp_references_valid(self):
-        """Los agentes que declaran mcpServers deben referenciar servidores existentes."""
-        with open(os.path.join(PLUGIN_ROOT, ".mcp.json")) as f:
-            mcp = json.load(f)["mcpServers"]
-        valid_servers = set(mcp.keys())
-
-        import re
-        for agent_path in self.plugin["agents"]:
-            full_path = os.path.join(PLUGIN_ROOT, agent_path.lstrip("./"))
-            with open(full_path) as f:
+        """mcpServers no es un campo soportado en frontmatter de agentes: ninguno debe declararlo."""
+        agents_dir = os.path.join(PLUGIN_ROOT, "agents")
+        for agent in os.listdir(agents_dir):
+            with open(os.path.join(agents_dir, agent)) as f:
                 content = f.read()
-            # Buscar mcpServers en frontmatter
-            match = re.search(r"mcpServers:\s*\n((?:\s+-\s*.+\n)*)", content)
-            if match:
-                for line in match.group(1).strip().split("\n"):
-                    server_name = line.strip().lstrip("- ").strip()
-                    self.assertIn(server_name, valid_servers,
-                                  f"Agente {agent_path} referencia servidor MCP "
-                                  f"inexistente: {server_name}")
+            self.assertNotIn("mcpServers:", content,
+                             f"Agente {agent} declara mcpServers, campo no soportado "
+                             "que se ignora silenciosamente")
+
+    def test_publisher_does_not_restrict_tools(self):
+        """El publisher necesita las tools MCP de trello-client: una lista `tools`
+        restrictiva sin las tools mcp__... las excluiria."""
+        with open(os.path.join(PLUGIN_ROOT, "agents", "publisher.md")) as f:
+            frontmatter = f.read().split("---")[1]
+        self.assertNotIn("tools:", frontmatter,
+                         "publisher.md no debe restringir tools o perdera acceso al MCP")
 
 
 if __name__ == "__main__":

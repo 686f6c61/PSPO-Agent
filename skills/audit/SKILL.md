@@ -4,8 +4,7 @@ description: >
   Auditoria senior de historias de usuario. Revisa completitud, coherencia,
   calidad del contenido, HU que faltan y HU que sobran. Cruza contra el
   documento original si existe. Se activa automaticamente en la primera
-  generacion y bajo demanda en las siguientes.
-disable-model-invocation: false
+  generacion. Usar cuando el usuario pide auditar o revisar la calidad del backlog.
 allowed-tools: Read, Grep, Glob, Write, Edit, Task, AskUserQuestion
 ---
 

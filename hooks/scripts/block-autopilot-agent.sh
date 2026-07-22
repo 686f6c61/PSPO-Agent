@@ -13,9 +13,18 @@ emit_block() {
     echo "$message"
 }
 
+# Resolver interprete de Python sin depender de 'python3' (en Windows suele ser
+# 'python'). Sin interprete no se puede computar el estado: fail-open avisado,
+# porque bloquear Agent/Task de forma global romperia la sesion.
+PY="$(command -v python3 || command -v python || true)"
+if [ -z "${PY}" ]; then
+    echo "[pspo-agent] Aviso: no se encontro python3 ni python; se omite el guardarrail de delegaciones (fail-open)." >&2
+    exit 0
+fi
+
 INPUT=$(cat)
 
-eval "$(printf '%s' "$INPUT" | python3 -c "
+eval "$(printf '%s' "$INPUT" | "$PY" -c "
 import json, os, shlex, sys
 try:
     data = json.load(sys.stdin)
@@ -30,23 +39,20 @@ print(f'PAYLOAD={shlex.quote(json.dumps(tool_input, ensure_ascii=False))}')
 ")"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-phase="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --ensure-scaffold --field phase "${CWD}")"
-gate_status="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field gate_status "${CWD}")"
-branch_skill="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field branch_skill "${CWD}")"
-publish_provider="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field publish_provider "${CWD}")"
-provider_needs_choice="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field publish_provider_needs_choice "${CWD}")"
-active_skill="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field active_skill "${CWD}")"
+# Un unico volcado del estado del guard en vez de reinvocarlo campo a campo.
+eval "$("$PY" "${SCRIPT_DIR}/autopilot-guard.py" --ensure-scaffold --dump-shell "${CWD}")"
+provider_needs_choice="${publish_provider_needs_choice}"
 payload_lower="$(printf '%s' "${PAYLOAD}" | tr '[:upper:]' '[:lower:]')"
 
 case "${phase}" in
     inactive)
         if [[ "${active_skill}" == "pspo-agent:onboarding" ]]; then
             if [[ "${provider_needs_choice}" == "1" || -z "${publish_provider}" ]]; then
-                emit_block "En /pspo-agent:onboarding no uses ${TOOL_NAME} para descubrir estado. La ruta valida empieza por trello-fallback/notion-fallback env-status y .pspo-agent/runtime/publish-provider.py."
+                emit_block "En /pspo-agent:onboarding no uses ${TOOL_NAME} para descubrir estado. La ruta valida empieza por trello-fallback/notion-fallback/github-fallback env-status y .pspo-agent/runtime/publish-provider.py."
                 exit 2
             fi
-            if [[ "${publish_provider}" == "notion" || "${publish_provider}" == "local" ]]; then
-                emit_block "En /pspo-agent:onboarding con proveedor ${publish_provider} no uses ${TOOL_NAME}. La ruta valida es Bash con notion-fallback.sh o .pspo-agent/runtime/publish-provider.py; no delegues a agentes genericos."
+            if [[ "${publish_provider}" == "notion" || "${publish_provider}" == "github" || "${publish_provider}" == "local" ]]; then
+                emit_block "En /pspo-agent:onboarding con proveedor ${publish_provider} no uses ${TOOL_NAME}. La ruta valida es Bash con notion-fallback.sh o github-fallback.sh o .pspo-agent/runtime/publish-provider.py; no delegues a agentes genericos."
                 exit 2
             fi
             if [[ "${payload_lower}" == *"publisher"* ]]; then
@@ -70,11 +76,15 @@ fi
 if [[ "${phase}" == "product-ready" ]]; then
     if [[ "${gate_status}" == "plan-publish" && "${branch_skill}" == "pspo-agent:onboarding" ]]; then
         if [[ "${provider_needs_choice}" == "1" || -z "${publish_provider}" ]]; then
-            emit_block "Durante onboarding desde autopilot primero resuelve el proveedor remoto. No uses ${TOOL_NAME} todavia: la ruta valida es trello-fallback/notion-fallback env-status y .pspo-agent/runtime/publish-provider.py."
+            emit_block "Durante onboarding desde autopilot primero resuelve el proveedor remoto. No uses ${TOOL_NAME} todavia: la ruta valida es trello-fallback/notion-fallback/github-fallback env-status y .pspo-agent/runtime/publish-provider.py."
             exit 2
         fi
         if [[ "${publish_provider}" == "notion" ]]; then
             emit_block "Durante onboarding Notion desde autopilot no uses ${TOOL_NAME}. La ruta valida es notion-fallback.sh verify-credentials -> retrieve-page -> create-project -> save-project-targets."
+            exit 2
+        fi
+        if [[ "${publish_provider}" == "github" ]]; then
+            emit_block "Durante onboarding GitHub Projects desde autopilot no uses ${TOOL_NAME}. La ruta valida es github-fallback.sh verify-credentials -> create-project -> save-project-targets."
             exit 2
         fi
         if [[ "${publish_provider}" == "local" ]]; then

@@ -12,9 +12,17 @@ emit_block() {
     echo "$message"
 }
 
+# Resolver interprete de Python sin depender de 'python3' (en Windows suele ser
+# 'python'). Sin interprete no se puede computar el estado: fail-open avisado.
+PY="$(command -v python3 || command -v python || true)"
+if [ -z "${PY}" ]; then
+    echo "[pspo-agent] Aviso: no se encontro python3 ni python; se omite el guardarrail de skills (fail-open)." >&2
+    exit 0
+fi
+
 INPUT=$(cat)
 
-eval "$(printf '%s' "$INPUT" | python3 -c "
+eval "$(printf '%s' "$INPUT" | "$PY" -c "
 import json, os, shlex, sys
 try:
     data = json.load(sys.stdin)
@@ -28,9 +36,8 @@ print(f'SKILL_NAME={shlex.quote(skill)}')
 ")"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-phase="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --ensure-scaffold --field phase "${CWD}")"
-gate_status="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field gate_status "${CWD}")"
-branch_skill_file="$(python3 "${SCRIPT_DIR}/autopilot-guard.py" --field branch_skill_file "${CWD}")"
+# Un unico volcado del estado del guard en vez de reinvocarlo campo a campo.
+eval "$("$PY" "${SCRIPT_DIR}/autopilot-guard.py" --ensure-scaffold --dump-shell "${CWD}")"
 
 set_branch_skill() {
     mkdir -p "$(dirname "${branch_skill_file}")"

@@ -3,8 +3,8 @@ name: product-phase
 description: >
   Skill interna no interactiva para ejecutar la fase de producto completa a
   partir del contexto preparado por el modo carpeta: analisis, vision,
-  backlog, historias individuales y auditoria.
-disable-model-invocation: false
+  backlog, historias individuales y auditoria. Usar solo desde autopilot,
+  nunca por peticion directa del usuario.
 allowed-tools: Read, Glob, Write, Edit
 ---
 

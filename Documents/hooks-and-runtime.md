@@ -17,10 +17,10 @@ Eventos usados:
 | Evento | Matcher | Script | Función |
 |---|---|---|---|
 | `Stop` | n/a | [`../hooks/scripts/autopilot-stop.py`](../hooks/scripts/autopilot-stop.py) | impide cortar `autopilot` antes de tiempo |
-| `PreToolUse` | `mcp__trello-client__.*` | [`../hooks/scripts/block-autopilot-trello.sh`](../hooks/scripts/block-autopilot-trello.sh) | Trello no entra antes de fase de producto |
-| `PreToolUse` | `mcp__trello-client__.*` | [`../hooks/scripts/check-env.sh`](../hooks/scripts/check-env.sh) | exige `.env` válido |
-| `PreToolUse` | `Bash` | [`../hooks/scripts/block-trello-bash.sh`](../hooks/scripts/block-trello-bash.sh) | bloquea Bash/Fetch no permitidos |
-| `PreToolUse` | `Fetch` | [`../hooks/scripts/block-trello-bash.sh`](../hooks/scripts/block-trello-bash.sh) | idem para `Fetch` |
+| `PreToolUse` | `mcp__(plugin_pspo-agent_)?trello-client__.*` | [`../hooks/scripts/block-autopilot-trello.sh`](../hooks/scripts/block-autopilot-trello.sh) | Trello no entra antes de fase de producto |
+| `PreToolUse` | `mcp__(plugin_pspo-agent_)?trello-client__.*` | [`../hooks/scripts/check-env.sh`](../hooks/scripts/check-env.sh) | exige `.env` válido |
+| `PreToolUse` | `Bash` | [`../hooks/scripts/block-trello-bash.sh`](../hooks/scripts/block-trello-bash.sh) | bloquea Bash/WebFetch no permitidos |
+| `PreToolUse` | `WebFetch` | [`../hooks/scripts/block-trello-bash.sh`](../hooks/scripts/block-trello-bash.sh) | idem para `WebFetch` |
 | `PreToolUse` | `Agent` | [`../hooks/scripts/block-secret-prompt-leak.py`](../hooks/scripts/block-secret-prompt-leak.py) | evita fugas de secretos en prompts |
 | `PreToolUse` | `Agent` | [`../hooks/scripts/block-autopilot-agent.sh`](../hooks/scripts/block-autopilot-agent.sh) | bloquea delegaciones fuera del carril |
 | `PreToolUse` | `Task` | [`../hooks/scripts/block-secret-prompt-leak.py`](../hooks/scripts/block-secret-prompt-leak.py) | idem |

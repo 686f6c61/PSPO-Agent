@@ -8,7 +8,28 @@ import glob
 import importlib.util
 import json
 import os
+import shlex
 import sys
+
+
+# Campos que necesitan los envoltorios .sh. El modo --dump-shell los vuelca
+# todos en una sola invocacion para que cada hook haga un unico eval en vez
+# de reinvocar el guard (y reimportar modulos y releer .env) una vez por campo.
+SHELL_DUMP_FIELDS = (
+    "phase",
+    "gate_status",
+    "branch_skill",
+    "branch_skill_file",
+    "next_review_skill",
+    "next_plan_publish_skill",
+    "active_skill",
+    "start_bootstrap",
+    "start_bootstrap_file",
+    "onboarding_bootstrap",
+    "onboarding_bootstrap_file",
+    "publish_provider",
+    "publish_provider_needs_choice",
+)
 
 
 REQUIRED_TEAM_COLUMNS = {
@@ -176,6 +197,8 @@ def compute_state(cwd: str, ensure_scaffold: bool = False) -> dict[str, object]:
         next_plan_publish_skill = "pspo-agent:onboarding"
     elif publish_provider == "notion" and not bool(provider_state.get("notion_ready")):
         next_plan_publish_skill = "pspo-agent:onboarding"
+    elif publish_provider == "github" and not bool(provider_state.get("github_ready")):
+        next_plan_publish_skill = "pspo-agent:onboarding"
     elif not _has_team_csv(cwd):
         next_plan_publish_skill = "pspo-agent:team"
     elif not os.path.isfile(assignments_file):
@@ -226,6 +249,9 @@ def compute_state(cwd: str, ensure_scaffold: bool = False) -> dict[str, object]:
         "notion_credentials_ready": bool(provider_state["notion_credentials_ready"]),
         "notion_ready": bool(provider_state["notion_ready"]),
         "notion_targets_ready": bool(provider_state.get("notion_targets_ready")),
+        "github_credentials_ready": bool(provider_state.get("github_credentials_ready")),
+        "github_ready": bool(provider_state.get("github_ready")),
+        "github_targets_ready": bool(provider_state.get("github_targets_ready")),
         "assignments_ready": os.path.isfile(assignments_file),
         "dependencies_ready": os.path.isfile(dependencies_file),
         "sprint_plan_ready": os.path.isfile(sprint_plan_file),
@@ -234,10 +260,30 @@ def compute_state(cwd: str, ensure_scaffold: bool = False) -> dict[str, object]:
     }
 
 
+def _format_field(value: object) -> str:
+    """Serializa un campo del estado igual que hace el modo --field."""
+    if isinstance(value, bool):
+        return "1" if value else "0"
+    return str(value)
+
+
+def _dump_shell(state: dict[str, object]) -> None:
+    """Vuelca los campos de SHELL_DUMP_FIELDS como asignaciones de shell.
+
+    Cada valor se protege con shlex.quote para que el consumidor haga un
+    unico `eval` seguro y disponga de todas las variables sin reinvocar
+    el guard campo a campo.
+    """
+    for field in SHELL_DUMP_FIELDS:
+        rendered = _format_field(state.get(field, ""))
+        sys.stdout.write(f"{field}={shlex.quote(rendered)}\n")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("cwd", nargs="?", default=os.getcwd())
     parser.add_argument("--field", dest="field")
+    parser.add_argument("--dump-shell", action="store_true")
     parser.add_argument("--ensure-scaffold", action="store_true")
     args = parser.parse_args()
 
@@ -245,12 +291,12 @@ def main() -> int:
         os.path.abspath(args.cwd),
         ensure_scaffold=args.ensure_scaffold,
     )
+    if args.dump_shell:
+        _dump_shell(state)
+        return 0
+
     if args.field:
-        value = state.get(args.field, "")
-        if isinstance(value, bool):
-            sys.stdout.write("1" if value else "0")
-        else:
-            sys.stdout.write(str(value))
+        sys.stdout.write(_format_field(state.get(args.field, "")))
         return 0
 
     json.dump(state, sys.stdout, ensure_ascii=False)

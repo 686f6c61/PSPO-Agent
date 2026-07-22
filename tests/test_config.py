@@ -17,17 +17,23 @@ class TestPluginJson(unittest.TestCase):
             self.plugin = json.load(f)
 
     def test_all_skills_exist(self):
-        for skill_path in self.plugin["skills"]:
-            full_path = os.path.join(PLUGIN_ROOT, skill_path.lstrip("./"))
-            self.assertTrue(os.path.exists(full_path), f"Skill no encontrada: {skill_path}")
-            self.assertTrue(os.path.isdir(full_path), f"La skill debe declararse como directorio: {skill_path}")
-            self.assertTrue(os.path.exists(os.path.join(full_path, "SKILL.md")),
-                            f"Falta SKILL.md dentro de {skill_path}")
+        """Las skills se autodescubren desde skills/: cada directorio debe tener SKILL.md."""
+        skills_dir = os.path.join(PLUGIN_ROOT, "skills")
+        skill_dirs = [d for d in os.listdir(skills_dir)
+                      if os.path.isdir(os.path.join(skills_dir, d))]
+        self.assertTrue(skill_dirs, "El directorio skills/ no puede estar vacio")
+        for skill in skill_dirs:
+            self.assertTrue(os.path.exists(os.path.join(skills_dir, skill, "SKILL.md")),
+                            f"Falta SKILL.md dentro de skills/{skill}")
 
     def test_all_agents_exist(self):
-        for agent_path in self.plugin["agents"]:
-            full_path = os.path.join(PLUGIN_ROOT, agent_path.lstrip("./"))
-            self.assertTrue(os.path.exists(full_path), f"Agente no encontrado: {agent_path}")
+        """Los agentes se autodescubren desde agents/: solo ficheros .md."""
+        agents_dir = os.path.join(PLUGIN_ROOT, "agents")
+        agent_files = os.listdir(agents_dir)
+        self.assertTrue(agent_files, "El directorio agents/ no puede estar vacio")
+        for agent in agent_files:
+            self.assertTrue(agent.endswith(".md"),
+                            f"Fichero inesperado en agents/: {agent}")
 
     def test_hooks_file_exists(self):
         """hooks/hooks.json se carga automaticamente, no necesita estar en plugin.json."""
@@ -40,41 +46,41 @@ class TestPluginJson(unittest.TestCase):
                          "plugin.json no debe tener campo 'hooks' - se carga automaticamente")
 
     def test_required_fields(self):
-        for field in ("name", "version", "skills", "agents", "mcpServers"):
+        for field in ("name", "version", "description", "mcpServers"):
             self.assertIn(field, self.plugin, f"Falta campo: {field}")
 
     def test_manifest_points_to_plugin_mcp_config(self):
         self.assertEqual(self.plugin["mcpServers"], "./.mcp.json",
                          "plugin.json debe apuntar al fichero .mcp.json del plugin")
 
+    def test_manifest_relies_on_autodiscovery(self):
+        """commands/skills/agents se autodescubren; el manifiesto no debe listarlos."""
+        for field in ("commands", "skills", "agents"):
+            self.assertNotIn(field, self.plugin,
+                             f"plugin.json no debe declarar '{field}': se autodescubre")
+
     def test_start_command_registered(self):
-        self.assertIn("./commands/start.md", self.plugin["commands"])
+        self.assertTrue(os.path.exists(os.path.join(PLUGIN_ROOT, "commands", "start.md")))
 
     def test_autopilot_command_registered(self):
-        self.assertIn("./commands/autopilot.md", self.plugin["commands"])
+        self.assertTrue(os.path.exists(os.path.join(PLUGIN_ROOT, "commands", "autopilot.md")))
 
     def test_assign_command_registered(self):
-        self.assertIn("./commands/assign.md", self.plugin["commands"])
+        self.assertTrue(os.path.exists(os.path.join(PLUGIN_ROOT, "commands", "assign.md")))
 
     def test_dependencies_command_registered(self):
-        self.assertIn("./commands/dependencies.md", self.plugin["commands"])
-
-    def test_skills_are_array(self):
-        self.assertIsInstance(self.plugin["skills"], list)
-
-    def test_agents_are_array(self):
-        self.assertIsInstance(self.plugin["agents"], list)
+        self.assertTrue(os.path.exists(os.path.join(PLUGIN_ROOT, "commands", "dependencies.md")))
 
     def test_skill_count(self):
-        self.assertEqual(len(self.plugin["skills"]), 18)
-
-    def test_skill_manifest_uses_directories_not_skill_files(self):
-        for skill_path in self.plugin["skills"]:
-            self.assertFalse(skill_path.endswith("SKILL.md"),
-                             f"plugin.json no debe apuntar al fichero SKILL.md: {skill_path}")
+        skills_dir = os.path.join(PLUGIN_ROOT, "skills")
+        skill_dirs = [d for d in os.listdir(skills_dir)
+                      if os.path.isdir(os.path.join(skills_dir, d))]
+        self.assertEqual(len(skill_dirs), 18)
 
     def test_agent_count(self):
-        self.assertEqual(len(self.plugin["agents"]), 6)
+        agents_dir = os.path.join(PLUGIN_ROOT, "agents")
+        agents = [f for f in os.listdir(agents_dir) if f.endswith(".md")]
+        self.assertEqual(len(agents), 6)
 
 
 class TestSettingsJson(unittest.TestCase):
@@ -109,7 +115,7 @@ class TestSettingsJson(unittest.TestCase):
         self.assertEqual(self.defaults["sprint"]["ai_agent_factor_recommended"], 0.70)
 
     def test_all_sections_exist(self):
-        for section in ("providers", "trello", "notion", "discovery", "stories", "validation", "docs", "publish", "sprint", "autopilot", "dod"):
+        for section in ("providers", "trello", "notion", "github", "discovery", "stories", "validation", "docs", "publish", "sprint", "autopilot", "dod"):
             self.assertIn(section, self.defaults, f"Falta seccion: {section}")
 
     def test_sprint_duration_is_one_week_or_less(self):
@@ -120,14 +126,21 @@ class TestSettingsJson(unittest.TestCase):
         self.assertIn("Sprint activo", lists)
         self.assertIn("Bloqueada", lists)
 
-    def test_supported_publish_providers_include_trello_notion_and_local(self):
+    def test_supported_publish_providers_include_trello_notion_github_and_local(self):
         providers = self.defaults["providers"]["supported"]
-        self.assertEqual(providers, ["trello", "notion", "local"])
+        self.assertEqual(providers, ["trello", "notion", "github", "local"])
 
     def test_notion_required_envs_exist(self):
         required_env = self.defaults["notion"]["required_env"]
         self.assertIn("NOTION_TOKEN", required_env)
         self.assertIn("NOTION_PARENT_PAGE_ID", required_env)
+
+    def test_github_section_has_prefix_status_and_required_env(self):
+        github = self.defaults["github"]
+        self.assertEqual(github["project_title_prefix"], "PSPO")
+        self.assertIn("GITHUB_TOKEN", github["required_env"])
+        for option in ("Backlog", "Sprint activo", "Bloqueada", "En progreso", "En revision", "Hecho"):
+            self.assertIn(option, github["status_options"])
 
 
 class TestMarketplaceJson(unittest.TestCase):
@@ -192,6 +205,10 @@ class TestMcpServerExists(unittest.TestCase):
         path = os.path.join(PLUGIN_ROOT, "servers", "notion-fallback.py")
         self.assertTrue(os.path.exists(path))
 
+    def test_github_fallback_exists(self):
+        path = os.path.join(PLUGIN_ROOT, "servers", "github-fallback.py")
+        self.assertTrue(os.path.exists(path))
+
     def test_persist_active_skill_hook_exists(self):
         path = os.path.join(PLUGIN_ROOT, "hooks", "scripts", "persist-active-skill.py")
         self.assertTrue(os.path.exists(path))
@@ -205,6 +222,12 @@ class TestMcpServerExists(unittest.TestCase):
             content = handle.read()
         self.assertIn("NOTION_PROJECT_PAGE_ID", content)
         self.assertIn("NOTION_VISION_PAGE_ID", content)
+
+    def test_github_variables_documented_in_env_example(self):
+        with open(os.path.join(PLUGIN_ROOT, ".env.example"), encoding="utf-8") as handle:
+            content = handle.read()
+        for var in ("GITHUB_TOKEN", "GH_TOKEN", "GITHUB_PROJECT_NUMBER", "GITHUB_PROJECT_ID"):
+            self.assertIn(var, content)
 
     def test_no_typescript_legacy(self):
         legacy = os.path.join(PLUGIN_ROOT, "servers", "trello-mcp")

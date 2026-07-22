@@ -6,7 +6,6 @@ description: >
   destino de publicacion. Detecta automaticamente que pasos ya estan
   completados y salta al siguiente. Usar cuando no hay configuracion o cuando
   el usuario quiere reconfigurar.
-disable-model-invocation: false
 allowed-tools: Write, Edit, Bash, Task, AskUserQuestion
 ---
 
@@ -28,6 +27,7 @@ La capa de proveedor remoto ya existe en runtime:
 - la seleccion persiste en `.pspo-agent/runtime/publish-provider.json`
 - Trello sigue siendo el carril mas maduro
 - Notion ya tiene fallback oficial y estructura zero-template validada
+- GitHub Projects tiene fallback oficial: crea un Project v2 privado del usuario y publica las historias como draft items
 
 Se breve y directo. Instrucciones de 1-2 lineas por paso. El usuario quiere configurar rapido.
 
@@ -38,6 +38,7 @@ Antes de cualquier `Glob`, `Read`, `Grep`, `ToolSearch` o `TodoWrite`, la
 
 - `.pspo-agent/runtime/trello-fallback.sh env-status --pretty`
 - `.pspo-agent/runtime/notion-fallback.sh env-status --pretty`
+- `.pspo-agent/runtime/github-fallback.sh env-status --pretty`
 - `.pspo-agent/runtime/publish-provider.py .`
 
 Reglas:
@@ -56,13 +57,15 @@ Antes de empezar, evalua que ya esta configurado:
 1. **Consulta el estado seguro de `.env`** con:
    - `.pspo-agent/runtime/trello-fallback.sh env-status --pretty`
    - `.pspo-agent/runtime/notion-fallback.sh env-status --pretty`
+   - `.pspo-agent/runtime/github-fallback.sh env-status --pretty`
 2. Usa `.pspo-agent/runtime/publish-provider.py .` para resolver:
    - proveedor ya seleccionado
    - proveedores configurados
    - si hace falta preguntar
 3. Si el proveedor activo es `trello`, verifica `TRELLO_API_KEY`, `TRELLO_TOKEN` y `TRELLO_BOARD_ID`.
 4. Si el proveedor activo es `notion`, verifica `NOTION_TOKEN`, `NOTION_PARENT_PAGE_ID` y, si existen, `NOTION_PROJECT_PAGE_ID` o `NOTION_DATABASE_ID`.
-5. **Excepcion autopilot:** si `.pspo-agent/runtime/final-gate.status=plan-publish` y `.pspo-agent/runtime/autopilot-branch-skill.status=pspo-agent:onboarding`, la eleccion del proveedor y la configuracion del destino deben ser **100% automaticas** siempre que solo haya un proveedor remoto configurado.
+5. Si el proveedor activo es `github`, verifica que `github-fallback.sh env-status` reporta autenticacion (`gh` autenticado o `GITHUB_TOKEN`/`GH_TOKEN`) y, si existen, `GITHUB_PROJECT_ID` o `GITHUB_PROJECT_NUMBER`.
+6. **Excepcion autopilot:** si `.pspo-agent/runtime/final-gate.status=plan-publish` y `.pspo-agent/runtime/autopilot-branch-skill.status=pspo-agent:onboarding`, la eleccion del proveedor y la configuracion del destino deben ser **100% automaticas** siempre que solo haya un proveedor remoto configurado.
 
 ### Primera llamada obligatoria en autopilot
 
@@ -71,6 +74,7 @@ Si vienes desde `/pspo-agent:autopilot` con la rama `plan-publish` activa:
 - las **primeras llamadas validas** son:
   - `.pspo-agent/runtime/trello-fallback.sh env-status --pretty`
   - `.pspo-agent/runtime/notion-fallback.sh env-status --pretty`
+  - `.pspo-agent/runtime/github-fallback.sh env-status --pretty`
   - `.pspo-agent/runtime/publish-provider.py .`
 - esa llamada debe hacerse con `Bash`
 - antes de esa llamada no uses `Glob`, `Grep`, `Read`, `ToolSearch` ni `TodoWrite`
@@ -90,17 +94,19 @@ Si vienes desde `/pspo-agent:autopilot` con la rama `plan-publish` activa:
 
 ## Paso 0: Resolver proveedor remoto
 
-1. Consulta Trello y Notion con sus wrappers `env-status`.
+1. Consulta Trello, Notion y GitHub con sus wrappers `env-status`.
 2. Usa `publish-provider.py` para inspeccionar el estado.
 
 Casos:
 
 - **Solo Trello configurado:** selecciona `trello` y continua sin preguntar.
 - **Solo Notion configurado:** selecciona `notion` y continua sin preguntar.
-- **Trello + Notion configurados:** usa AskUserQuestion:
+- **Solo GitHub configurado:** selecciona `github` y continua sin preguntar.
+- **Varios proveedores configurados:** usa AskUserQuestion (maximo 4 opciones):
   - **"Trello"**: usar tablero y tarjetas
   - **"Notion"**: usar páginas y backlog zero-template
-- **Ningun proveedor configurado:** pregunta por `Trello` o `Notion`.
+  - **"GitHub Projects"**: usar un Project v2 privado del usuario con draft items
+- **Ningun proveedor configurado:** pregunta por `Trello`, `Notion` o `GitHub Projects`.
 
 Tras decidir, persiste la eleccion con:
 
@@ -189,7 +195,69 @@ El resultado final de Notion debe dejar:
 - pagina padre accesible
 - `NOTION_PROJECT_PAGE_ID` y `NOTION_DATABASE_ID` si la estructura ya se creo
 
+## Ruta GitHub
+
+Si el proveedor elegido es `github`, usa esta ruta y NO sigas por la parte de Trello:
+
+### Reglas operativas de la ruta GitHub
+
+- Usa solo `publish-provider.py` y `.pspo-agent/runtime/github-fallback.sh`.
+- No uses `find`, `grep`, `sed`, `cat`, `ls` ni inspeccion del repo para "descubrir" el flujo.
+- Backend primario: la CLI `gh` autenticada. Si `gh` no esta disponible, el fallback usa `GITHUB_TOKEN` o `GH_TOKEN`.
+- Si necesitas recordar los comandos soportados, usa:
+
+```bash
+.pspo-agent/runtime/github-fallback.sh help --pretty
+```
+
+- Secuencia canonica:
+
+```bash
+.pspo-agent/runtime/github-fallback.sh env-status --pretty
+.pspo-agent/runtime/github-fallback.sh verify-credentials --pretty
+.pspo-agent/runtime/github-fallback.sh create-project --pretty
+.pspo-agent/runtime/github-fallback.sh save-project-targets --pretty
+```
+
+### Paso G1: Verificar autenticacion y scope `project`
+
+1. Ejecuta `.pspo-agent/runtime/github-fallback.sh env-status --pretty`.
+   - Si `authMethod` es `none`, pide al usuario que ejecute `gh auth login` o que defina `GITHUB_TOKEN`/`GH_TOKEN` en `.env`.
+2. Ejecuta `.pspo-agent/runtime/github-fallback.sh verify-credentials --pretty`.
+   - Si `hasProjectScope` es `false`, indica al usuario que ejecute `gh auth refresh -s project` (o que genere un token con el scope `project`) y vuelve a verificar.
+   - No finjas exito.
+
+### Paso G2: Preparar el Project v2 zero-template
+
+Si ya existen `GITHUB_PROJECT_ID` y/o `GITHUB_PROJECT_NUMBER` y siguen siendo validos:
+
+- usalos y muestra un resumen final breve
+
+Si no existen:
+
+- **crea automaticamente** el Project v2 privado con el esquema de campos completo (Status con sus opciones estandar, Prioridad, Talla, Horas, Sprint y Responsable) y con `shortDescription` y `readme` autodocumentados
+- no preguntes si quieres crearlo o dejarlo para mas tarde
+
+Para crearlo usa solo el fallback oficial:
+
+```bash
+.pspo-agent/runtime/github-fallback.sh create-project --pretty
+```
+
+Despues persiste los IDs con:
+
+```bash
+.pspo-agent/runtime/github-fallback.sh save-project-targets --pretty
+```
+
+El resultado final de GitHub debe dejar:
+
+- autenticacion valida con scope `project`
+- `GITHUB_PROJECT_ID`, `GITHUB_PROJECT_NUMBER`, `GITHUB_PROJECT_OWNER` y `GITHUB_PROJECT_URL` persistidos en `.env`
+
 Solo si el proveedor elegido es `trello`, continua con los pasos 1-4 de abajo.
+
+Para las URLs exactas de Trello, las validaciones de formato de credenciales y los errores comunes de cada paso, lee el fichero `steps.md` de esta skill.
 
 ## Paso 1: Obtener la API Key
 

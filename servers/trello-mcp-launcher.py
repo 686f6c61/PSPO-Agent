@@ -11,12 +11,13 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import tempfile
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 ENV_KEYS = ("TRELLO_API_KEY", "TRELLO_TOKEN", "TRELLO_BOARD_ID", "TRELLO_TOKEN_CREATED")
-DEBUG_LOG = Path("/tmp/pspo-agent-mcp-launcher.log")
+DEBUG_LOG = Path(tempfile.gettempdir()) / "pspo-agent-mcp-launcher.log"
 
 
 def _strip_quotes(value: str) -> str:
@@ -52,7 +53,7 @@ def _debug_log(message: str) -> None:
     try:
         DEBUG_LOG.parent.mkdir(parents=True, exist_ok=True)
         with DEBUG_LOG.open("a", encoding="utf-8") as handle:
-            handle.write(f"{datetime.utcnow().isoformat()}Z {message}\n")
+            handle.write(f"{datetime.now(timezone.utc).isoformat()} {message}\n")
     except OSError:
         pass
 

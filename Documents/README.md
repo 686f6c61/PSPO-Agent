@@ -21,7 +21,7 @@ PSPO Agent es un plugin no oficial de Claude Code que cubre el ciclo completo de
 2. Generación de backlog e historias de usuario.
 3. Validación, asignación y mapa de dependencias.
 4. Planificación de sprint adaptada a equipos que usan agentes.
-5. Publicación en Trello o Notion con resumen, adjunto `.md`, dependencias y asignación real cuando puede resolverse.
+5. Publicación en Trello, Notion o GitHub Projects con resumen, detalle largo, dependencias y asignación real cuando puede resolverse.
 
 ## Foto actual del plugin
 
@@ -30,11 +30,15 @@ PSPO Agent es un plugin no oficial de Claude Code que cubre el ciclo completo de
 - `6` agentes especializados en [`../agents/`](../agents/)
 - `14` herramientas MCP de Trello en [`../servers/trello-mcp.py`](../servers/trello-mcp.py)
 - fallback oficial de Notion en [`../servers/notion-fallback.py`](../servers/notion-fallback.py)
+- fallback oficial de GitHub Projects en [`../servers/github-fallback.py`](../servers/github-fallback.py)
 - orquestación con hooks en [`../hooks/hooks.json`](../hooks/hooks.json)
 - configuración global en [`../settings.json`](../settings.json)
 - distribución e instalación en [`../install.sh`](../install.sh) y [`../install.ps1`](../install.ps1)
 
 ## Cómo leer esta documentación
+
+0. [`prd.md`](./prd.md)
+   Definición de producto (baseline): problema, usuarios, alcance y criterios. Referencia histórica.
 
 1. [`configuration.md`](./configuration.md)
    Configuración, instalación, `.env`, `settings.json`, `.mcp.json`, marketplace y desinstalación.
@@ -54,10 +58,13 @@ PSPO Agent es un plugin no oficial de Claude Code que cubre el ciclo completo de
 6. [`notion-integration.md`](./notion-integration.md)
    Integración zero-template de Notion, contrato de `.env`, modelo de páginas y límites de la API.
 
-7. [`security.md`](./security.md)
+7. [`github-projects-integration.md`](./github-projects-integration.md)
+   Integración zero-template de GitHub Projects v2, autenticación con `gh`/token, draft items y límites de la API.
+
+8. [`security.md`](./security.md)
    Modelo de seguridad, manejo de secretos, bloqueos y normas de extensión segura.
 
-8. [`testing-and-release.md`](./testing-and-release.md)
+9. [`testing-and-release.md`](./testing-and-release.md)
    Suite de tests, cobertura por archivo, estrategia E2E y checklist de release.
 
 ## Reglas de diseño importantes
@@ -79,6 +86,7 @@ PSPO Agent es un plugin no oficial de Claude Code que cubre el ciclo completo de
 - Servidor MCP: [`../servers/trello-mcp.py`](../servers/trello-mcp.py)
 - Fallback oficial: [`../servers/trello-fallback.py`](../servers/trello-fallback.py)
 - Fallback oficial Notion: [`../servers/notion-fallback.py`](../servers/notion-fallback.py)
+- Fallback oficial GitHub Projects: [`../servers/github-fallback.py`](../servers/github-fallback.py)
 - Launcher MCP: [`../servers/trello-mcp-launcher.py`](../servers/trello-mcp-launcher.py)
 - Selector de proveedor: [`../hooks/scripts/publish-provider.py`](../hooks/scripts/publish-provider.py)
 - Hooks: [`../hooks/hooks.json`](../hooks/hooks.json)
